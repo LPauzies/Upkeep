@@ -30,6 +30,12 @@
   "content_scripts": [
     {
       "matches": ["https://endstep.cc/*"],
+      "js": ["src/content/ws-spy.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://endstep.cc/*"],
       "css": ["src/content/upkeep.css"],
       "js": ["src/content/upkeep.js"],
       "run_at": "document_idle"

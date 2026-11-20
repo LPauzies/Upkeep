@@ -1,540 +1,1076 @@
-/* Upkeep — Content Script auto-injecté sur https://endstep.cc/*
- * Détecte automatiquement les URLs /game/* côté client (rien à copier-coller).
- * - Ouvre automatiquement le panneau Log (bouton vertical "Log" sur le bord gauche d'Endstep)
- * - Améliore la lisibilité des compteurs PV / Deck / Main (LIFE + bibliothèque + main)
- * - Affiche en continu le cimetière adverse dans un rail droit dédié
- * - Laisse les cartes Magic 100% intactes telles qu'Endstep les affiche
- */
 (() => {
-  'use strict';
-
   const extApi = globalThis.browser ?? globalThis.chrome;
-  const STORAGE_KEY = 'upkeep_config_v1';
+  const STORAGE_KEY = 'upkeep_config_v2';
 
   const DEFAULT_CONFIG = {
-    version: '1.0.0',
     enabled: true,
     autoOpenLogsLeft: true,
     alwaysShowOpponentGraveyard: true,
     highContrastHud: true,
-    showExtendedCounters: true,
     enableHoverZoom: true,
-    logsWidth: 264,
+    logsWidth: 278,
     graveyardWidth: 268,
-    hoverZoomScale: 1.45,
-    density: 'balanced',
     shortcuts: { toggleLogs: 'l', toggleGraveyard: 'g', toggleTheme: 'u' },
     selectors: {
-      gameRoot: '[data-testid="game-board"], .game-board, main',
-      logsPanel: '[data-testid="game-log"], [data-zone="log"], .game-log, .log-panel, aside[aria-label*="log" i]',
-      logsToggleButton: 'button[aria-label*="log" i], button[title*="log" i], [data-testid="toggle-log"], .log-toggle',
-      opponentGraveyardZone: '[data-player="opponent"] [data-zone="graveyard"], .opponent-zone .graveyard, [aria-label*="graveyard" i]',
-      opponentGraveyardCards: '[data-player="opponent"] [data-zone="graveyard"] img, .opponent-zone .graveyard img',
-      opponentLife: '[data-player="opponent"] [data-stat="life"], [data-testid="opponent-life"]',
-      opponentLibrary: '[data-player="opponent"] [data-stat="library"], [data-testid="opponent-library"]',
-      opponentHand: '[data-player="opponent"] [data-stat="hand"], [data-testid="opponent-hand"]',
-      opponentExile: '[data-player="opponent"] [data-stat="exile"], [data-testid="opponent-exile"]',
-      selfLife: '[data-player="self"] [data-stat="life"], [data-testid="self-life"]',
-      selfLibrary: '[data-player="self"] [data-stat="library"], [data-testid="self-library"]',
-      selfHand: '[data-player="self"] [data-stat="hand"], [data-testid="self-hand"]',
-      selfExile: '[data-player="self"] [data-stat="exile"], [data-testid="self-exile"]',
+      gameRoot: '[data-testid="game-root"], .wr-game-grid',
+      logsPanel: '[data-gamelog-panel], [data-zone="gamelog-display"]',
+      logsToggleButton:
+        'button[aria-label*="open game log" i], button[aria-label*="game log" i]:not([aria-label*="close" i]), button[title*="game log" i]',
+      opponentGraveyardZone: 'button[data-zone-anchor="opp-graveyard"]',
+      opponentGraveyardCards: '[role="dialog"] [data-testid="card-img"], [data-zone*="graveyard" i] [data-testid="card-img"]',
+      opponentLife: '[data-testid="opp-life"] .life-total',
+      opponentLibrary: '[data-player-anchor="opp"] [title="Library (deck) size"] [data-zone-count]',
+      opponentHand: '[data-zone-anchor="opp-hand"] [data-zone-count]',
+      opponentExile: 'button[data-zone-anchor="opp-exile"] [data-zone-count]',
+      selfLife: '[data-testid="me-life"] .life-total',
+      selfLibrary: 'button[data-zone-anchor="my-library"] [data-zone-count]',
+      selfHand: '[data-player-anchor="me"] [title="Hand size"] .font-mono',
+      selfExile: 'button[data-zone-anchor="my-exile"] [data-zone-count]',
     },
   };
 
+  const KNOWN_LANDS = new Set([
+    'plains', 'island', 'swamp', 'mountain', 'forest', 'wastes',
+    'snow-covered plains', 'snow-covered island', 'snow-covered swamp',
+    'snow-covered mountain', 'snow-covered forest',
+  ]);
+
   let config = structuredClone(DEFAULT_CONFIG);
-  let state = {
-    isGameRoute: false,
-    currentGameId: null,
-    logsOpenedForGameId: null,
-    logsVisible: true,
-    graveyardVisible: true,
-    gyFilter: 'all',
-    lastOpponentLife: null,
-    lastSelfLife: null,
-    opponentLifeDelta: null,
-    selfLifeDelta: null,
-  };
+  let activeGameKey = '';
+  let gyFilter = 'all';
+  let gyDockMode = 'docked'; // 'docked' (inside aside.wr-rail-right) | 'floating'
+  let gyVisible = true;
+  let userUndockedLog = false;
+  let userClosedLog = false;
+  let logAutoOpenAttempts = 0;
 
-  let syncRaf = null;
+  let prevOppLife = null;
+  let prevSelfLife = null;
 
-  function isGameUrl(pathname = window.location.pathname) {
-    return /^\/game\/[^/]+/i.test(pathname);
+  // 3-Layer Opponent Graveyard State
+  let wsOppCards = [];
+  let peekOppCards = [];
+  let peekCountAtCapture = -1;
+  let peekInFlight = false;
+  let lastAutoPeekCount = -1;
+  let lastAutoPeekTs = 0;
+  let statusNotice = '';
+  let statusNoticeTimer = null;
+
+  let domObserver = null;
+  let resizeObserver = null;
+  let syncRaf = 0;
+
+  function isGameRoute() {
+    return /^\/game\/[^/]+/.test(window.location.pathname);
   }
 
-  function extractGameId(pathname = window.location.pathname) {
-    const m = pathname.match(/^\/game\/([^/?#]+)/i);
-    return m ? m[1] : null;
+  function toCardImageUrl(name) {
+    return `/api/cards/image?name=${encodeURIComponent(name)}&_v=2`;
   }
 
-  function safeQuery(selector) {
+  function querySafe(selector, root = document) {
     if (!selector) return null;
     try {
-      return document.querySelector(selector);
-    } catch {
+      return root.querySelector(selector);
+    } catch (_) {
       return null;
     }
   }
 
-  function safeQueryAll(selector) {
-    if (!selector) return [];
-    try {
-      return Array.from(document.querySelectorAll(selector));
-    } catch {
-      return [];
+  function getOpponentName() {
+    const el =
+      document.querySelector('[data-player-anchor="opp"] .wr-player-nameplate') ||
+      document.querySelector('[data-player-anchor="opp"] [title]');
+    return (el?.textContent || '').trim();
+  }
+
+  function getSelfName() {
+    const el =
+      document.querySelector('[data-player-anchor="me"] .wr-player-nameplate') ||
+      document.querySelector('[data-player-anchor="me"] [title]');
+    return (el?.textContent || '').trim();
+  }
+
+  function getAuthoritativeOppGyCount() {
+    const btn = querySafe(config.selectors.opponentGraveyardZone);
+    if (!btn) return 0;
+    const countNode = btn.querySelector('[data-zone-count]');
+    const raw = countNode ? countNode.textContent : btn.getAttribute('aria-label') || btn.textContent || '0';
+    const m = String(raw).match(/\d+/);
+    return m ? parseInt(m[0], 10) : 0;
+  }
+
+  function classifyCard(card) {
+    const tl = String(card.typeLine || '').toLowerCase();
+    const nm = String(card.name || '').toLowerCase();
+    if (tl.includes('creature')) return 'creature';
+    if (tl.includes('land') || KNOWN_LANDS.has(nm)) return 'land';
+    if (tl.includes('instant') || tl.includes('sorcery') || tl.includes('artifact') || tl.includes('enchantment') || tl.includes('planeswalker')) {
+      return 'spell';
     }
+    return 'other';
   }
 
-  function parseIntSafe(text) {
-    const m = (text || '').trim().match(/-?\d+/);
-    return m ? Number.parseInt(m[0], 10) : null;
+  function setStatusNotice(msg, durationMs = 2600) {
+    statusNotice = msg;
+    if (statusNoticeTimer) clearTimeout(statusNoticeTimer);
+    statusNoticeTimer = window.setTimeout(() => {
+      statusNotice = '';
+      renderGraveyardPanel();
+    }, durationMs);
+    renderGraveyardPanel();
   }
 
-  /**
-   * Endstep affiche "20 LIFE" en haut à gauche (adversaire) et en bas à gauche (vous),
-   * suivi directement par les compteurs de bibliothèque et de main.
-   * Cette détection heuristique fonctionne même sans attributs data-testid.
-   */
-  function discoverEndstepPlayerBlocks() {
-    const blocks = [];
-    const allElements = Array.from(document.querySelectorAll('div, section, aside'));
-    for (const el of allElements) {
-      const rect = el.getBoundingClientRect();
-      if (rect.left > 320 || rect.width < 80 || rect.width > 340 || rect.height > 200) continue;
-      const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
-      if (!/\b\d+\s*LIFE\b/i.test(text)) continue;
-      if (el.querySelector('[data-upkeep-life-block="true"]')) continue;
-      blocks.push({ el, top: rect.top, text });
+  // ==========================================================================
+  // LAYER 1: WebSocket / Fetch Passive State Listener (from ws-spy.js)
+  // ==========================================================================
+  window.addEventListener('message', (event) => {
+    if (event.origin !== window.location.origin) return;
+    const data = event.data;
+    if (!data || data.source !== 'upkeep-state' || data.kind !== 'graveyards') return;
+    if (!Array.isArray(data.players) || data.players.length === 0) return;
+
+    const oppName = getOpponentName().toLowerCase();
+    const selfName = getSelfName().toLowerCase();
+
+    let oppPlayer = data.players.find((p) => p.isOpponent);
+    if (!oppPlayer && oppName) {
+      oppPlayer = data.players.find((p) => String(p.name || '').toLowerCase() === oppName);
     }
-    blocks.sort((a, b) => a.top - b.top);
-    // Garder les conteneurs les plus compacts (1 en haut = adversaire, 1 en bas = joueur)
-    const compact = blocks.filter((b) => b.text.length < 120);
-    return {
-      opponent: compact[0] || null,
-      self: compact.length > 1 ? compact[compact.length - 1] : null,
-    };
-  }
-
-  function extractStatsFromBlock(block, explicitSelectors) {
-    let life = parseIntSafe(safeQuery(explicitSelectors.life)?.textContent);
-    let library = parseIntSafe(safeQuery(explicitSelectors.library)?.textContent);
-    let hand = parseIntSafe(safeQuery(explicitSelectors.hand)?.textContent);
-    let exile = parseIntSafe(safeQuery(explicitSelectors.exile)?.textContent);
-
-    if (block) {
-      const lifeMatch = block.text.match(/(-?\d+)\s*LIFE/i);
-      if (life === null && lifeMatch) {
-        life = Number.parseInt(lifeMatch[1], 10);
-      }
-      // Après "XX LIFE", Endstep affiche les nombres dans l'ordre : Deck, Main, Cimetière, Exil
-      const afterLife = block.text.split(/LIFE/i)[1] || '';
-      const nums = (afterLife.match(/\d+/g) || []).map((n) => Number.parseInt(n, 10));
-      if (library === null && nums.length >= 1) library = nums[0];
-      if (hand === null && nums.length >= 2) hand = nums[1];
-      if (exile === null && nums.length >= 4) exile = nums[3];
+    if (!oppPlayer && selfName) {
+      oppPlayer = data.players.find((p) => !p.isSelf && String(p.name || '').toLowerCase() !== selfName);
+    }
+    if (!oppPlayer && data.players.length === 1 && !data.players[0].isSelf) {
+      oppPlayer = data.players[0];
     }
 
-    return { life, library, hand, exile };
-  }
+    if (oppPlayer && Array.isArray(oppPlayer.graveyard)) {
+      wsOppCards = oppPlayer.graveyard.map((c) => ({
+        name: c.name,
+        typeLine: c.typeLine || '',
+        manaCost: c.manaCost || '',
+        imageUrl: c.imageUrl || toCardImageUrl(c.name),
+        source: 'ws',
+      }));
+      scheduleSync();
+    }
+  });
 
-  /* 1. Détection & clic automatique sur le bouton vertical "Log" sur le bord gauche d'Endstep */
-  function findEndstepLogButton() {
-    const direct = safeQuery(config.selectors.logsToggleButton);
-    if (direct) return direct;
-
-    const candidates = Array.from(document.querySelectorAll('button, [role="button"], div'));
-    return (
-      candidates.find((el) => {
-        const txt = (el.textContent || '').trim();
-        if (!/^logs?$/i.test(txt)) return false;
-        const rect = el.getBoundingClientRect();
-        return rect.width > 0 && rect.width < 90 && rect.left < 80;
-      }) || null
+  // ==========================================================================
+  // LAYER 2: Native Graveyard Dialog Scraper + Silent Peek
+  // ==========================================================================
+  function findOpenZoneDialogs() {
+    const dialogs = Array.from(
+      document.querySelectorAll(
+        '[role="dialog"]:not([data-zone="decision-surface"]), [data-radix-popper-content-wrapper], [data-zone*="graveyard" i]'
+      )
     );
+    return dialogs.filter((el) => {
+      if (el.id === 'upkeep-opp-graveyard') return false;
+      if (el.closest('#upkeep-opp-graveyard')) return false;
+      const style = window.getComputedStyle(el);
+      if (style.display === 'none' || style.visibility === 'hidden') return false;
+      return true;
+    });
   }
 
-  function findEndstepLogPanel() {
-    const direct = safeQuery(config.selectors.logsPanel);
-    if (direct) return direct;
-
-    const candidates = Array.from(document.querySelectorAll('aside, section, div'));
-    return (
-      candidates.find((el) => {
-        if (el.id?.startsWith('upkeep-')) return false;
-        const label = (
-          el.getAttribute('aria-label') ||
-          el.getAttribute('data-testid') ||
-          el.className?.toString() ||
-          ''
-        ).toLowerCase();
-        return /(game[-_]?log|match[-_]?log|action[-_]?log|log[-_]?drawer|log[-_]?panel)/.test(
-          label
-        );
-      }) || null
-    );
-  }
-
-  function ensureLogsOpenedLeft() {
-    if (!config.enabled || !state.isGameRoute) return;
-
-    const panel = findEndstepLogPanel();
-    const isVisible =
-      panel && panel.getBoundingClientRect().width > 80 && getComputedStyle(panel).display !== 'none';
-
-    if (
-      config.autoOpenLogsLeft &&
-      !isVisible &&
-      state.currentGameId &&
-      state.logsOpenedForGameId !== state.currentGameId
-    ) {
-      const logBtn = findEndstepLogButton();
-      if (logBtn) {
-        state.logsOpenedForGameId = state.currentGameId;
-        logBtn.click();
-        window.setTimeout(() => {
-          const opened = findEndstepLogPanel();
-          if (opened) opened.setAttribute('data-upkeep-dock', 'logs-left');
-        }, 220);
+  function extractCardsFromDialog(dialog) {
+    const cards = [];
+    const imgs = dialog.querySelectorAll('img[data-testid="card-img"], img[src*="/api/cards/image"], img[alt]');
+    imgs.forEach((img) => {
+      const alt = (img.getAttribute('alt') || '').trim();
+      const src = img.getAttribute('src') || '';
+      let name = alt;
+      if (!name && src.includes('name=')) {
+        try {
+          const u = new URL(src, window.location.origin);
+          name = u.searchParams.get('name') || '';
+        } catch (_) {}
       }
-    }
+      if (!name || name.startsWith('{')) return; // Ignore mana symbol SVGs
+      const tile = img.closest('[data-card-id], [aria-label]');
+      const label = (tile?.getAttribute('aria-label') || '').trim();
+      cards.push({
+        name: name || label,
+        typeLine: '',
+        manaCost: '',
+        imageUrl: src || toCardImageUrl(name),
+        source: 'dialog',
+      });
+    });
 
-    if (panel) {
-      panel.setAttribute('data-upkeep-dock', 'logs-left');
-    }
-  }
-
-  /* 2. Cimetière adverse en continu (lit les cartes natives d'Endstep sans modifier leur rendu) */
-  function inferCategory(typeText = '') {
-    const low = typeText.toLowerCase();
-    if (/land|terrain/.test(low)) return 'land';
-    if (/creature|créature/.test(low)) return 'creature';
-    if (/instant|sorcery|éphémère|rituel/.test(low)) return 'spell';
-    return 'artifact';
-  }
-
-  function readOpponentGraveyardCards() {
-    const explicitNodes = safeQueryAll(config.selectors.opponentGraveyardCards);
-    const zone = safeQuery(config.selectors.opponentGraveyardZone);
-
-    let nodes = explicitNodes;
-    if (nodes.length === 0 && zone) {
-      nodes = Array.from(zone.querySelectorAll('img[alt], [data-card-name], .card'));
-    }
-
-    return nodes
-      .map((el, i) => {
-        const img = el.tagName === 'IMG' ? el : el.querySelector('img');
-        const name = (
-          el.getAttribute('data-card-name') ||
-          img?.getAttribute('alt') ||
-          el.getAttribute('title') ||
-          el.textContent ||
-          ''
-        ).trim();
-        const typeLine = (el.getAttribute('data-card-type') || 'Carte Magic').trim();
-        return {
-          id: el.getAttribute('data-card-id') || `gy-${i}-${name}`,
+    if (cards.length === 0) {
+      const tiles = dialog.querySelectorAll('[data-card-name], [data-card-id][aria-label]');
+      tiles.forEach((tile) => {
+        const name = (tile.getAttribute('data-card-name') || tile.getAttribute('aria-label') || '').trim();
+        if (!name) return;
+        cards.push({
           name,
-          typeLine,
-          category: inferCategory(typeLine),
-          imgSrc: img?.getAttribute('src') || '',
-        };
-      })
-      .filter((c) => c.name.length > 0 && !/^\d+$/.test(c.name));
-  }
-
-  function ensureCardZoom() {
-    let el = document.getElementById('upkeep-card-zoom');
-    if (!el) {
-      el = document.createElement('div');
-      el.id = 'upkeep-card-zoom';
-      el.setAttribute('aria-hidden', 'true');
-      document.body.appendChild(el);
+          typeLine: '',
+          manaCost: '',
+          imageUrl: toCardImageUrl(name),
+          source: 'dialog',
+        });
+      });
     }
-    return el;
+    return cards;
   }
 
-  function showNativeCardZoom(card, rect) {
-    if (!config.enableHoverZoom || !card.imgSrc) return;
-    const zoom = ensureCardZoom();
-    zoom.innerHTML = '';
-    const img = document.createElement('img');
-    img.src = card.imgSrc;
-    img.alt = card.name;
-    img.referrerPolicy = 'no-referrer';
-    zoom.appendChild(img);
+  function isOpponentGraveyardDialog(dialog) {
+    const text = (
+      (dialog.getAttribute('aria-label') || '') +
+      ' ' +
+      (dialog.querySelector('h1, h2, h3, [role="heading"]')?.textContent || '')
+    ).toLowerCase();
+    if (!text.includes('graveyard') && !text.includes('cimetière')) return false;
+    const oppName = getOpponentName().toLowerCase();
+    const selfName = getSelfName().toLowerCase();
+    if (oppName && text.includes(oppName)) return true;
+    if (text.includes('opponent') || text.includes('opp')) return true;
+    if (selfName && text.includes(selfName)) return false;
+    if (text.includes('your ')) return false;
+    return true;
+  }
 
-    const w = Math.round(230 * (config.hoverZoomScale / 1.35));
-    zoom.style.width = `${w}px`;
-    zoom.style.left = `${Math.max(12, rect.left - w - 14)}px`;
-    zoom.style.top = `${Math.min(window.innerHeight - 360, Math.max(12, rect.top - 40))}px`;
+  function passiveScanOpenDialogs() {
+    if (peekInFlight) return;
+    const dialogs = findOpenZoneDialogs();
+    for (const dlg of dialogs) {
+      if (!isOpponentGraveyardDialog(dlg)) continue;
+      const found = extractCardsFromDialog(dlg);
+      if (found.length > 0) {
+        peekOppCards = found;
+        peekCountAtCapture = getAuthoritativeOppGyCount();
+      }
+    }
+  }
+
+  function closeDialogElement(dialog) {
+    if (dialog) {
+      const closeBtn = dialog.querySelector(
+        'button[aria-label*="close" i], button[title*="close" i], [data-testid*="close" i]'
+      );
+      if (closeBtn) {
+        closeBtn.click();
+        return;
+      }
+    }
+    const escDown = new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true, cancelable: true });
+    (document.activeElement || document.body).dispatchEvent(escDown);
+    document.dispatchEvent(escDown);
+  }
+
+  async function peekOpponentGraveyard({ force = false } = {}) {
+    if (peekInFlight) return false;
+    const count = getAuthoritativeOppGyCount();
+    if (count === 0) {
+      peekOppCards = [];
+      peekCountAtCapture = 0;
+      if (force) setStatusNotice('Cimetière adverse vide');
+      renderGraveyardPanel();
+      return true;
+    }
+
+    const oppGyBtn = querySafe(config.selectors.opponentGraveyardZone);
+    if (!oppGyBtn || oppGyBtn.disabled) {
+      if (force) setStatusNotice('Lecture via le journal de partie');
+      renderGraveyardPanel();
+      return false;
+    }
+
+    // Do not interrupt if the user currently has another modal open (unless explicitly forced)
+    const preExistingDialogs = new Set(findOpenZoneDialogs());
+    if (!force && preExistingDialogs.size > 0) {
+      return false;
+    }
+
+    peekInFlight = true;
+    lastAutoPeekCount = count;
+    lastAutoPeekTs = Date.now();
+    document.documentElement.dataset.upkeepPeekingGy = 'true';
+
+    let captured = [];
+    let openedDialog = null;
+
+    try {
+      oppGyBtn.click();
+
+      // Wait up to 480ms for Endstep to render the graveyard cards inside its dialog
+      const deadline = Date.now() + 480;
+      while (Date.now() < deadline) {
+        await new Promise((r) => window.setTimeout(r, 45));
+        const currentDialogs = findOpenZoneDialogs().filter((d) => !preExistingDialogs.has(d));
+        for (const dlg of currentDialogs) {
+          const cards = extractCardsFromDialog(dlg);
+          if (cards.length > 0) {
+            openedDialog = dlg;
+            captured = cards;
+            break;
+          }
+          if (!openedDialog) openedDialog = dlg;
+        }
+        if (captured.length >= count) break;
+      }
+
+      if (captured.length > 0) {
+        peekOppCards = captured;
+        peekCountAtCapture = count;
+      }
+    } finally {
+      closeDialogElement(openedDialog);
+      await new Promise((r) => window.setTimeout(r, 60));
+      delete document.documentElement.dataset.upkeepPeekingGy;
+      peekInFlight = false;
+    }
+
+    if (force) {
+      const effective = getEffectiveOpponentGraveyard().cards.length;
+      setStatusNotice(
+        effective > 0 ? `Synchronisé · ${effective} carte${effective > 1 ? 's' : ''}` : 'Synchronisation effectuée'
+      );
+    } else {
+      renderGraveyardPanel();
+    }
+    return captured.length > 0;
+  }
+
+  // ==========================================================================
+  // LAYER 3: Smart Game Log Parser (Zero-Click Instant Fallback)
+  // ==========================================================================
+  function parseOpponentGraveyardFromLog(authoritativeCount) {
+    if (authoritativeCount === 0) return [];
+    const logRoot = document.querySelector('[data-gamelog-panel] [role="log"]');
+    if (!logRoot) return [];
+
+    const oppName = getOpponentName();
+    const selfName = getSelfName();
+    const oppLower = oppName.toLowerCase();
+    const selfLower = selfName.toLowerCase();
+
+    const lastOwnerByCard = new Map();
+    const oppGraveyard = [];
+    const oppCastCandidates = [];
+    let activeTurnOwner = 'unknown';
+
+    const oppBoardCardNames = new Set(
+      Array.from(document.querySelectorAll('[data-half="opp"] [data-testid="card-img"]'))
+        .map((img) => (img.getAttribute('alt') || '').trim().toLowerCase())
+        .filter(Boolean)
+    );
+
+    const rows = Array.from(logRoot.children);
+    for (const node of rows) {
+      if (node.classList.contains('gl-turn')) {
+        activeTurnOwner = node.classList.contains('gl-turn--opp')
+          ? 'opp'
+          : node.classList.contains('gl-turn--you')
+          ? 'me'
+          : activeTurnOwner;
+        continue;
+      }
+
+      const aria = (
+        node.getAttribute('aria-label') ||
+        node.querySelector('[aria-label]')?.getAttribute('aria-label') ||
+        ''
+      ).trim();
+      const text = (node.textContent || '').trim();
+      const combined = aria || text;
+      if (!combined) continue;
+
+      const cardBtn = node.querySelector('.gl-card-name');
+      const cardName = (cardBtn?.textContent || '').trim();
+
+      let actor = 'unknown';
+      if (/^opponent\b/i.test(aria) || (oppLower && combined.toLowerCase().includes(oppLower))) {
+        actor = 'opp';
+      } else if (/^you:/i.test(aria) || (selfLower && combined.toLowerCase().includes(selfLower))) {
+        actor = 'me';
+      }
+
+      // Skip "Look at Forge AI's hand: ..." reveal lines (they list hand, not graveyard)
+      if (/look at .* hand/i.test(combined)) continue;
+
+      if (cardName && actor !== 'unknown') {
+        lastOwnerByCard.set(cardName.toLowerCase(), actor);
+      }
+
+      // Leaving graveyard
+      if (cardName && /graveyard\s*(?:->|→)/i.test(combined)) {
+        const owner = actor !== 'unknown' ? actor : lastOwnerByCard.get(cardName.toLowerCase()) || activeTurnOwner;
+        if (owner === 'opp') {
+          const idx = oppGraveyard.findIndex((c) => c.name.toLowerCase() === cardName.toLowerCase());
+          if (idx !== -1) oppGraveyard.splice(idx, 1);
+        }
+        continue;
+      }
+
+      // Entering graveyard explicitly
+      if (
+        cardName &&
+        (/(?:->|→)\s*graveyard/i.test(combined) ||
+          /\b(?:discarded|milled|put .* into .* graveyard|died|destroyed|countered)\b/i.test(combined))
+      ) {
+        const owner = actor !== 'unknown' ? actor : lastOwnerByCard.get(cardName.toLowerCase()) || activeTurnOwner;
+        if (owner === 'opp') {
+          oppGraveyard.push({
+            name: cardName,
+            typeLine: '',
+            manaCost: '',
+            imageUrl: toCardImageUrl(cardName),
+            source: 'log',
+          });
+        }
+        continue;
+      }
+
+      // Track opponent spell casts that aren't currently permanents on opponent's board
+      if (cardName && actor === 'opp' && /\bcast\b/i.test(combined)) {
+        oppCastCandidates.push(cardName);
+      }
+    }
+
+    // Complete missing slots (e.g. opponent sorceries/instants like Land Grant that resolve into graveyard without a separate zone-move row)
+    if (oppGraveyard.length < authoritativeCount) {
+      const alreadyCounted = new Map();
+      oppGraveyard.forEach((c) => {
+        const k = c.name.toLowerCase();
+        alreadyCounted.set(k, (alreadyCounted.get(k) || 0) + 1);
+      });
+
+      for (let i = oppCastCandidates.length - 1; i >= 0 && oppGraveyard.length < authoritativeCount; i--) {
+        const name = oppCastCandidates[i];
+        const key = name.toLowerCase();
+        if (oppBoardCardNames.has(key)) continue;
+        if ((alreadyCounted.get(key) || 0) > 0) {
+          alreadyCounted.set(key, alreadyCounted.get(key) - 1);
+          continue;
+        }
+        oppGraveyard.push({
+          name,
+          typeLine: '',
+          manaCost: '',
+          imageUrl: toCardImageUrl(name),
+          source: 'log',
+        });
+      }
+    }
+
+    return oppGraveyard;
+  }
+
+  function getEffectiveOpponentGraveyard() {
+    const authCount = getAuthoritativeOppGyCount();
+    if (authCount === 0) {
+      return { count: 0, cards: [], source: 'empty' };
+    }
+
+    if (wsOppCards.length > 0 && wsOppCards.length === authCount) {
+      return { count: authCount, cards: wsOppCards, source: 'ws' };
+    }
+    if (peekOppCards.length > 0 && peekCountAtCapture === authCount) {
+      return { count: authCount, cards: peekOppCards, source: 'dialog' };
+    }
+
+    const logCards = parseOpponentGraveyardFromLog(authCount);
+    if (logCards.length >= authCount) {
+      return { count: authCount, cards: logCards, source: 'log' };
+    }
+    if (wsOppCards.length > 0) {
+      return { count: authCount, cards: wsOppCards, source: 'ws' };
+    }
+    if (peekOppCards.length > 0) {
+      return { count: authCount, cards: peekOppCards, source: 'dialog' };
+    }
+    return { count: authCount, cards: logCards, source: logCards.length > 0 ? 'log' : 'pending' };
+  }
+
+  // ==========================================================================
+  // UI: Opponent Graveyard Panel (Docked inside aside.wr-rail-right OR Floating)
+  // ==========================================================================
+  function ensureCardZoomOverlay() {
+    let zoom = document.getElementById('upkeep-card-zoom');
+    if (!zoom) {
+      zoom = document.createElement('div');
+      zoom.id = 'upkeep-card-zoom';
+      zoom.setAttribute('aria-hidden', 'true');
+      const img = document.createElement('img');
+      img.alt = '';
+      zoom.appendChild(img);
+      document.body.appendChild(zoom);
+    }
+    return zoom;
+  }
+
+  function showCardZoom(imageUrl, name) {
+    if (!config.enableHoverZoom) return;
+    const zoom = ensureCardZoomOverlay();
+    const img = zoom.querySelector('img');
+    if (img) {
+      img.src = imageUrl;
+      img.alt = name;
+    }
     zoom.dataset.visible = 'true';
   }
 
-  function hideNativeCardZoom() {
+  function hideCardZoom() {
     const zoom = document.getElementById('upkeep-card-zoom');
     if (zoom) zoom.dataset.visible = 'false';
   }
 
-  function ensureGraveyardRail() {
-    let rail = document.getElementById('upkeep-opp-graveyard');
-    if (rail) return rail;
+  function ensureGraveyardPanel() {
+    let panel = document.getElementById('upkeep-opp-graveyard');
+    if (!panel) {
+      panel = document.createElement('section');
+      panel.id = 'upkeep-opp-graveyard';
+      panel.setAttribute('aria-label', 'Cimetière adverse (Upkeep)');
 
-    rail = document.createElement('aside');
-    rail.id = 'upkeep-opp-graveyard';
-    rail.setAttribute('aria-label', 'Cimetière adverse (Upkeep)');
-    rail.innerHTML = `
-      <div class="upkeep-gy-header">
-        <div class="upkeep-gy-title-row">
-          <h2 class="upkeep-gy-title">Cimetière adverse</h2>
-          <span class="upkeep-gy-count" id="upkeep-gy-count">0</span>
-        </div>
-        <div class="upkeep-gy-meta" id="upkeep-gy-meta">Cimetière vide</div>
-      </div>
-      <div class="upkeep-gy-filters" role="group" aria-label="Filtrer le cimetière">
-        <button type="button" class="upkeep-gy-filter-btn" data-filter="all" aria-pressed="true">Tout</button>
-        <button type="button" class="upkeep-gy-filter-btn" data-filter="creature" aria-pressed="false">Créat.</button>
-        <button type="button" class="upkeep-gy-filter-btn" data-filter="spell" aria-pressed="false">Sorts</button>
-        <button type="button" class="upkeep-gy-filter-btn" data-filter="land" aria-pressed="false">Terrains</button>
-      </div>
-      <div class="upkeep-gy-list" id="upkeep-gy-list"></div>
-    `;
+      const header = document.createElement('div');
+      header.className = 'upkeep-gy-header';
 
-    rail.querySelectorAll('.upkeep-gy-filter-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        state.gyFilter = btn.getAttribute('data-filter') || 'all';
-        rail.querySelectorAll('.upkeep-gy-filter-btn').forEach((b) => {
-          b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
-        });
-        renderGraveyard();
+      const titleRow = document.createElement('div');
+      titleRow.className = 'upkeep-gy-title-row';
+
+      const titleGroup = document.createElement('div');
+      titleGroup.className = 'upkeep-gy-title-group';
+
+      const titleEl = document.createElement('h2');
+      titleEl.className = 'upkeep-gy-title';
+      titleEl.textContent = 'Cimetière adverse';
+
+      const countSpan = document.createElement('span');
+      countSpan.className = 'upkeep-gy-count';
+      countSpan.id = 'upkeep-gy-count';
+      countSpan.textContent = '0';
+
+      titleGroup.appendChild(titleEl);
+      titleGroup.appendChild(countSpan);
+
+      const actions = document.createElement('div');
+      actions.className = 'upkeep-gy-actions';
+
+      const refreshBtn = document.createElement('button');
+      refreshBtn.type = 'button';
+      refreshBtn.className = 'upkeep-gy-icon-btn';
+      refreshBtn.id = 'upkeep-gy-refresh';
+      refreshBtn.title = 'Synchroniser le cimetière adverse';
+      refreshBtn.setAttribute('aria-label', 'Synchroniser le cimetière adverse');
+      refreshBtn.textContent = '↻';
+      refreshBtn.addEventListener('click', () => {
+        peekOpponentGraveyard({ force: true });
       });
-    });
 
-    document.body.appendChild(rail);
-    return rail;
-  }
+      const modeBtn = document.createElement('button');
+      modeBtn.type = 'button';
+      modeBtn.className = 'upkeep-gy-icon-btn';
+      modeBtn.id = 'upkeep-gy-mode';
+      modeBtn.title = 'Basculer ancré dans le rail droit / flottant par-dessus';
+      modeBtn.setAttribute('aria-label', "Changer le mode d'affichage du cimetière");
+      modeBtn.textContent = '◫';
+      modeBtn.addEventListener('click', () => {
+        gyDockMode = gyDockMode === 'docked' ? 'floating' : 'docked';
+        mountGraveyardPanel();
+        renderGraveyardPanel();
+      });
 
-  function renderGraveyard() {
-    if (!config.enabled || !state.isGameRoute || !config.alwaysShowOpponentGraveyard) return;
-    ensureGraveyardRail();
+      actions.appendChild(refreshBtn);
+      actions.appendChild(modeBtn);
+      titleRow.appendChild(titleGroup);
+      titleRow.appendChild(actions);
 
-    const cards = readOpponentGraveyardCards();
-    const filtered = state.gyFilter === 'all' ? cards : cards.filter((c) => c.category === state.gyFilter);
+      const metaEl = document.createElement('div');
+      metaEl.className = 'upkeep-gy-meta';
+      metaEl.id = 'upkeep-gy-meta';
+      metaEl.textContent = 'Aucune carte au cimetière';
 
-    const countEl = document.getElementById('upkeep-gy-count');
-    const metaEl = document.getElementById('upkeep-gy-meta');
-    const listEl = document.getElementById('upkeep-gy-list');
-    if (!countEl || !metaEl || !listEl) return;
+      header.appendChild(titleRow);
+      header.appendChild(metaEl);
 
-    countEl.textContent = String(cards.length);
-    const distinctTypes = new Set(cards.map((c) => c.category)).size;
-    metaEl.textContent =
-      cards.length > 0
-        ? `${distinctTypes} types · ${cards.length} ${cards.length > 1 ? 'cartes' : 'carte'}`
-        : 'Aucune carte au cimetière';
+      const filtersEl = document.createElement('div');
+      filtersEl.className = 'upkeep-gy-filters';
+      filtersEl.setAttribute('role', 'group');
+      filtersEl.setAttribute('aria-label', 'Filtrer le cimetière adverse');
 
-    listEl.innerHTML = '';
-
-    if (filtered.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'upkeep-gy-empty';
-      empty.textContent =
-        cards.length === 0
-          ? 'Cimetière vide ou en attente de lecture.'
-          : 'Aucune carte pour ce filtre.';
-
-      if (cards.length === 0) {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'upkeep-gy-sync-btn';
-        btn.textContent = 'Synchroniser le cimetière';
-        btn.addEventListener('click', () => {
-          const z = safeQuery(config.selectors.opponentGraveyardZone);
-          if (z) z.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-          scheduleSync();
+      const filterDefs = [
+        ['all', 'Tout'],
+        ['creature', 'Créat.'],
+        ['spell', 'Sorts'],
+        ['land', 'Terrains'],
+      ];
+      for (const [key, label] of filterDefs) {
+        const fBtn = document.createElement('button');
+        fBtn.type = 'button';
+        fBtn.className = 'upkeep-gy-filter-btn';
+        fBtn.dataset.filter = key;
+        fBtn.setAttribute('aria-pressed', key === 'all' ? 'true' : 'false');
+        fBtn.textContent = label;
+        fBtn.addEventListener('click', () => {
+          gyFilter = key;
+          filtersEl.querySelectorAll('.upkeep-gy-filter-btn').forEach((b) => {
+            b.setAttribute('aria-pressed', String(b === fBtn));
+          });
+          renderGraveyardPanel();
         });
-        empty.appendChild(document.createElement('br'));
-        empty.appendChild(btn);
+        filtersEl.appendChild(fBtn);
       }
 
+      const listEl = document.createElement('div');
+      listEl.className = 'upkeep-gy-list';
+      listEl.id = 'upkeep-gy-list';
+
+      panel.appendChild(header);
+      panel.appendChild(filtersEl);
+      panel.appendChild(listEl);
+    }
+
+    mountGraveyardPanel(panel);
+    return panel;
+  }
+
+  function mountGraveyardPanel(panelEl) {
+    const panel = panelEl || document.getElementById('upkeep-opp-graveyard');
+    if (!panel) return;
+
+    const shouldShow = config.enabled && config.alwaysShowOpponentGraveyard && gyVisible;
+    panel.dataset.hidden = shouldShow ? 'false' : 'true';
+    panel.dataset.mode = gyDockMode;
+
+    const rightRail = document.querySelector('aside.wr-rail-right');
+    if (shouldShow && gyDockMode === 'docked' && rightRail) {
+      document.documentElement.dataset.upkeepGyDocked = 'true';
+      const phaseBar = rightRail.querySelector('.wr-phase-bar');
+      if (panel.parentElement !== rightRail) {
+        if (phaseBar) {
+          rightRail.insertBefore(panel, phaseBar);
+        } else {
+          rightRail.appendChild(panel);
+        }
+      }
+    } else {
+      document.documentElement.dataset.upkeepGyDocked = 'false';
+      if (panel.parentElement !== document.body) {
+        document.body.appendChild(panel);
+      }
+    }
+  }
+
+  function groupCardsByName(cards) {
+    const map = new Map();
+    for (const card of cards) {
+      const key = card.name.toLowerCase();
+      if (!map.has(key)) {
+        map.set(key, { ...card, qty: 1, category: classifyCard(card) });
+      } else {
+        map.get(key).qty += 1;
+      }
+    }
+    return Array.from(map.values());
+  }
+
+  function renderGraveyardPanel() {
+    if (!config.enabled || !isGameRoute()) return;
+    const panel = ensureGraveyardPanel();
+    const countEl = panel.querySelector('#upkeep-gy-count');
+    const metaEl = panel.querySelector('#upkeep-gy-meta');
+    const listEl = panel.querySelector('#upkeep-gy-list');
+    if (!countEl || !metaEl || !listEl) return;
+
+    const { count, cards, source } = getEffectiveOpponentGraveyard();
+    countEl.textContent = String(count);
+
+    // Highlight opponent graveyard button in left rail when count > 0
+    const oppGyBtn = querySafe(config.selectors.opponentGraveyardZone);
+    if (oppGyBtn) {
+      oppGyBtn.dataset.upkeepHasCards = count > 0 ? 'true' : 'false';
+    }
+
+    if (statusNotice) {
+      metaEl.textContent = statusNotice;
+    } else if (count === 0) {
+      metaEl.textContent = 'Aucune carte au cimetière';
+    } else if (cards.length > 0) {
+      const srcLabel = source === 'ws' ? 'Temps réel' : source === 'dialog' ? 'Synchronisé' : 'Via journal';
+      metaEl.textContent = `${cards.length}/${count} carte${count > 1 ? 's' : ''} · ${srcLabel}`;
+    } else {
+      metaEl.textContent = `${count} carte${count > 1 ? 's' : ''} détectée${count > 1 ? 's' : ''}`;
+    }
+
+    const grouped = groupCardsByName(cards);
+    const filtered = gyFilter === 'all' ? grouped : grouped.filter((c) => c.category === gyFilter);
+
+    listEl.replaceChildren();
+
+    if (count === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'upkeep-gy-empty';
+      empty.textContent = 'Les cartes envoyées au cimetière adverse apparaîtront ici automatiquement.';
       listEl.appendChild(empty);
       return;
     }
 
-    filtered.forEach((card) => {
-      const row = document.createElement('div');
-      row.className = 'upkeep-gy-item';
+    if (filtered.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'upkeep-gy-empty';
+      if (grouped.length === 0) {
+        empty.textContent = `${count} carte${count > 1 ? 's' : ''} présente${count > 1 ? 's' : ''} dans le cimetière adverse.`;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'upkeep-gy-sync-btn';
+        btn.textContent = 'Lire les cartes maintenant';
+        btn.addEventListener('click', () => peekOpponentGraveyard({ force: true }));
+        empty.appendChild(document.createElement('br'));
+        empty.appendChild(btn);
+      } else {
+        empty.textContent = 'Aucune carte dans cette catégorie.';
+      }
+      listEl.appendChild(empty);
+      return;
+    }
 
-      const wrap = document.createElement('div');
-      wrap.style.minWidth = '0';
+    for (const card of filtered) {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'upkeep-gy-row';
 
-      const nameEl = document.createElement('div');
+      const thumb = document.createElement('img');
+      thumb.className = 'upkeep-gy-thumb';
+      thumb.src = card.imageUrl || toCardImageUrl(card.name);
+      thumb.alt = card.name;
+      thumb.loading = 'lazy';
+
+      const info = document.createElement('div');
+      info.className = 'upkeep-gy-card-info';
+
+      const nameRow = document.createElement('div');
+      nameRow.className = 'upkeep-gy-card-name-row';
+
+      const nameEl = document.createElement('span');
       nameEl.className = 'upkeep-gy-card-name';
       nameEl.textContent = card.name;
+      nameRow.appendChild(nameEl);
 
-      const typeEl = document.createElement('div');
-      typeEl.className = 'upkeep-gy-card-type';
-      typeEl.textContent = card.typeLine;
+      if (card.qty > 1) {
+        const qtyEl = document.createElement('span');
+        qtyEl.className = 'upkeep-gy-card-qty';
+        qtyEl.textContent = `×${card.qty}`;
+        nameRow.appendChild(qtyEl);
+      }
 
-      wrap.appendChild(nameEl);
-      wrap.appendChild(typeEl);
-      row.appendChild(wrap);
+      info.appendChild(nameRow);
 
-      row.addEventListener('mouseenter', () => showNativeCardZoom(card, row.getBoundingClientRect()));
-      row.addEventListener('mouseleave', hideNativeCardZoom);
+      if (card.typeLine || card.manaCost) {
+        const sub = document.createElement('span');
+        sub.className = 'upkeep-gy-card-sub';
+        sub.textContent = [card.manaCost, card.typeLine].filter(Boolean).join(' · ');
+        info.appendChild(sub);
+      }
+
+      row.appendChild(thumb);
+      row.appendChild(info);
+
+      row.addEventListener('mouseenter', () => showCardZoom(thumb.src, card.name));
+      row.addEventListener('mouseleave', hideCardZoom);
+      row.addEventListener('focus', () => showCardZoom(thumb.src, card.name));
+      row.addEventListener('blur', hideCardZoom);
+      row.addEventListener('click', () => {
+        const btn = querySafe(config.selectors.opponentGraveyardZone);
+        if (btn && !btn.disabled) btn.click();
+      });
+
       listEl.appendChild(row);
-    });
-  }
-
-  /* 3. HUD Tactique PV / Deck / Main haute lisibilité */
-  function ensureHudStrip(id, cls) {
-    let el = document.getElementById(id);
-    if (!el) {
-      el = document.createElement('div');
-      el.id = id;
-      el.className = `upkeep-hud-strip ${cls}`;
-      document.body.appendChild(el);
-    }
-    return el;
-  }
-
-  function fillHudStrip(el, prefix, stats, delta) {
-    el.innerHTML = '';
-
-    const lifeCell = document.createElement('div');
-    lifeCell.className = 'upkeep-hud-cell';
-    const lbl = document.createElement('span');
-    lbl.className = 'upkeep-hud-label';
-    lbl.textContent = `${prefix} · PV`;
-    const val = document.createElement('span');
-    val.className =
-      'upkeep-hud-val upkeep-hud-val--life' +
-      (stats.life !== null && stats.life <= 5 ? ' upkeep-hud-val--critical' : '');
-    val.textContent = stats.life !== null ? String(stats.life) : '—';
-    lifeCell.appendChild(lbl);
-    lifeCell.appendChild(val);
-
-    if (delta) {
-      const d = document.createElement('span');
-      d.className = `upkeep-hud-delta ${delta > 0 ? 'upkeep-hud-delta--pos' : 'upkeep-hud-delta--neg'}`;
-      d.textContent = `${delta > 0 ? '+' : ''}${delta}`;
-      lifeCell.appendChild(d);
-    }
-    el.appendChild(lifeCell);
-
-    const pairs = [
-      { label: 'Deck', v: stats.library },
-      { label: 'Main', v: stats.hand },
-    ];
-    if (config.showExtendedCounters) {
-      pairs.push({ label: 'Exil', v: stats.exile });
     }
 
-    pairs.forEach((p) => {
-      const c = document.createElement('div');
-      c.className = 'upkeep-hud-cell';
-      const l = document.createElement('span');
-      l.className = 'upkeep-hud-label';
-      l.textContent = p.label;
-      const n = document.createElement('span');
-      n.className = 'upkeep-hud-val';
-      n.textContent = p.v !== null ? String(p.v) : '—';
-      c.appendChild(l);
-      c.appendChild(n);
-      el.appendChild(c);
-    });
-  }
-
-  function updateHud() {
-    if (!config.enabled || !state.isGameRoute || !config.highContrastHud) return;
-    const discovered = discoverEndstepPlayerBlocks();
-
-    const opp = extractStatsFromBlock(discovered.opponent, {
-      life: config.selectors.opponentLife,
-      library: config.selectors.opponentLibrary,
-      hand: config.selectors.opponentHand,
-      exile: config.selectors.opponentExile,
-    });
-    const self = extractStatsFromBlock(discovered.self, {
-      life: config.selectors.selfLife,
-      library: config.selectors.selfLibrary,
-      hand: config.selectors.selfHand,
-      exile: config.selectors.selfExile,
-    });
-
-    if (opp.life !== null && state.lastOpponentLife !== null && opp.life !== state.lastOpponentLife) {
-      state.opponentLifeDelta = opp.life - state.lastOpponentLife;
-    }
-    if (opp.life !== null) state.lastOpponentLife = opp.life;
-
-    if (self.life !== null && state.lastSelfLife !== null && self.life !== state.lastSelfLife) {
-      state.selfLifeDelta = self.life - state.lastSelfLife;
-    }
-    if (self.life !== null) state.lastSelfLife = self.life;
-
-    if (opp.life !== null || opp.library !== null || opp.hand !== null) {
-      fillHudStrip(
-        ensureHudStrip('upkeep-hud-top', 'upkeep-hud-strip--top'),
-        'Adversaire',
-        opp,
-        state.opponentLifeDelta
-      );
-    }
-
-    if (self.life !== null || self.library !== null || self.hand !== null) {
-      fillHudStrip(
-        ensureHudStrip('upkeep-hud-bottom', 'upkeep-hud-strip--bottom'),
-        'Vous',
-        self,
-        state.selfLifeDelta
-      );
+    // Trigger silent auto-peek if authoritative count changed and we don't have full cards yet
+    if (
+      count > 0 &&
+      cards.length < count &&
+      !peekInFlight &&
+      (lastAutoPeekCount !== count || Date.now() - lastAutoPeekTs > 6000)
+    ) {
+      window.setTimeout(() => {
+        if (!peekInFlight && isGameRoute() && config.enabled) {
+          peekOpponentGraveyard({ force: false });
+        }
+      }, 280);
     }
   }
 
-  function applyRootAttrs() {
-    const active = Boolean(config.enabled && state.isGameRoute);
-    document.documentElement.dataset.upkeepActive = active ? 'true' : 'false';
-    document.documentElement.dataset.upkeepLogsOpen = active && state.logsVisible ? 'true' : 'false';
-    document.documentElement.dataset.upkeepGyOpen =
-      active && state.graveyardVisible && config.alwaysShowOpponentGraveyard ? 'true' : 'false';
-    document.documentElement.style.setProperty('--upkeep-logs-width', `${config.logsWidth}px`);
-    document.documentElement.style.setProperty('--upkeep-gy-width', `${config.graveyardWidth}px`);
+  // ==========================================================================
+  // AUTO-OPEN & DOCK GAME LOG INSIDE aside.wr-rail-left
+  // ==========================================================================
+  function findNativeLogOpenButton() {
+    const direct = querySafe(config.selectors.logsToggleButton);
+    if (direct && !direct.closest('[data-testid="tablet-log-dock"]') && !direct.closest('[data-gamelog-panel]')) {
+      return direct;
+    }
 
-    const topHud = document.getElementById('upkeep-hud-top');
-    const bottomHud = document.getElementById('upkeep-hud-bottom');
-    const gy = document.getElementById('upkeep-opp-graveyard');
-    const disp = active ? '' : 'none';
-    if (topHud) topHud.style.display = config.highContrastHud ? disp : 'none';
-    if (bottomHud) bottomHud.style.display = config.highContrastHud ? disp : 'none';
-    if (gy) gy.style.display = config.alwaysShowOpponentGraveyard ? disp : 'none';
+    const buttons = Array.from(document.querySelectorAll('button'));
+    for (const btn of buttons) {
+      if (btn.closest('[data-testid="tablet-log-dock"]')) continue;
+      if (btn.closest('[data-gamelog-panel]')) continue;
+      if (btn.closest('#upkeep-opp-graveyard')) continue;
+      const aria = (btn.getAttribute('aria-label') || '').toLowerCase();
+      const text = (btn.textContent || '').trim().toLowerCase();
+      if (
+        text === 'log' ||
+        text === 'logs' ||
+        text === 'game log' ||
+        (aria.includes('game log') && !aria.includes('close'))
+      ) {
+        const rect = btn.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) return btn;
+      }
+    }
+    return null;
+  }
+
+  function enhanceLogPanelControls(logPanel) {
+    if (!logPanel || logPanel.dataset.upkeepBound === 'true') return;
+    logPanel.dataset.upkeepBound = 'true';
+
+    // Respect manual close by the user
+    const closeBtn = logPanel.querySelector('button[aria-label*="close" i]');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        userClosedLog = true;
+      });
+    }
+
+    // Inject subtle dock/undock toggle in titlebar
+    const titlebar = logPanel.querySelector('[data-gamelog-titlebar]');
+    const actionsBox = titlebar?.lastElementChild;
+    if (actionsBox && !titlebar.querySelector('.upkeep-log-dock-btn')) {
+      const dockBtn = document.createElement('button');
+      dockBtn.type = 'button';
+      dockBtn.className = 'upkeep-log-dock-btn';
+      dockBtn.title = 'Ancrer / Détacher le journal dans le rail gauche (Upkeep)';
+      dockBtn.setAttribute('aria-label', 'Ancrer ou détacher le journal');
+      dockBtn.textContent = '◫';
+      dockBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        userUndockedLog = !userUndockedLog;
+        syncLogDockGeometry();
+      });
+      actionsBox.insertBefore(dockBtn, actionsBox.firstChild);
+    }
+  }
+
+  function syncLogDockGeometry() {
+    const root = document.documentElement;
+    if (!config.enabled || !isGameRoute()) {
+      root.dataset.upkeepLogsDocked = 'false';
+      return;
+    }
+
+    const logPanel = querySafe(config.selectors.logsPanel);
+    if (!logPanel) {
+      root.dataset.upkeepLogsDocked = 'false';
+      if (config.autoOpenLogsLeft && !userClosedLog && logAutoOpenAttempts < 8) {
+        const openBtn = findNativeLogOpenButton();
+        if (openBtn) {
+          logAutoOpenAttempts += 1;
+          openBtn.click();
+        }
+      }
+      return;
+    }
+
+    enhanceLogPanelControls(logPanel);
+
+    if (!config.autoOpenLogsLeft || userUndockedLog) {
+      root.dataset.upkeepLogsDocked = 'false';
+      return;
+    }
+
+    const leftRail = document.querySelector('aside.wr-rail-left');
+    const oppPlate = leftRail?.querySelector('[data-player-anchor="opp"]');
+    const pendingGroup = leftRail?.querySelector('[aria-label="Pending actions"]');
+    const bottomStack = pendingGroup?.firstElementChild;
+    const selfPlate = leftRail?.querySelector('[data-player-anchor="me"]');
+
+    if (!leftRail || !oppPlate) {
+      root.dataset.upkeepLogsDocked = 'false';
+      return;
+    }
+
+    const railRect = leftRail.getBoundingClientRect();
+    const oppRect = oppPlate.getBoundingClientRect();
+    const bottomAnchorRect =
+      bottomStack && bottomStack.getBoundingClientRect().height > 0
+        ? bottomStack.getBoundingClientRect()
+        : selfPlate?.getBoundingClientRect();
+
+    const topY = Math.round(oppRect.bottom + 6);
+    const bottomY = Math.round((bottomAnchorRect ? bottomAnchorRect.top : railRect.bottom) - 8);
+    const availHeight = bottomY - topY;
+
+    if (availHeight < 120 || railRect.width < 180) {
+      root.dataset.upkeepLogsDocked = 'false';
+      return;
+    }
+
+    root.dataset.upkeepLogsDocked = 'true';
+    root.style.setProperty('--upkeep-log-left', `${Math.round(railRect.left + 6)}px`);
+    root.style.setProperty('--upkeep-log-top', `${topY}px`);
+    root.style.setProperty('--upkeep-log-width', `${Math.round(railRect.width - 12)}px`);
+    root.style.setProperty('--upkeep-log-height', `${availHeight}px`);
+  }
+
+  // ==========================================================================
+  // DIRECT NATIVE PLAYER PLATE ENHANCEMENT (PV DELTA & CRITICAL STATE)
+  // ==========================================================================
+  function updatePlateLifeFeedback(testId, isOpponent) {
+    const container = document.querySelector(`[data-testid="${testId}"]`);
+    if (!container) return;
+    const totalEl = container.querySelector('.life-total');
+    if (!totalEl) return;
+
+    const val = parseInt((totalEl.textContent || '').trim(), 10);
+    if (Number.isNaN(val)) return;
+
+    container.dataset.upkeepCritical = val <= 5 ? 'true' : 'false';
+
+    const prev = isOpponent ? prevOppLife : prevSelfLife;
+    if (prev !== null && prev !== val) {
+      const diff = val - prev;
+      let deltaEl = container.querySelector('.upkeep-life-delta');
+      if (!deltaEl) {
+        deltaEl = document.createElement('span');
+        deltaEl.className = 'upkeep-life-delta';
+        container.appendChild(deltaEl);
+      }
+      deltaEl.textContent = diff > 0 ? `+${diff}` : String(diff);
+      deltaEl.className = `upkeep-life-delta ${diff < 0 ? 'upkeep-life-delta--neg' : 'upkeep-life-delta--pos'}`;
+    }
+
+    if (isOpponent) prevOppLife = val;
+    else prevSelfLife = val;
+  }
+
+  // ==========================================================================
+  // LIFECYCLE, OBSERVERS & SHORTCUTS
+  // ==========================================================================
+  function applyRootAttributes() {
+    const root = document.documentElement;
+    const active = config.enabled && isGameRoute();
+    root.dataset.upkeepActive = active ? 'true' : 'false';
+    root.dataset.upkeepHud = active && config.highContrastHud ? 'true' : 'false';
+    root.style.setProperty('--upkeep-gy-width', `${config.graveyardWidth || 268}px`);
+
+    if (!active) {
+      cleanupOverlays();
+    }
+  }
+
+  function cleanupOverlays() {
+    document.documentElement.dataset.upkeepLogsDocked = 'false';
+    document.documentElement.dataset.upkeepGyDocked = 'false';
+    delete document.documentElement.dataset.upkeepPeekingGy;
+    document.getElementById('upkeep-opp-graveyard')?.remove();
+    document.getElementById('upkeep-card-zoom')?.remove();
+    document.querySelectorAll('.upkeep-life-delta').forEach((n) => n.remove());
+  }
+
+  function resetGameStateIfChanged() {
+    const key = isGameRoute() ? window.location.pathname : '';
+    if (key === activeGameKey) return;
+    activeGameKey = key;
+    userClosedLog = false;
+    userUndockedLog = false;
+    logAutoOpenAttempts = 0;
+    prevOppLife = null;
+    prevSelfLife = null;
+    wsOppCards = [];
+    peekOppCards = [];
+    peekCountAtCapture = -1;
+    lastAutoPeekCount = -1;
+    statusNotice = '';
+    attachResizeObserver();
+  }
+
+  function runSync() {
+    syncRaf = 0;
+    resetGameStateIfChanged();
+    applyRootAttributes();
+    if (!config.enabled || !isGameRoute()) return;
+
+    updatePlateLifeFeedback('opp-life', true);
+    updatePlateLifeFeedback('me-life', false);
+    passiveScanOpenDialogs();
+    syncLogDockGeometry();
+    renderGraveyardPanel();
   }
 
   function scheduleSync() {
     if (syncRaf) return;
-    syncRaf = window.requestAnimationFrame(() => {
-      syncRaf = null;
-      const nowGame = isGameUrl();
-      const nextId = extractGameId();
+    syncRaf = window.requestAnimationFrame(runSync);
+  }
 
-      if (nowGame !== state.isGameRoute || nextId !== state.currentGameId) {
-        state.isGameRoute = nowGame;
-        state.currentGameId = nextId;
-        state.lastOpponentLife = null;
-        state.lastSelfLife = null;
-        state.opponentLifeDelta = null;
-        state.selfLifeDelta = null;
-        if (nowGame && config.autoOpenLogsLeft) state.logsVisible = true;
+  function attachResizeObserver() {
+    if (resizeObserver) resizeObserver.disconnect();
+    if (typeof ResizeObserver === 'undefined') return;
+    resizeObserver = new ResizeObserver(() => scheduleSync());
+
+    const targets = [
+      document.querySelector('aside.wr-rail-left'),
+      document.querySelector('[data-player-anchor="opp"]'),
+      document.querySelector('[aria-label="Pending actions"] > div'),
+      document.querySelector('aside.wr-rail-right'),
+    ];
+    targets.forEach((el) => {
+      if (el) resizeObserver.observe(el);
+    });
+  }
+
+  function setupObservers() {
+    if (domObserver) domObserver.disconnect();
+    domObserver = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        if (m.target instanceof Element && m.target.closest('#upkeep-opp-graveyard, #upkeep-card-zoom')) {
+          continue;
+        }
+        scheduleSync();
+        return;
       }
+    });
+    domObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
+    window.addEventListener('resize', scheduleSync, { passive: true });
+    attachResizeObserver();
+  }
 
-      applyRootAttrs();
-      if (state.isGameRoute && config.enabled) {
-        ensureLogsOpenedLeft();
-        renderGraveyard();
-        updateHud();
+  function setupShortcuts() {
+    window.addEventListener('keydown', (e) => {
+      if (!isGameRoute()) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const tag = (e.target?.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable) return;
+
+      const key = e.key.toLowerCase();
+      if (key === (config.shortcuts?.toggleTheme || 'u').toLowerCase()) {
+        config.enabled = !config.enabled;
+        extApi?.storage?.sync?.set?.({ [STORAGE_KEY]: config }).catch?.(() => {});
+        scheduleSync();
+      } else if (key === (config.shortcuts?.toggleGraveyard || 'g').toLowerCase()) {
+        gyVisible = !gyVisible;
+        mountGraveyardPanel();
+        renderGraveyardPanel();
+      } else if (key === (config.shortcuts?.toggleLogs || 'l').toLowerCase()) {
+        const panel = querySafe(config.selectors.logsPanel);
+        if (panel) {
+          const closeBtn = panel.querySelector('button[aria-label*="close" i]');
+          userClosedLog = true;
+          closeBtn?.click();
+        } else {
+          userClosedLog = false;
+          const openBtn = findNativeLogOpenButton();
+          openBtn?.click();
+        }
       }
     });
   }
 
-  function installSpaHooks() {
+  function setupNavigationHooks() {
     const origPush = history.pushState;
     const origReplace = history.replaceState;
     history.pushState = function (...args) {
@@ -546,60 +1082,53 @@
       scheduleSync();
     };
     window.addEventListener('popstate', scheduleSync);
-    window.addEventListener('hashchange', scheduleSync);
-  }
-
-  function installKeyboardShortcuts() {
-    window.addEventListener('keydown', (e) => {
-      const tag = (e.target?.tagName || '').toLowerCase();
-      if (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable) return;
-      if (e.metaKey || e.ctrlKey || e.altKey || !state.isGameRoute) return;
-
-      const k = e.key.toLowerCase();
-      if (k === config.shortcuts.toggleLogs.toLowerCase()) {
-        state.logsVisible = !state.logsVisible;
-        applyRootAttrs();
-      } else if (k === config.shortcuts.toggleGraveyard.toLowerCase()) {
-        state.graveyardVisible = !state.graveyardVisible;
-        applyRootAttrs();
-      } else if (k === config.shortcuts.toggleTheme.toLowerCase()) {
-        config.enabled = !config.enabled;
-        extApi.storage.sync.set({ [STORAGE_KEY]: config });
+    window.setInterval(() => {
+      if (isGameRoute()) {
+        attachResizeObserver();
         scheduleSync();
       }
+    }, 1500);
+  }
+
+  async function loadConfig() {
+    try {
+      const stored = await extApi?.storage?.sync?.get?.(STORAGE_KEY);
+      if (stored && stored[STORAGE_KEY]) {
+        const saved = stored[STORAGE_KEY];
+        config = {
+          ...DEFAULT_CONFIG,
+          ...saved,
+          shortcuts: { ...DEFAULT_CONFIG.shortcuts, ...(saved.shortcuts || {}) },
+          selectors: { ...DEFAULT_CONFIG.selectors, ...(saved.selectors || {}) },
+        };
+      }
+    } catch (_) {}
+
+    extApi?.storage?.onChanged?.addListener?.((changes, area) => {
+      if (area !== 'sync' || !changes[STORAGE_KEY]) return;
+      const next = changes[STORAGE_KEY].newValue;
+      if (!next) return;
+      config = {
+        ...DEFAULT_CONFIG,
+        ...next,
+        shortcuts: { ...DEFAULT_CONFIG.shortcuts, ...(next.shortcuts || {}) },
+        selectors: { ...DEFAULT_CONFIG.selectors, ...(next.selectors || {}) },
+      };
+      scheduleSync();
     });
   }
 
   async function init() {
-    try {
-      const stored = await extApi.storage.sync.get(STORAGE_KEY);
-      if (stored && stored[STORAGE_KEY]) {
-        config = {
-          ...DEFAULT_CONFIG,
-          ...stored[STORAGE_KEY],
-          shortcuts: { ...DEFAULT_CONFIG.shortcuts, ...(stored[STORAGE_KEY].shortcuts || {}) },
-          selectors: { ...DEFAULT_CONFIG.selectors, ...(stored[STORAGE_KEY].selectors || {}) },
-        };
-      }
-    } catch {
-      // keep defaults
-    }
-
-    extApi.storage.onChanged.addListener((changes) => {
-      if (changes[STORAGE_KEY]?.newValue) {
-        config = { ...DEFAULT_CONFIG, ...changes[STORAGE_KEY].newValue };
-        scheduleSync();
-      }
-    });
-
-    installSpaHooks();
-    installKeyboardShortcuts();
-
-    const observer = new MutationObserver(() => scheduleSync());
-    observer.observe(document.body, { childList: true, subtree: true });
-
+    await loadConfig();
+    setupObservers();
+    setupShortcuts();
+    setupNavigationHooks();
     scheduleSync();
   }
 
-  init();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+  } else {
+    init();
+  }
 })();

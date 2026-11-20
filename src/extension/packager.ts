@@ -15,6 +15,7 @@ import {
   generateReleaseWorkflowYaml,
   generateRepoPackageJson,
   generateRepoReadme,
+  generateWsSpyJs,
 } from './templates';
 import type { UpkeepConfig } from './types';
 
@@ -102,6 +103,7 @@ async function addIconsToZip(zip: JSZip, prefix = '') {
 }
 
 function addExtensionSources(zip: JSZip, config: UpkeepConfig, prefix = '') {
+  zip.file(`${prefix}src/content/ws-spy.js`, generateWsSpyJs());
   zip.file(`${prefix}src/content/upkeep.css`, generateContentCss(config));
   zip.file(`${prefix}src/content/upkeep.js`, generateContentJs(config));
   zip.file(`${prefix}src/popup/popup.html`, generatePopupHtml());

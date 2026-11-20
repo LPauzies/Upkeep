@@ -1,4 +1,7 @@
 import type { UpkeepConfig } from './types';
+import rawWsSpyJs from '../../extension/src/content/ws-spy.js?raw';
+import rawUpkeepCss from '../../extension/src/content/upkeep.css?raw';
+import rawUpkeepJs from '../../extension/src/content/upkeep.js?raw';
 
 export interface GeneratedRepoFile {
   path: string;
@@ -42,6 +45,12 @@ export function generateChromeManifest(config: UpkeepConfig): string {
     content_scripts: [
       {
         matches: ['https://endstep.cc/*'],
+        js: ['src/content/ws-spy.js'],
+        run_at: 'document_start',
+        world: 'MAIN',
+      },
+      {
+        matches: ['https://endstep.cc/*'],
         css: ['src/content/upkeep.css'],
         js: ['src/content/upkeep.js'],
         run_at: 'document_idle',
@@ -68,788 +77,39 @@ export function generateFirefoxManifest(config: UpkeepConfig): string {
   return JSON.stringify(firefoxManifest, null, 2) + '\n';
 }
 
+export function generateWsSpyJs(): string {
+  return rawWsSpyJs;
+}
+
 export function generateContentCss(config: UpkeepConfig): string {
-  const rowPadding =
-    config.density === 'compact' ? '6px 10px' : config.density === 'spacious' ? '10px 12px' : '8px 11px';
-
-  return `/* Upkeep — Surcharge CSS côté client sur https://endstep.cc/game/*
- * Charte : Tapis de tournoi ardoise obsidienne & or mat
- * RÈGLE STRICTE : les cartes Magic (art, cadre, proportions) ne sont JAMAIS modifiées.
- * Repository: https://github.com/LPauzies/Upkeep
- */
-
-:root {
-  --upkeep-bg-canvas: #0E1116;
-  --upkeep-bg-surface: #151922;
-  --upkeep-bg-elevated: #1C222E;
-  --upkeep-bg-hover: #232A38;
-  --upkeep-text-primary: #F2EEE6;
-  --upkeep-text-secondary: #9CA3B2;
-  --upkeep-text-muted: #6C7486;
-  --upkeep-accent-gold: #C9A45C;
-  --upkeep-crimson: #D9534F;
-  --upkeep-emerald: #3FA372;
-  --upkeep-border: rgba(242, 238, 230, 0.1);
-  --upkeep-border-strong: rgba(242, 238, 230, 0.18);
-  --upkeep-logs-width: ${config.logsWidth}px;
-  --upkeep-gy-width: ${config.graveyardWidth}px;
-  --upkeep-row-padding: ${rowPadding};
-  --upkeep-font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --upkeep-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-
-/* Toile de fond tapis de tournoi (ne touche jamais les cartes Magic natives) */
-html[data-upkeep-active="true"] body {
-  background-color: var(--upkeep-bg-canvas) !important;
-  color: var(--upkeep-text-primary) !important;
-  font-family: var(--upkeep-font-sans) !important;
-  letter-spacing: 0.008em;
-}
-
-html[data-upkeep-active="true"][data-upkeep-logs-open="true"] body {
-  padding-left: var(--upkeep-logs-width) !important;
-  box-sizing: border-box !important;
-}
-
-html[data-upkeep-active="true"][data-upkeep-gy-open="true"] body {
-  padding-right: var(--upkeep-gy-width) !important;
-  box-sizing: border-box !important;
-}
-
-/* Panneau de logs Endstep ouvert automatiquement et ancré à gauche */
-html[data-upkeep-active="true"][data-upkeep-logs-open="true"] [data-upkeep-dock="logs-left"] {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  bottom: 0 !important;
-  width: var(--upkeep-logs-width) !important;
-  max-width: var(--upkeep-logs-width) !important;
-  height: 100vh !important;
-  z-index: 9000 !important;
-  background: var(--upkeep-bg-surface) !important;
-  border-right: 1px solid var(--upkeep-border) !important;
-  box-shadow: none !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow-y: auto !important;
-  padding: 12px !important;
-  font-size: 13px !important;
-  line-height: 1.5 !important;
-  color: var(--upkeep-text-primary) !important;
-}
-
-/* Bandeaux tactiques PV / Deck / Main haute lisibilité */
-.upkeep-hud-bar {
-  position: fixed;
-  left: calc(var(--upkeep-logs-width) + 12px);
-  z-index: 9100;
-  display: flex;
-  align-items: center;
-  background: rgba(21, 25, 34, 0.96);
-  border: 1px solid var(--upkeep-border-strong);
-  border-radius: 9px;
-  padding: 6px 14px;
-  color: var(--upkeep-text-primary);
-  font-family: var(--upkeep-font-sans);
-  backdrop-filter: blur(8px);
-}
-
-html[data-upkeep-logs-open="false"] .upkeep-hud-bar {
-  left: 14px;
-}
-
-.upkeep-hud-bar--top { top: 10px; }
-.upkeep-hud-bar--bottom { bottom: 10px; }
-
-.upkeep-hud-metric {
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
-  padding: 2px 14px;
-  border-right: 1px solid var(--upkeep-border);
-  white-space: nowrap;
-}
-
-.upkeep-hud-metric:last-child { border-right: none; }
-
-.upkeep-hud-label {
-  font-size: 12px;
-  color: var(--upkeep-text-secondary);
-  font-weight: 500;
-}
-
-.upkeep-hud-value {
-  font-family: var(--upkeep-font-mono);
-  font-variant-numeric: tabular-nums;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--upkeep-text-primary);
-  line-height: 1;
-}
-
-.upkeep-hud-value--life { font-size: 28px; }
-.upkeep-hud-value--critical { color: var(--upkeep-crimson); }
-
-.upkeep-hud-delta {
-  font-family: var(--upkeep-font-mono);
-  font-variant-numeric: tabular-nums;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.upkeep-hud-delta--neg { color: var(--upkeep-crimson); }
-.upkeep-hud-delta--pos { color: var(--upkeep-emerald); }
-
-/* Panneau Cimetière Adverse continu (rail droit) */
-#upkeep-opp-graveyard {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: var(--upkeep-gy-width);
-  z-index: 9050;
-  background: var(--upkeep-bg-surface);
-  border-left: 1px solid var(--upkeep-border);
-  display: flex;
-  flex-direction: column;
-  color: var(--upkeep-text-primary);
-  font-family: var(--upkeep-font-sans);
-  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-html[data-upkeep-gy-open="false"] #upkeep-opp-graveyard {
-  transform: translateX(100%);
-}
-
-.upkeep-gy-header {
-  padding: 14px 14px 10px;
-  border-bottom: 1px solid var(--upkeep-border);
-}
-
-.upkeep-gy-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.upkeep-gy-title { font-size: 14px; font-weight: 600; margin: 0; }
-
-.upkeep-gy-count {
-  font-family: var(--upkeep-font-mono);
-  font-variant-numeric: tabular-nums;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--upkeep-accent-gold);
-}
-
-.upkeep-gy-meta { margin-top: 4px; font-size: 12px; color: var(--upkeep-text-secondary); }
-
-.upkeep-gy-filters {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--upkeep-border);
-  background: var(--upkeep-bg-canvas);
-}
-
-.upkeep-gy-filter-btn {
-  appearance: none;
-  border: none;
-  background: transparent;
-  color: var(--upkeep-text-secondary);
-  font-size: 11px;
-  font-weight: 500;
-  padding: 5px 4px;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.upkeep-gy-filter-btn[aria-pressed="true"] {
-  background: var(--upkeep-bg-elevated);
-  color: var(--upkeep-accent-gold);
-}
-
-.upkeep-gy-list { flex: 1; overflow-y: auto; padding: 6px; }
-
-.upkeep-gy-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: var(--upkeep-row-padding);
-  border-bottom: 1px solid rgba(242, 238, 230, 0.05);
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.upkeep-gy-item:hover { background: var(--upkeep-bg-hover); }
-
-.upkeep-gy-card-name {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--upkeep-text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.upkeep-gy-card-type { font-size: 11px; color: var(--upkeep-text-muted); margin-top: 2px; }
-
-.upkeep-gy-empty {
-  padding: 24px 14px;
-  text-align: center;
-  color: var(--upkeep-text-secondary);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.upkeep-gy-sync-btn {
-  margin-top: 10px;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #0E1116;
-  background: var(--upkeep-accent-gold);
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-/* Agrandissement de la carte native d'Endstep au survol du cimetière */
-#upkeep-card-zoom {
-  position: fixed;
-  z-index: 9500;
-  pointer-events: none;
-  width: 256px;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.72);
-  opacity: 0;
-  transform: translateY(4px) scale(0.97);
-  transition: opacity 140ms ease, transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-#upkeep-card-zoom[data-visible="true"] {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
-
-#upkeep-card-zoom img { display: block; width: 100%; height: auto; }
-`;
+  return rawUpkeepCss.replace(
+    /width: var\(--upkeep-gy-width, 268px\);/,
+    `width: var(--upkeep-gy-width, ${config.graveyardWidth}px);`
+  );
 }
 
 export function generateContentJs(config: UpkeepConfig): string {
-  const defaultConfigJson = JSON.stringify(config, null, 2);
-
-  return `/* Upkeep — Content Script auto-injecté sur https://endstep.cc/*
- * Détecte automatiquement /game/* côté client (rien à copier-coller).
- * Les cartes Magic natives d'Endstep restent 100% intactes.
- * Repository: https://github.com/LPauzies/Upkeep
- */
-(() => {
-  'use strict';
-
-  const extApi = globalThis.browser ?? globalThis.chrome;
-  const STORAGE_KEY = 'upkeep_config_v1';
-  const DEFAULT_CONFIG = ${defaultConfigJson};
-
-  let config = structuredClone(DEFAULT_CONFIG);
-  let state = {
-    isGameRoute: false,
-    currentGameId: null,
-    logsOpenedForGameId: null,
-    logsVisible: true,
-    graveyardVisible: true,
-    gyFilter: 'all',
-    lastOpponentLife: null,
-    lastSelfLife: null,
-    opponentLifeDelta: null,
-    selfLifeDelta: null,
-  };
-
-  let syncRaf = null;
-
-  function isGameUrl(url = window.location.pathname) {
-    return /^\\/game\\/[^/]+/i.test(url);
-  }
-
-  function extractGameId(url = window.location.pathname) {
-    const match = url.match(/^\\/game\\/([^/?#]+)/i);
-    return match ? match[1] : null;
-  }
-
-  function safeQuery(selector) {
-    if (!selector || typeof selector !== 'string') return null;
-    try {
-      return document.querySelector(selector);
-    } catch {
-      return null;
-    }
-  }
-
-  function safeQueryAll(selector) {
-    if (!selector || typeof selector !== 'string') return [];
-    try {
-      return Array.from(document.querySelectorAll(selector));
-    } catch {
-      return [];
-    }
-  }
-
-  function parseIntSafe(text) {
-    const m = (text || '').trim().match(/-?\\d+/);
-    return m ? Number.parseInt(m[0], 10) : null;
-  }
-
-  /* Détection heuristique des blocs joueur Endstep ("20 LIFE" + Deck + Main en colonne gauche) */
-  function discoverEndstepPlayerBlocks() {
-    const blocks = [];
-    for (const el of Array.from(document.querySelectorAll('div, section, aside'))) {
-      const rect = el.getBoundingClientRect();
-      if (rect.left > 320 || rect.width < 80 || rect.width > 340 || rect.height > 200) continue;
-      const text = (el.textContent || '').replace(/\\s+/g, ' ').trim();
-      if (!/\\b\\d+\\s*LIFE\\b/i.test(text) || text.length > 120) continue;
-      blocks.push({ el, top: rect.top, text });
-    }
-    blocks.sort((a, b) => a.top - b.top);
-    return {
-      opponent: blocks[0] || null,
-      self: blocks.length > 1 ? blocks[blocks.length - 1] : null,
-    };
-  }
-
-  function extractStatsFromBlock(block, explicit) {
-    let life = parseIntSafe(safeQuery(explicit.life)?.textContent);
-    let library = parseIntSafe(safeQuery(explicit.library)?.textContent);
-    let hand = parseIntSafe(safeQuery(explicit.hand)?.textContent);
-    let exile = parseIntSafe(safeQuery(explicit.exile)?.textContent);
-
-    if (block) {
-      const lifeMatch = block.text.match(/(-?\\d+)\\s*LIFE/i);
-      if (life === null && lifeMatch) life = Number.parseInt(lifeMatch[1], 10);
-      const afterLife = block.text.split(/LIFE/i)[1] || '';
-      const nums = (afterLife.match(/\\d+/g) || []).map((n) => Number.parseInt(n, 10));
-      if (library === null && nums.length >= 1) library = nums[0];
-      if (hand === null && nums.length >= 2) hand = nums[1];
-      if (exile === null && nums.length >= 4) exile = nums[3];
-    }
-
-    return { life, library, hand, exile };
-  }
-
-  /* Ouverture automatique du bouton vertical "Log" sur le bord gauche d'Endstep */
-  function findLogsToggleButton() {
-    const direct = safeQuery(config.selectors.logsToggleButton);
-    if (direct) return direct;
-    return (
-      Array.from(document.querySelectorAll('button, [role="button"], div')).find((el) => {
-        const txt = (el.textContent || '').trim();
-        if (!/^logs?$/i.test(txt)) return false;
-        const rect = el.getBoundingClientRect();
-        return rect.width > 0 && rect.width < 90 && rect.left < 80;
-      }) || null
-    );
-  }
-
-  function findLogsPanel() {
-    const direct = safeQuery(config.selectors.logsPanel);
-    if (direct) return direct;
-    return (
-      Array.from(document.querySelectorAll('aside, section, div')).find((el) => {
-        if (el.id?.startsWith('upkeep-')) return false;
-        const label = (
-          el.getAttribute('aria-label') ||
-          el.getAttribute('data-testid') ||
-          el.className?.toString() ||
-          ''
-        ).toLowerCase();
-        return /(game[-_]?log|action[-_]?log|match[-_]?log|log[-_]?panel|log[-_]?drawer)/.test(label);
-      }) || null
-    );
-  }
-
-  function ensureLogsDockedLeft() {
-    if (!config.enabled || !state.isGameRoute) return;
-    const panel = findLogsPanel();
-    const visible =
-      panel && panel.getBoundingClientRect().width > 80 && getComputedStyle(panel).display !== 'none';
-
-    if (
-      config.autoOpenLogsLeft &&
-      !visible &&
-      state.currentGameId &&
-      state.logsOpenedForGameId !== state.currentGameId
-    ) {
-      const btn = findLogsToggleButton();
-      if (btn) {
-        state.logsOpenedForGameId = state.currentGameId;
-        btn.click();
-        window.setTimeout(() => {
-          const opened = findLogsPanel();
-          if (opened) opened.setAttribute('data-upkeep-dock', 'logs-left');
-        }, 220);
-      }
-    }
-
-    if (panel) panel.setAttribute('data-upkeep-dock', 'logs-left');
-  }
-
-  function inferCardCategory(typeText = '') {
-    const low = typeText.toLowerCase();
-    if (/land|terrain/.test(low)) return 'land';
-    if (/creature|créature/.test(low)) return 'creature';
-    if (/instant|sorcery|éphémère|rituel/.test(low)) return 'spell';
-    return 'artifact';
-  }
-
-  function extractOpponentGraveyardCards() {
-    const nodes = safeQueryAll(config.selectors.opponentGraveyardCards);
-    const zone = safeQuery(config.selectors.opponentGraveyardZone);
-    const items =
-      nodes.length > 0
-        ? nodes
-        : zone
-        ? Array.from(zone.querySelectorAll('img[alt], [data-card-name], .card'))
-        : [];
-
-    return items
-      .map((el, i) => {
-        const img = el.tagName === 'IMG' ? el : el.querySelector('img');
-        const name = (
-          el.getAttribute('data-card-name') ||
-          img?.getAttribute('alt') ||
-          el.getAttribute('title') ||
-          el.textContent ||
-          ''
-        ).trim();
-        const typeLine = (el.getAttribute('data-card-type') || 'Carte Magic').trim();
-        return {
-          id: el.getAttribute('data-card-id') || 'gy-' + i + '-' + name,
-          name,
-          typeLine,
-          category: inferCardCategory(typeLine),
-          imgSrc: img?.getAttribute('src') || '',
-        };
-      })
-      .filter((c) => c.name.length > 0 && !/^\\d+$/.test(c.name));
-  }
-
-  function showCardZoom(card, rect) {
-    if (!config.enableHoverZoom || !card.imgSrc) return;
-    let zoom = document.getElementById('upkeep-card-zoom');
-    if (!zoom) {
-      zoom = document.createElement('div');
-      zoom.id = 'upkeep-card-zoom';
-      document.body.appendChild(zoom);
-    }
-    zoom.innerHTML = '';
-    const img = document.createElement('img');
-    img.src = card.imgSrc;
-    img.alt = card.name;
-    img.referrerPolicy = 'no-referrer';
-    zoom.appendChild(img);
-    const w = Math.round(230 * (config.hoverZoomScale / 1.35));
-    zoom.style.width = w + 'px';
-    zoom.style.left = Math.max(12, rect.left - w - 14) + 'px';
-    zoom.style.top = Math.min(window.innerHeight - 360, Math.max(12, rect.top - 40)) + 'px';
-    zoom.dataset.visible = 'true';
-  }
-
-  function hideCardZoom() {
-    const zoom = document.getElementById('upkeep-card-zoom');
-    if (zoom) zoom.dataset.visible = 'false';
-  }
-
-  function ensureGraveyardRail() {
-    let rail = document.getElementById('upkeep-opp-graveyard');
-    if (rail) return rail;
-
-    rail = document.createElement('aside');
-    rail.id = 'upkeep-opp-graveyard';
-    rail.setAttribute('aria-label', 'Cimetière adverse (Upkeep)');
-    rail.innerHTML = \`
-      <div class="upkeep-gy-header">
-        <div class="upkeep-gy-title-row">
-          <h2 class="upkeep-gy-title">Cimetière adverse</h2>
-          <span class="upkeep-gy-count" id="upkeep-gy-count">0</span>
-        </div>
-        <div class="upkeep-gy-meta" id="upkeep-gy-meta">Cimetière vide</div>
-      </div>
-      <div class="upkeep-gy-filters" role="group">
-        <button type="button" class="upkeep-gy-filter-btn" data-filter="all" aria-pressed="true">Tout</button>
-        <button type="button" class="upkeep-gy-filter-btn" data-filter="creature" aria-pressed="false">Créat.</button>
-        <button type="button" class="upkeep-gy-filter-btn" data-filter="spell" aria-pressed="false">Sorts</button>
-        <button type="button" class="upkeep-gy-filter-btn" data-filter="land" aria-pressed="false">Terrains</button>
-      </div>
-      <div class="upkeep-gy-list" id="upkeep-gy-list"></div>
-    \`;
-
-    rail.querySelectorAll('.upkeep-gy-filter-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        state.gyFilter = btn.getAttribute('data-filter') || 'all';
-        rail.querySelectorAll('.upkeep-gy-filter-btn').forEach((b) => {
-          b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
-        });
-        renderGraveyardList();
-      });
-    });
-
-    document.body.appendChild(rail);
-    return rail;
-  }
-
-  function renderGraveyardList() {
-    if (!config.enabled || !state.isGameRoute || !config.alwaysShowOpponentGraveyard) return;
-    ensureGraveyardRail();
-    const cards = extractOpponentGraveyardCards();
-    const filtered = state.gyFilter === 'all' ? cards : cards.filter((c) => c.category === state.gyFilter);
-    const countEl = document.getElementById('upkeep-gy-count');
-    const metaEl = document.getElementById('upkeep-gy-meta');
-    const listEl = document.getElementById('upkeep-gy-list');
-    if (!countEl || !metaEl || !listEl) return;
-
-    countEl.textContent = String(cards.length);
-    const types = new Set(cards.map((c) => c.category)).size;
-    metaEl.textContent =
-      cards.length > 0
-        ? types + ' types · ' + cards.length + (cards.length > 1 ? ' cartes' : ' carte')
-        : 'Aucune carte au cimetière';
-
-    listEl.innerHTML = '';
-    if (filtered.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'upkeep-gy-empty';
-      empty.textContent = cards.length === 0 ? 'Cimetière adverse vide.' : 'Aucune carte pour ce filtre.';
-      listEl.appendChild(empty);
-      return;
-    }
-
-    filtered.forEach((card) => {
-      const row = document.createElement('div');
-      row.className = 'upkeep-gy-item';
-      const info = document.createElement('div');
-      info.style.minWidth = '0';
-      const n = document.createElement('div');
-      n.className = 'upkeep-gy-card-name';
-      n.textContent = card.name;
-      const t = document.createElement('div');
-      t.className = 'upkeep-gy-card-type';
-      t.textContent = card.typeLine;
-      info.appendChild(n);
-      info.appendChild(t);
-      row.appendChild(info);
-      row.addEventListener('mouseenter', () => showCardZoom(card, row.getBoundingClientRect()));
-      row.addEventListener('mouseleave', hideCardZoom);
-      listEl.appendChild(row);
-    });
-  }
-
-  function ensureHudBar(id, cls) {
-    let bar = document.getElementById(id);
-    if (!bar) {
-      bar = document.createElement('div');
-      bar.id = id;
-      bar.className = 'upkeep-hud-bar ' + cls;
-      document.body.appendChild(bar);
-    }
-    return bar;
-  }
-
-  function renderHudBar(bar, prefix, metrics) {
-    bar.innerHTML = '';
-    const lifeMetric = document.createElement('div');
-    lifeMetric.className = 'upkeep-hud-metric';
-    const lifeLabel = document.createElement('span');
-    lifeLabel.className = 'upkeep-hud-label';
-    lifeLabel.textContent = prefix + ' · PV';
-    const lifeVal = document.createElement('span');
-    lifeVal.className =
-      'upkeep-hud-value upkeep-hud-value--life' +
-      (metrics.life !== null && metrics.life <= 5 ? ' upkeep-hud-value--critical' : '');
-    lifeVal.textContent = metrics.life !== null ? String(metrics.life) : '—';
-    lifeMetric.appendChild(lifeLabel);
-    lifeMetric.appendChild(lifeVal);
-    if (metrics.delta) {
-      const d = document.createElement('span');
-      d.className = 'upkeep-hud-delta ' + (metrics.delta > 0 ? 'upkeep-hud-delta--pos' : 'upkeep-hud-delta--neg');
-      d.textContent = (metrics.delta > 0 ? '+' : '') + metrics.delta;
-      lifeMetric.appendChild(d);
-    }
-    bar.appendChild(lifeMetric);
-
-    [
-      { label: 'Deck', value: metrics.library },
-      { label: 'Main', value: metrics.hand },
-      ...(config.showExtendedCounters ? [{ label: 'Exil', value: metrics.exile }] : []),
-    ].forEach((item) => {
-      const c = document.createElement('div');
-      c.className = 'upkeep-hud-metric';
-      const l = document.createElement('span');
-      l.className = 'upkeep-hud-label';
-      l.textContent = item.label;
-      const v = document.createElement('span');
-      v.className = 'upkeep-hud-value';
-      v.textContent = item.value !== null ? String(item.value) : '—';
-      c.appendChild(l);
-      c.appendChild(v);
-      bar.appendChild(c);
-    });
-  }
-
-  function updateTacticalHud() {
-    if (!config.enabled || !state.isGameRoute || !config.highContrastHud) return;
-    const discovered = discoverEndstepPlayerBlocks();
-    const opp = extractStatsFromBlock(discovered.opponent, {
-      life: config.selectors.opponentLife,
-      library: config.selectors.opponentLibrary,
-      hand: config.selectors.opponentHand,
-      exile: config.selectors.opponentExile,
-    });
-    const self = extractStatsFromBlock(discovered.self, {
-      life: config.selectors.selfLife,
-      library: config.selectors.selfLibrary,
-      hand: config.selectors.selfHand,
-      exile: config.selectors.selfExile,
-    });
-
-    if (opp.life !== null && state.lastOpponentLife !== null && opp.life !== state.lastOpponentLife) {
-      state.opponentLifeDelta = opp.life - state.lastOpponentLife;
-    }
-    if (opp.life !== null) state.lastOpponentLife = opp.life;
-
-    if (self.life !== null && state.lastSelfLife !== null && self.life !== state.lastSelfLife) {
-      state.selfLifeDelta = self.life - state.lastSelfLife;
-    }
-    if (self.life !== null) state.lastSelfLife = self.life;
-
-    if (opp.life !== null || opp.library !== null || opp.hand !== null) {
-      renderHudBar(ensureHudBar('upkeep-hud-top', 'upkeep-hud-bar--top'), 'Adversaire', {
-        ...opp,
-        delta: state.opponentLifeDelta,
-      });
-    }
-    if (self.life !== null || self.library !== null || self.hand !== null) {
-      renderHudBar(ensureHudBar('upkeep-hud-bottom', 'upkeep-hud-bar--bottom'), 'Vous', {
-        ...self,
-        delta: state.selfLifeDelta,
-      });
-    }
-  }
-
-  function applyRootAttributes() {
-    const active = Boolean(config.enabled && state.isGameRoute);
-    document.documentElement.dataset.upkeepActive = active ? 'true' : 'false';
-    document.documentElement.dataset.upkeepLogsOpen = active && state.logsVisible ? 'true' : 'false';
-    document.documentElement.dataset.upkeepGyOpen =
-      active && state.graveyardVisible && config.alwaysShowOpponentGraveyard ? 'true' : 'false';
-    document.documentElement.style.setProperty('--upkeep-logs-width', config.logsWidth + 'px');
-    document.documentElement.style.setProperty('--upkeep-gy-width', config.graveyardWidth + 'px');
-
-    const topHud = document.getElementById('upkeep-hud-top');
-    const bottomHud = document.getElementById('upkeep-hud-bottom');
-    const gy = document.getElementById('upkeep-opp-graveyard');
-    const disp = active ? '' : 'none';
-    if (topHud) topHud.style.display = config.highContrastHud ? disp : 'none';
-    if (bottomHud) bottomHud.style.display = config.highContrastHud ? disp : 'none';
-    if (gy) gy.style.display = config.alwaysShowOpponentGraveyard ? disp : 'none';
-  }
-
-  function scheduleSync() {
-    if (syncRaf) return;
-    syncRaf = window.requestAnimationFrame(() => {
-      syncRaf = null;
-      const nowGame = isGameUrl();
-      const nextId = extractGameId();
-      if (nowGame !== state.isGameRoute || nextId !== state.currentGameId) {
-        state.isGameRoute = nowGame;
-        state.currentGameId = nextId;
-        state.lastOpponentLife = null;
-        state.lastSelfLife = null;
-        state.opponentLifeDelta = null;
-        state.selfLifeDelta = null;
-        if (nowGame && config.autoOpenLogsLeft) state.logsVisible = true;
-      }
-      applyRootAttributes();
-      if (state.isGameRoute && config.enabled) {
-        ensureLogsDockedLeft();
-        renderGraveyardList();
-        updateTacticalHud();
-      }
-    });
-  }
-
-  function installSpaHooks() {
-    const origPush = history.pushState;
-    const origReplace = history.replaceState;
-    history.pushState = function (...args) {
-      origPush.apply(this, args);
-      scheduleSync();
-    };
-    history.replaceState = function (...args) {
-      origReplace.apply(this, args);
-      scheduleSync();
-    };
-    window.addEventListener('popstate', scheduleSync);
-    window.addEventListener('hashchange', scheduleSync);
-  }
-
-  function installKeyboardShortcuts() {
-    window.addEventListener('keydown', (e) => {
-      const tag = (e.target?.tagName || '').toLowerCase();
-      if (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable) return;
-      if (e.metaKey || e.ctrlKey || e.altKey || !state.isGameRoute) return;
-      const key = e.key.toLowerCase();
-      if (key === config.shortcuts.toggleLogs.toLowerCase()) {
-        state.logsVisible = !state.logsVisible;
-        applyRootAttributes();
-      } else if (key === config.shortcuts.toggleGraveyard.toLowerCase()) {
-        state.graveyardVisible = !state.graveyardVisible;
-        applyRootAttributes();
-      } else if (key === config.shortcuts.toggleTheme.toLowerCase()) {
-        config.enabled = !config.enabled;
-        extApi.storage.sync.set({ [STORAGE_KEY]: config });
-        scheduleSync();
-      }
-    });
-  }
-
-  async function init() {
-    try {
-      const stored = await extApi.storage.sync.get(STORAGE_KEY);
-      if (stored && stored[STORAGE_KEY]) {
-        config = {
-          ...DEFAULT_CONFIG,
-          ...stored[STORAGE_KEY],
-          shortcuts: { ...DEFAULT_CONFIG.shortcuts, ...(stored[STORAGE_KEY].shortcuts || {}) },
-          selectors: { ...DEFAULT_CONFIG.selectors, ...(stored[STORAGE_KEY].selectors || {}) },
-        };
-      }
-    } catch {
-      // defaults
-    }
-
-    extApi.storage.onChanged.addListener((changes) => {
-      if (changes[STORAGE_KEY]?.newValue) {
-        config = { ...DEFAULT_CONFIG, ...changes[STORAGE_KEY].newValue };
-        scheduleSync();
-      }
-    });
-
-    installSpaHooks();
-    installKeyboardShortcuts();
-    new MutationObserver(() => scheduleSync()).observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
-    scheduleSync();
-  }
-
-  init();
-})();
-`;
+  const injectedConfig = JSON.stringify(
+    {
+      enabled: config.enabled,
+      autoOpenLogsLeft: config.autoOpenLogsLeft,
+      alwaysShowOpponentGraveyard: config.alwaysShowOpponentGraveyard,
+      highContrastHud: config.highContrastHud,
+      enableHoverZoom: config.enableHoverZoom,
+      logsWidth: config.logsWidth,
+      graveyardWidth: config.graveyardWidth,
+      shortcuts: config.shortcuts,
+      selectors: config.selectors,
+    },
+    null,
+    2
+  );
+  return rawUpkeepJs.replace(
+    /const DEFAULT_CONFIG = \{[\s\S]*?\n  \};/,
+    `const DEFAULT_CONFIG = ${injectedConfig};`
+  );
 }
+
 
 export function generatePopupHtml(): string {
   return `<!doctype html>
@@ -1038,7 +298,7 @@ button {
 export function generatePopupJs(config: UpkeepConfig): string {
   return `(() => {
   const extApi = globalThis.browser ?? globalThis.chrome;
-  const STORAGE_KEY = 'upkeep_config_v1';
+  const STORAGE_KEY = 'upkeep_config_v2';
   const DEFAULTS = ${JSON.stringify(config, null, 2)};
 
   let current = structuredClone(DEFAULTS);
@@ -1245,7 +505,7 @@ button {
 export function generateOptionsJs(config: UpkeepConfig): string {
   return `(() => {
   const extApi = globalThis.browser ?? globalThis.chrome;
-  const STORAGE_KEY = 'upkeep_config_v1';
+  const STORAGE_KEY = 'upkeep_config_v2';
   const DEFAULTS = ${JSON.stringify(config, null, 2)};
 
   let current = structuredClone(DEFAULTS);
@@ -1701,18 +961,25 @@ export function getAllGeneratedFiles(config: UpkeepConfig): GeneratedRepoFile[] 
       description: 'Manifeste MV3 Mozilla AMO avec gecko.id et data_collection_permissions.',
     },
     {
+      path: 'src/content/ws-spy.js',
+      content: generateWsSpyJs(),
+      language: 'js',
+      category: 'extension',
+      description: 'Observateur passif WebSocket/Fetch (MAIN world) pour lire le cimetière en temps réel.',
+    },
+    {
       path: 'src/content/upkeep.js',
       content: generateContentJs(config),
       language: 'js',
       category: 'extension',
-      description: 'Contrôleur DOM : ouverture auto des logs, cimetière continu, HUD & raccourcis.',
+      description: 'Contrôleur DOM : logs ancrés dans le rail gauche, cimetière continu 3 couches et plaques PV.',
     },
     {
       path: 'src/content/upkeep.css',
       content: generateContentCss(config),
       language: 'css',
       category: 'extension',
-      description: 'Feuille de style Ardoise & Or mat injectée sur endstep.cc/game/*.',
+      description: 'Surcharge Ardoise & Or mat sans réduction du champ de bataille ni modification des cartes.',
     },
     {
       path: 'src/popup/popup.html',

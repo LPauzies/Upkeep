@@ -8,8 +8,8 @@ export const DEFAULT_UPKEEP_CONFIG: UpkeepConfig = {
   highContrastHud: true,
   showExtendedCounters: true,
   enableHoverZoom: true,
-  logsWidth: 264,
-  graveyardWidth: 276,
+  logsWidth: 278,
+  graveyardWidth: 268,
   hoverZoomScale: 1.45,
   density: 'balanced',
   shortcuts: {
@@ -18,31 +18,21 @@ export const DEFAULT_UPKEEP_CONFIG: UpkeepConfig = {
     toggleTheme: 'u',
   },
   selectors: {
-    gameRoot: '[data-testid="game-board"], .game-board, main',
-    logsPanel:
-      '[data-testid="game-log"], [data-zone="log"], .game-log, .log-panel, aside[aria-label*="log" i]',
+    gameRoot: '[data-testid="game-root"], .wr-game-grid',
+    logsPanel: '[data-gamelog-panel], [data-zone="gamelog-display"]',
     logsToggleButton:
-      'button[aria-label*="log" i], button[title*="log" i], [data-testid="toggle-log"], .log-toggle',
-    opponentGraveyardZone:
-      '[data-player="opponent"] [data-zone="graveyard"], .opponent-zone .graveyard, [aria-label*="opponent graveyard" i]',
+      'button[aria-label*="open game log" i], button[aria-label*="game log" i]:not([aria-label*="close" i]), button[title*="game log" i]',
+    opponentGraveyardZone: 'button[data-zone-anchor="opp-graveyard"]',
     opponentGraveyardCards:
-      '[data-player="opponent"] [data-zone="graveyard"] [data-card-name], .opponent-zone .graveyard .card',
-    opponentLife:
-      '[data-player="opponent"] [data-stat="life"], .opponent-zone .life-total, [data-testid="opponent-life"]',
-    opponentLibrary:
-      '[data-player="opponent"] [data-stat="library"], .opponent-zone .library-count, [data-testid="opponent-library"]',
-    opponentHand:
-      '[data-player="opponent"] [data-stat="hand"], .opponent-zone .hand-count, [data-testid="opponent-hand"]',
-    opponentExile:
-      '[data-player="opponent"] [data-stat="exile"], .opponent-zone .exile-count, [data-testid="opponent-exile"]',
-    selfLife:
-      '[data-player="self"] [data-stat="life"], .player-zone .life-total, [data-testid="self-life"]',
-    selfLibrary:
-      '[data-player="self"] [data-stat="library"], .player-zone .library-count, [data-testid="self-library"]',
-    selfHand:
-      '[data-player="self"] [data-stat="hand"], .player-zone .hand-count, [data-testid="self-hand"]',
-    selfExile:
-      '[data-player="self"] [data-stat="exile"], .player-zone .exile-count, [data-testid="self-exile"]',
+      '[role="dialog"] [data-testid="card-img"], [data-zone*="graveyard" i] [data-testid="card-img"]',
+    opponentLife: '[data-testid="opp-life"] .life-total',
+    opponentLibrary: '[data-player-anchor="opp"] [title="Library (deck) size"] [data-zone-count]',
+    opponentHand: '[data-zone-anchor="opp-hand"] [data-zone-count]',
+    opponentExile: 'button[data-zone-anchor="opp-exile"] [data-zone-count]',
+    selfLife: '[data-testid="me-life"] .life-total',
+    selfLibrary: 'button[data-zone-anchor="my-library"] [data-zone-count]',
+    selfHand: '[data-player-anchor="me"] [title="Hand size"] .font-mono',
+    selfExile: 'button[data-zone-anchor="my-exile"] [data-zone-count]',
   },
 };
 

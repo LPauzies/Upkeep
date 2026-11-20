@@ -1,13 +1,13 @@
 (() => {
   const extApi = globalThis.browser ?? globalThis.chrome;
-  const STORAGE_KEY = 'upkeep_config_v1';
+  const STORAGE_KEY = 'upkeep_config_v2';
   let current = {
     enabled: true,
     autoOpenLogsLeft: true,
     alwaysShowOpponentGraveyard: true,
     highContrastHud: true,
     enableHoverZoom: true,
-    logsWidth: 264,
+    logsWidth: 278,
     graveyardWidth: 268,
   };
 
