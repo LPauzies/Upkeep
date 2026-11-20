@@ -58,7 +58,7 @@ export function generateFirefoxManifest(config: UpkeepConfig): string {
     browser_specific_settings: {
       gecko: {
         id: 'upkeep@lpauzies.dev',
-        strict_min_version: '140.0',
+        strict_min_version: '142.0',
         data_collection_permissions: {
           required: ['none'],
         },
@@ -1617,7 +1617,7 @@ npm run lint:firefox
 3. Cliquez sur **Charger l'extension non empaquetée** et sélectionnez \`dist/chrome/\`.
 4. Ouvrez une partie sur \`https://endstep.cc/game/...\`.
 
-### Firefox (Desktop ≥ 140)
+### Firefox (Desktop &amp; Android ≥ 142)
 1. Lancez \`npm run build:firefox\` (ou décompressez \`upkeep-firefox-v${config.version}.zip\`).
 2. Ouvrez \`about:debugging#/runtime/this-firefox\`.
 3. Cliquez sur **Charger un module complémentaire temporaire...** et sélectionnez \`dist/firefox/manifest.json\`.
@@ -1638,7 +1638,7 @@ npm run lint:firefox
 
 Le manifeste \`manifest.firefox.json\` inclut déjà les champs obligatoires AMO :
 - \`browser_specific_settings.gecko.id\`: \`upkeep@lpauzies.dev\`
-- \`strict_min_version\`: \`140.0\`
+- \`strict_min_version\`: \`142.0\`
 - \`data_collection_permissions.required\`: \`["none"]\`
 
 1. Rendez-vous sur [Mozilla Add-on Developer Hub](https://addons.mozilla.org/developers/).

@@ -42,7 +42,7 @@ npm run lint:firefox
 4. Cliquez sur **Charger l'extension non empaquetée** (*Load unpacked*) et sélectionnez le dossier contenant `manifest.json`.
 5. Ouvrez une partie sur `https://endstep.cc/game/...` : Upkeep s'active automatiquement.
 
-### Firefox (Desktop ≥ 140)
+### Firefox (≥ 142)
 1. Décompressez `upkeep-firefox-mv3-v1.0.0.zip` dans un dossier local (ou utilisez `dist/firefox/`).
 2. Ouvrez `about:debugging#/runtime/this-firefox` dans Firefox.
 3. Cliquez sur **Charger un module complémentaire temporaire...** (*Load Temporary Add-on*).
@@ -77,7 +77,7 @@ Configurez les 4 secrets suivants dans `Settings → Secrets and variables → A
 
 Le manifeste Firefox (`manifest.firefox.json`) est pré-configuré pour les règles Mozilla MV3 :
 - `browser_specific_settings.gecko.id`: `"upkeep@lpauzies.dev"`
-- `strict_min_version`: `"140.0"`
+- `strict_min_version`: `"142.0"`
 - `data_collection_permissions.required`: `["none"]` (obligatoire pour la validation AMO)
 
 ### Publication manuelle
