@@ -1,0 +1,357 @@
+/* Upkeep — Surcharge CSS côté client sur https://endstep.cc/game/*
+ * Charte : Tapis de tournoi ardoise obsidienne & or mat
+ * RÈGLE STRICTE : les cartes Magic (art, cadre, proportions) ne sont JAMAIS modifiées.
+ */
+
+:root {
+  --upkeep-bg-canvas: #0E1116;
+  --upkeep-bg-surface: #151922;
+  --upkeep-bg-elevated: #1C222E;
+  --upkeep-bg-hover: #242B3A;
+  --upkeep-text-primary: #F2EEE6;
+  --upkeep-text-secondary: #9CA3B2;
+  --upkeep-text-muted: #6C7486;
+  --upkeep-accent-gold: #C9A45C;
+  --upkeep-accent-opp: #5B8DB8;
+  --upkeep-crimson: #D9534F;
+  --upkeep-emerald: #3FA372;
+  --upkeep-border: rgba(242, 238, 230, 0.1);
+  --upkeep-border-strong: rgba(242, 238, 230, 0.18);
+  --upkeep-logs-width: 264px;
+  --upkeep-gy-width: 268px;
+  --upkeep-font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --upkeep-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* 1. Toile de fond tapis de tournoi (ne touche aucun élément carte) */
+html[data-upkeep-active="true"],
+html[data-upkeep-active="true"] body {
+  background-color: var(--upkeep-bg-canvas) !important;
+  color: var(--upkeep-text-primary) !important;
+  font-family: var(--upkeep-font-sans) !important;
+}
+
+/* 2. Réorganisation des rails latéraux sur le plateau Endstep */
+html[data-upkeep-active="true"] [data-upkeep-zone="left-sidebar"] {
+  background: var(--upkeep-bg-surface) !important;
+  border-right: 1px solid var(--upkeep-border) !important;
+}
+
+html[data-upkeep-active="true"] [data-upkeep-zone="right-phases"] {
+  background: var(--upkeep-bg-surface) !important;
+  border-left: 1px solid var(--upkeep-border) !important;
+}
+
+/* 3. Compteurs PV / Deck / Main agrandis et tabulaires directement dans l'UI Endstep */
+html[data-upkeep-active="true"] [data-upkeep-stat="life-number"] {
+  font-family: var(--upkeep-font-mono) !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 32px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  color: var(--upkeep-text-primary) !important;
+  letter-spacing: -0.02em !important;
+}
+
+html[data-upkeep-active="true"] [data-upkeep-stat="life-number"][data-upkeep-critical="true"] {
+  color: var(--upkeep-crimson) !important;
+}
+
+html[data-upkeep-active="true"] [data-upkeep-stat="sub-counter"] {
+  font-family: var(--upkeep-font-mono) !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: var(--upkeep-text-primary) !important;
+}
+
+/* 4. Panneau de logs Endstep ouvert automatiquement et ancré à gauche */
+html[data-upkeep-active="true"][data-upkeep-logs-open="true"] [data-upkeep-dock="logs-left"] {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  bottom: 0 !important;
+  width: var(--upkeep-logs-width) !important;
+  max-width: var(--upkeep-logs-width) !important;
+  height: 100vh !important;
+  z-index: 9000 !important;
+  background: var(--upkeep-bg-surface) !important;
+  border-right: 1px solid var(--upkeep-border) !important;
+  box-shadow: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow-y: auto !important;
+  padding: 12px !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  color: var(--upkeep-text-primary) !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-logs-open="true"] body {
+  padding-left: var(--upkeep-logs-width) !important;
+  box-sizing: border-box !important;
+}
+
+/* 5. Bandeaux tactiques PV / Deck / Main haute lisibilité (Adversaire en haut, Joueur en bas) */
+.upkeep-hud-strip {
+  position: fixed;
+  left: calc(var(--upkeep-logs-width) + 12px);
+  z-index: 9100;
+  display: flex;
+  align-items: center;
+  background: rgba(21, 25, 34, 0.96);
+  border: 1px solid var(--upkeep-border-strong);
+  border-radius: 8px;
+  padding: 5px 12px;
+  color: var(--upkeep-text-primary);
+  font-family: var(--upkeep-font-sans);
+  backdrop-filter: blur(8px);
+}
+
+html[data-upkeep-logs-open="false"] .upkeep-hud-strip {
+  left: 14px;
+}
+
+.upkeep-hud-strip--top {
+  top: 10px;
+}
+
+.upkeep-hud-strip--bottom {
+  bottom: 10px;
+}
+
+.upkeep-hud-cell {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 2px 12px;
+  border-right: 1px solid var(--upkeep-border);
+  white-space: nowrap;
+}
+
+.upkeep-hud-cell:last-child {
+  border-right: none;
+}
+
+.upkeep-hud-label {
+  font-size: 11px;
+  color: var(--upkeep-text-secondary);
+  font-weight: 500;
+}
+
+.upkeep-hud-val {
+  font-family: var(--upkeep-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--upkeep-text-primary);
+  line-height: 1;
+}
+
+.upkeep-hud-val--life {
+  font-size: 28px;
+}
+
+.upkeep-hud-val--critical {
+  color: var(--upkeep-crimson);
+}
+
+.upkeep-hud-delta {
+  font-family: var(--upkeep-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.upkeep-hud-delta--neg {
+  color: var(--upkeep-crimson);
+}
+
+.upkeep-hud-delta--pos {
+  color: var(--upkeep-emerald);
+}
+
+/* 6. Panneau Cimetière Adverse continu (ancré à droite, à côté de la barre de phases) */
+#upkeep-opp-graveyard {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--upkeep-gy-width);
+  z-index: 9050;
+  background: var(--upkeep-bg-surface);
+  border-left: 1px solid var(--upkeep-border);
+  display: flex;
+  flex-direction: column;
+  color: var(--upkeep-text-primary);
+  font-family: var(--upkeep-font-sans);
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html[data-upkeep-active="true"][data-upkeep-gy-open="true"] body {
+  padding-right: var(--upkeep-gy-width) !important;
+  box-sizing: border-box !important;
+}
+
+html[data-upkeep-gy-open="false"] #upkeep-opp-graveyard {
+  transform: translateX(100%);
+}
+
+.upkeep-gy-header {
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid var(--upkeep-border);
+}
+
+.upkeep-gy-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.upkeep-gy-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.upkeep-gy-count {
+  font-family: var(--upkeep-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--upkeep-accent-gold);
+}
+
+.upkeep-gy-meta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--upkeep-text-secondary);
+}
+
+.upkeep-gy-filters {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--upkeep-border);
+  background: var(--upkeep-bg-canvas);
+}
+
+.upkeep-gy-filter-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--upkeep-text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 5px 4px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.upkeep-gy-filter-btn[aria-pressed="true"] {
+  background: var(--upkeep-bg-elevated);
+  color: var(--upkeep-accent-gold);
+}
+
+.upkeep-gy-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.upkeep-gy-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(242, 238, 230, 0.05);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.upkeep-gy-item:hover {
+  background: var(--upkeep-bg-hover);
+}
+
+.upkeep-gy-card-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--upkeep-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upkeep-gy-card-type {
+  font-size: 11px;
+  color: var(--upkeep-text-muted);
+  margin-top: 2px;
+}
+
+.upkeep-gy-empty {
+  padding: 24px 14px;
+  text-align: center;
+  color: var(--upkeep-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.upkeep-gy-sync-btn {
+  margin-top: 10px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0E1116;
+  background: var(--upkeep-accent-gold);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Agrandissement de la carte native d'Endstep (Scryfall image telle quelle) au survol du cimetière */
+#upkeep-card-zoom {
+  position: fixed;
+  z-index: 9500;
+  pointer-events: none;
+  width: 256px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.72);
+  opacity: 0;
+  transform: translateY(4px) scale(0.97);
+  transition: opacity 140ms ease, transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#upkeep-card-zoom[data-visible="true"] {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+#upkeep-card-zoom img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.upkeep-picker-highlight {
+  outline: 2px solid var(--upkeep-accent-gold) !important;
+  outline-offset: 2px !important;
+  cursor: crosshair !important;
+}
+
+#upkeep-picker-banner {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  background: #151922;
+  border: 1px solid var(--upkeep-accent-gold);
+  color: var(--upkeep-text-primary);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+}

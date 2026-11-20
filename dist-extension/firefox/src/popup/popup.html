@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Upkeep</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="brand">Upkeep</div>
+      <label class="toggle">
+        <input type="checkbox" id="toggle-enabled" />
+        <span>Actif sur endstep.cc</span>
+      </label>
+    </header>
+    <main class="content">
+      <label class="row">
+        <span>Ouvrir les logs à gauche au démarrage</span>
+        <input type="checkbox" id="toggle-logs" />
+      </label>
+      <label class="row">
+        <span>Afficher le cimetière adverse en continu</span>
+        <input type="checkbox" id="toggle-gy" />
+      </label>
+      <label class="row">
+        <span>Agrandir PV / Deck / Main</span>
+        <input type="checkbox" id="toggle-hud" />
+      </label>
+      <label class="row">
+        <span>Zoom carte native au survol du cimetière</span>
+        <input type="checkbox" id="toggle-zoom" />
+      </label>
+      <div class="slider-row">
+        <div class="slider-meta">
+          <span>Largeur logs (gauche)</span>
+          <span class="mono" id="val-logs-width">264px</span>
+        </div>
+        <input type="range" id="range-logs" min="210" max="340" step="4" />
+      </div>
+      <div class="slider-row">
+        <div class="slider-meta">
+          <span>Largeur cimetière (droite)</span>
+          <span class="mono" id="val-gy-width">268px</span>
+        </div>
+        <input type="range" id="range-gy" min="220" max="350" step="4" />
+      </div>
+    </main>
+    <footer class="footer">
+      <button type="button" id="btn-options" class="btn-primary">Sélecteurs DOM</button>
+    </footer>
+    <script src="popup.js"></script>
+  </body>
+</html>

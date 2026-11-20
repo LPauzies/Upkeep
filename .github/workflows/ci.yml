@@ -1,0 +1,34 @@
+name: CI — Build & Validate Upkeep
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-and-build:
+    name: Build Chrome & Firefox MV3 + web-ext lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build & validate Chrome and Firefox manifests
+        run: npm run build:all
+
+      - name: Lint Firefox MV3 package with Mozilla web-ext
+        run: npx --yes web-ext lint --source-dir dist-extension/firefox --warnings-as-errors
+
+      - name: Upload preview extension artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: upkeep-preview-bundles
+          path: artifacts/*.zip
+          retention-days: 14

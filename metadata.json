@@ -1,0 +1,6 @@
+{
+  "name": "Upkeep",
+  "description": "Extension Chrome et Firefox (Manifest V3) pour refondre l'interface en partie de endstep.cc : cimetière adverse en continu, compteurs PV/Deck/Main haute lisibilité et journal ouvert à gauche.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
