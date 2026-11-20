@@ -7,7 +7,9 @@
     logsToggleButton:
       'button[aria-label*="open game log" i], button[aria-label*="game log" i]:not([aria-label*="close" i]), button[title*="game log" i]',
     opponentGraveyardZone: 'button[data-zone-anchor="opp-graveyard"]',
-    opponentGraveyardCards: '[role="dialog"] [data-testid="card-img"], [data-zone*="graveyard" i] [data-testid="card-img"]',
+    selfGraveyardZone: 'button[data-zone-anchor="my-graveyard"]',
+    opponentGraveyardCards:
+      '[role="dialog"] [data-testid="card-img"], [data-zone*="graveyard" i] [data-testid="card-img"]',
     opponentLife: '[data-testid="opp-life"] .life-total',
     opponentLibrary: '[data-player-anchor="opp"] [title="Library (deck) size"] [data-zone-count]',
     opponentHand: '[data-zone-anchor="opp-hand"] [data-zone-count]',
@@ -19,12 +21,24 @@
   };
   let current = { selectors: { ...DEFAULT_SELECTORS } };
 
+  async function loadStored() {
+    try {
+      const localRes = await extApi?.storage?.local?.get?.(STORAGE_KEY);
+      if (localRes && localRes[STORAGE_KEY]) return localRes[STORAGE_KEY];
+    } catch (_) {}
+    try {
+      const syncRes = await extApi?.storage?.sync?.get?.(STORAGE_KEY);
+      if (syncRes && syncRes[STORAGE_KEY]) return syncRes[STORAGE_KEY];
+    } catch (_) {}
+    return null;
+  }
+
   async function init() {
-    const stored = await extApi.storage.sync.get(STORAGE_KEY);
-    if (stored && stored[STORAGE_KEY]) {
+    const saved = await loadStored();
+    if (saved) {
       current = {
-        ...stored[STORAGE_KEY],
-        selectors: { ...DEFAULT_SELECTORS, ...(stored[STORAGE_KEY].selectors || {}) },
+        ...saved,
+        selectors: { ...DEFAULT_SELECTORS, ...(saved.selectors || {}) },
       };
     }
 
@@ -45,8 +59,13 @@
     });
 
     document.getElementById('btn-save').addEventListener('click', async () => {
-      await extApi.storage.sync.set({ [STORAGE_KEY]: current });
-      document.getElementById('status').textContent = 'Sélecteurs enregistrés.';
+      try {
+        await extApi?.storage?.local?.set?.({ [STORAGE_KEY]: current });
+      } catch (_) {}
+      try {
+        await extApi?.storage?.sync?.set?.({ [STORAGE_KEY]: current });
+      } catch (_) {}
+      document.getElementById('status').textContent = 'Selectors saved.';
     });
   }
 

@@ -88,19 +88,29 @@
         }
       }
 
-      // Case 2: direct opponentGraveyard / oppGraveyard keys
+      // Case 2: direct opponentGraveyard / selfGraveyard keys
       const directOppGy = cur.opponentGraveyard || cur.oppGraveyard || cur.opponent_graveyard;
-      if (Array.isArray(directOppGy)) {
-        return {
-          players: [
-            {
-              name: String(cur.opponentName || cur.opponent?.name || ''),
-              isSelf: false,
-              isOpponent: true,
-              graveyard: extractCardArray(directOppGy),
-            },
-          ],
-        };
+      const directSelfGy =
+        cur.selfGraveyard || cur.myGraveyard || cur.yourGraveyard || cur.playerGraveyard || cur.self_graveyard;
+      if (Array.isArray(directOppGy) || Array.isArray(directSelfGy)) {
+        const players = [];
+        if (Array.isArray(directOppGy)) {
+          players.push({
+            name: String(cur.opponentName || cur.opponent?.name || ''),
+            isSelf: false,
+            isOpponent: true,
+            graveyard: extractCardArray(directOppGy),
+          });
+        }
+        if (Array.isArray(directSelfGy)) {
+          players.push({
+            name: String(cur.selfName || cur.playerName || cur.self?.name || ''),
+            isSelf: true,
+            isOpponent: false,
+            graveyard: extractCardArray(directSelfGy),
+          });
+        }
+        if (players.length > 0) return { players };
       }
 
       // Case 3: cards dictionary or array with zone === 'Graveyard'

@@ -1,40 +1,41 @@
-/* Upkeep v2 — Surcharge CSS côté client pour https://endstep.cc/game/*
- * Charte : Tapis de tournoi ardoise obsidienne & or mat
- * RÈGLES STRICTES :
- *  1. ZÉRO réduction de largeur du champ de bataille (.wr-main-col reste à 100%).
- *  2. ZÉRO bande noire ajoutée autour de la page (aucun padding sur body).
- *  3. Les cartes Magic natives (.card-slot, [data-testid="card-img"], .wr-bf-tile, .wr-hand-card)
- *     ne sont JAMAIS modifiées.
+/* Upkeep v2.1 — Client-side CSS override for https://endstep.cc/game/*
+ * Palette: Obsidian Slate & Matte Gold | Typography: Neutral Helvetica Neue
+ * STRICT RULES:
+ *  1. ZERO battlefield width reduction (.wr-main-col stays 100% full width).
+ *  2. ZERO outer black bars (no body padding).
+ *  3. Native Magic cards (.card-slot, [data-testid="card-img"], .wr-bf-tile, .wr-hand-card)
+ *     are NEVER modified.
  * Repository: https://github.com/LPauzies/Upkeep
  */
 
 :root {
   --upkeep-bg-void: #0b0e14;
   --upkeep-bg-rail: #111620;
-  --upkeep-bg-surface: #151b27;
-  --upkeep-bg-elevated: #1c2433;
-  --upkeep-bg-hover: #242e42;
-  --upkeep-text-primary: #f2eee6;
-  --upkeep-text-secondary: #a1a9b8;
-  --upkeep-text-muted: #6f788a;
+  --upkeep-bg-surface: #161c28;
+  --upkeep-bg-elevated: #1e2636;
+  --upkeep-bg-hover: #273145;
+  --upkeep-text-primary: #f4f6fa;
+  --upkeep-text-secondary: #bcc5d4;
+  --upkeep-text-muted: #8490a3;
   --upkeep-gold: #c9a45c;
-  --upkeep-gold-soft: rgba(201, 164, 92, 0.24);
+  --upkeep-gold-soft: rgba(201, 164, 92, 0.3);
   --upkeep-gold-glow: rgba(201, 164, 92, 0.14);
   --upkeep-crimson: #e06c75;
   --upkeep-emerald: #4cb782;
-  --upkeep-border: rgba(242, 238, 230, 0.09);
-  --upkeep-border-strong: rgba(242, 238, 230, 0.17);
-  --upkeep-font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --upkeep-font-mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --upkeep-border: rgba(244, 246, 250, 0.1);
+  --upkeep-border-strong: rgba(244, 246, 250, 0.18);
+  --upkeep-font-sans: 'Helvetica Neue', Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif;
+  --upkeep-font-mono: 'Helvetica Neue', Helvetica, Arial, ui-sans-serif, sans-serif;
 }
 
 /* ============================================================================
- * 1. PALETTE ARDOISE OBSIDIENNE & OR MAT SUR LES SURFACES ENDSTEP
- *    (Sans jamais toucher aux dimensions de .wr-main-col ni aux cartes Magic)
+ * 1. GLOBAL NEUTRAL HELVETICA TYPOGRAPHY & OBSIDIAN SLATE SURFACES
+ *    (Strictly excludes Magic card art/overlays inside .wr-bf-tile & .wr-hand-card)
  * ============================================================================ */
 
 html[data-upkeep-active="true"] [data-testid="game-root"] {
   background-color: var(--upkeep-bg-void) !important;
+  font-family: var(--upkeep-font-sans) !important;
   --gradient-half-opponent: linear-gradient(180deg, #111621 0%, #0d1119 100%) !important;
   --gradient-half-self: linear-gradient(180deg, #0d1119 0%, #131925 100%) !important;
   --gradient-midline: linear-gradient(
@@ -45,6 +46,36 @@ html[data-upkeep-active="true"] [data-testid="game-root"] {
     rgba(201, 164, 92, 0.28) 82%,
     transparent 100%
   ) !important;
+}
+
+html[data-upkeep-active="true"] aside.wr-rail-left,
+html[data-upkeep-active="true"] aside.wr-rail-left *,
+html[data-upkeep-active="true"] aside.wr-rail-right,
+html[data-upkeep-active="true"] aside.wr-rail-right *,
+html[data-upkeep-active="true"] [data-gamelog-panel],
+html[data-upkeep-active="true"] [data-gamelog-panel] *,
+html[data-upkeep-active="true"] [data-upkeep-panel="stack"],
+html[data-upkeep-active="true"] [data-upkeep-panel="stack"] *,
+html[data-upkeep-active="true"] [role="dialog"]:not([data-zone="decision-surface"]),
+html[data-upkeep-active="true"] [role="dialog"]:not([data-zone="decision-surface"]) *:not(img):not(i),
+html[data-upkeep-active="true"] [data-radix-popper-content-wrapper] * {
+  font-family: var(--upkeep-font-sans) !important;
+}
+
+/* Remove serif italics from Endstep UI labels for crisp modern legibility */
+html[data-upkeep-active="true"] aside.wr-rail-left .font-serif,
+html[data-upkeep-active="true"] aside.wr-rail-left .italic,
+html[data-upkeep-active="true"] aside.wr-rail-right .font-serif,
+html[data-upkeep-active="true"] aside.wr-rail-right .italic,
+html[data-upkeep-active="true"] [data-gamelog-panel] .font-serif,
+html[data-upkeep-active="true"] [data-gamelog-panel] .italic,
+html[data-upkeep-active="true"] [data-upkeep-panel="stack"] .font-serif,
+html[data-upkeep-active="true"] [data-upkeep-panel="stack"] .italic,
+html[data-upkeep-active="true"] .wr-pb-now-name,
+html[data-upkeep-active="true"] .gl-title,
+html[data-upkeep-active="true"] .gl-turn-num {
+  font-family: var(--upkeep-font-sans) !important;
+  font-style: normal !important;
 }
 
 html[data-upkeep-active="true"] aside.wr-rail-left,
@@ -64,24 +95,69 @@ html[data-upkeep-active="true"] aside.wr-rail-right {
 }
 
 /* ============================================================================
- * 2. COMPTEURS PV / DECK / MAIN HAUTE LISIBILITÉ DIRECTEMENT DANS LES PLAQUES
- *    (Aucun bandeau flottant superposé sur le nom des joueurs)
+ * 2. HIGH-LEGIBILITY PLAYER PLATES (LIFE / DECK / HAND / GRAVEYARD / EXILE)
  * ============================================================================ */
 
 html[data-upkeep-active="true"] .wr-plate {
-  background: var(--upkeep-bg-surface) !important;
-  border-color: var(--upkeep-border) !important;
+  background: var(--upkeep-bg-surface);
+  border-color: var(--upkeep-border);
   padding: 10px 12px !important;
   min-height: 0 !important;
+  transition: background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
 }
 
 html[data-upkeep-active="true"] .wr-plate[data-deciding="true"] {
-  border-top: 1px solid var(--upkeep-gold-soft) !important;
-  box-shadow: inset 0 1px 0 rgba(201, 164, 92, 0.18) !important;
+  border-top: 1px solid var(--upkeep-gold-soft);
+  box-shadow: inset 0 1px 0 rgba(201, 164, 92, 0.2);
+}
+
+/* Unmistakable player target highlight (Lotleth Giant, burn, discard, triggers) */
+html[data-upkeep-active="true"] .wr-plate[data-upkeep-targetable="true"],
+html[data-upkeep-active="true"] .wr-plate[role="button"],
+html[data-upkeep-active="true"] .wr-plate[tabindex="0"],
+html[data-upkeep-active="true"] .wr-plate.cursor-pointer,
+html[data-upkeep-active="true"] .wr-plate[class*="ring-"],
+html[data-upkeep-active="true"] .wr-plate[class*="target"],
+html[data-upkeep-active="true"] .wr-plate[data-targetable="true"],
+html[data-upkeep-active="true"] .wr-plate[data-valid-target="true"],
+html[data-upkeep-active="true"] .wr-plate[data-selectable="true"] {
+  background: linear-gradient(135deg, rgba(201, 164, 92, 0.28) 0%, rgba(28, 36, 54, 0.96) 100%) !important;
+  border: 2px solid #ecc672 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 0 2px rgba(236, 198, 114, 0.4), inset 0 0 20px rgba(201, 164, 92, 0.22) !important;
+  cursor: pointer !important;
+  position: relative !important;
+  z-index: 25 !important;
+}
+
+html[data-upkeep-active="true"] .wr-plate[data-upkeep-targetable="true"]:hover,
+html[data-upkeep-active="true"] .wr-plate[role="button"]:hover,
+html[data-upkeep-active="true"] .wr-plate.cursor-pointer:hover,
+html[data-upkeep-active="true"] .wr-plate[class*="ring-"]:hover,
+html[data-upkeep-active="true"] .wr-plate[data-targetable="true"]:hover {
+  background: linear-gradient(135deg, rgba(229, 190, 103, 0.42) 0%, rgba(36, 46, 68, 0.98) 100%) !important;
+  border-color: #ffe094 !important;
+  box-shadow: 0 0 0 3px rgba(255, 224, 148, 0.55), inset 0 0 24px rgba(236, 198, 114, 0.3) !important;
+}
+
+html[data-upkeep-active="true"] .wr-plate[data-upkeep-targetable="true"] [data-plate-section="header"]::after,
+html[data-upkeep-active="true"] .wr-plate[role="button"] [data-plate-section="header"]::after,
+html[data-upkeep-active="true"] .wr-plate.cursor-pointer [data-plate-section="header"]::after,
+html[data-upkeep-active="true"] .wr-plate[class*="ring-"] [data-plate-section="header"]::after,
+html[data-upkeep-active="true"] .wr-plate[data-targetable="true"] [data-plate-section="header"]::after {
+  content: 'CLICK TO TARGET';
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: #ecc672;
+  color: #111620;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
 }
 
 html[data-upkeep-active="true"] .wr-plate .wr-player-nameplate {
-  font-family: var(--upkeep-font-sans) !important;
   font-style: normal !important;
   font-weight: 600 !important;
   font-size: 13px !important;
@@ -98,12 +174,13 @@ html[data-upkeep-active="true"][data-upkeep-hud="true"] [data-testid="me-life"] 
 
 html[data-upkeep-active="true"][data-upkeep-hud="true"] [data-testid="opp-life"] .life-total,
 html[data-upkeep-active="true"][data-upkeep-hud="true"] [data-testid="me-life"] .life-total {
-  font-family: var(--upkeep-font-mono) !important;
+  font-family: var(--upkeep-font-sans) !important;
+  font-style: normal !important;
   font-variant-numeric: tabular-nums !important;
-  font-size: 2.45rem !important;
+  font-size: 2.35rem !important;
   font-weight: 700 !important;
   line-height: 1 !important;
-  letter-spacing: -0.03em !important;
+  letter-spacing: -0.02em !important;
   color: var(--upkeep-text-primary) !important;
 }
 
@@ -113,111 +190,244 @@ html[data-upkeep-active="true"][data-upkeep-hud="true"] [data-testid="me-life"][
 }
 
 .upkeep-life-delta {
-  font-family: var(--upkeep-font-mono);
+  font-family: var(--upkeep-font-sans);
   font-variant-numeric: tabular-nums;
   font-size: 12px;
   font-weight: 700;
-  padding: 1px 5px;
+  padding: 1px 6px;
   border-radius: 4px;
   line-height: 1.25;
 }
 
 .upkeep-life-delta--neg {
   color: var(--upkeep-crimson);
-  background: rgba(224, 108, 117, 0.14);
+  background: rgba(224, 108, 117, 0.16);
 }
 
 .upkeep-life-delta--pos {
   color: var(--upkeep-emerald);
-  background: rgba(76, 183, 130, 0.14);
+  background: rgba(76, 183, 130, 0.16);
 }
 
-/* Ligne Deck + Main en 2 cellules nettes haute lisibilité */
-html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate [data-plate-section="body"] > div:first-child {
+/* Row 1: DECK & HAND | Row 2: GRAVEYARD & EXILE */
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate [data-plate-section="body"] > div:first-child,
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate [data-plate-section="body"] > div:nth-child(2) {
   display: grid !important;
   grid-template-columns: 1fr 1fr !important;
   gap: 6px !important;
-  margin-top: 2px !important;
+  margin-top: 4px !important;
 }
 
 html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate [title="Library (deck) size"],
 html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate [data-zone-anchor="opp-hand"],
 html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="my-library"],
-html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate [title="Hand size"] {
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate [title="Hand size"],
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="opp-graveyard"],
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="opp-exile"],
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="my-graveyard"],
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="my-exile"] {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  gap: 6px !important;
-  padding: 5px 8px !important;
+  gap: 4px !important;
+  padding: 5px 7px !important;
   margin: 0 !important;
   border-radius: 6px !important;
   background: var(--upkeep-bg-elevated) !important;
   border: 1px solid var(--upkeep-border) !important;
   color: var(--upkeep-text-primary) !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  opacity: 1 !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="opp-graveyard"]:disabled,
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="opp-exile"]:disabled,
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="my-graveyard"]:disabled,
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="my-exile"]:disabled {
+  opacity: 0.72 !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="opp-graveyard"] > span,
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="opp-exile"] > span,
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="my-graveyard"] > span,
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="my-exile"] > span {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
 }
 
 html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate [title="Library (deck) size"]::after,
 html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="my-library"]::after {
   content: 'DECK';
-  font-family: var(--upkeep-font-sans);
   font-size: 9px;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   color: var(--upkeep-text-muted);
 }
 
 html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate [data-zone-anchor="opp-hand"]::after,
 html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate [title="Hand size"]::after {
-  content: 'MAIN';
-  font-family: var(--upkeep-font-sans);
+  content: 'HAND';
   font-size: 9px;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
+  color: var(--upkeep-text-muted);
+}
+
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="opp-graveyard"]::after,
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="my-graveyard"]::after {
+  content: 'GRAVEYARD';
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--upkeep-text-muted);
+}
+
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="opp-exile"]::after,
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="my-exile"]::after {
+  content: 'EXILE';
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   color: var(--upkeep-text-muted);
 }
 
 html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate [title="Library (deck) size"] [data-zone-count],
 html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate [data-zone-anchor="opp-hand"] [data-zone-count],
 html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="my-library"] [data-zone-count],
-html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate [title="Hand size"] .font-mono {
-  font-family: var(--upkeep-font-mono) !important;
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate [title="Hand size"] .font-mono,
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="opp-graveyard"] [data-zone-count],
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="opp-exile"] [data-zone-count],
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="my-graveyard"] [data-zone-count],
+html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zone-anchor="my-exile"] [data-zone-count] {
+  font-family: var(--upkeep-font-sans) !important;
   font-variant-numeric: tabular-nums !important;
-  font-size: 16px !important;
+  font-size: 15px !important;
   font-weight: 700 !important;
   color: var(--upkeep-text-primary) !important;
-}
-
-/* Boutons Cimetière / Exil dans les plaques */
-html[data-upkeep-active="true"] .wr-plate button[data-zone-anchor="opp-graveyard"],
-html[data-upkeep-active="true"] .wr-plate button[data-zone-anchor="opp-exile"],
-html[data-upkeep-active="true"] .wr-plate button[data-zone-anchor="my-graveyard"],
-html[data-upkeep-active="true"] .wr-plate button[data-zone-anchor="my-exile"] {
-  background: var(--upkeep-bg-elevated) !important;
-  border-color: var(--upkeep-border) !important;
-  color: var(--upkeep-text-secondary) !important;
-  border-radius: 5px !important;
+  opacity: 1 !important;
 }
 
 html[data-upkeep-active="true"] .wr-plate button[data-zone-anchor="opp-graveyard"][data-upkeep-has-cards="true"] {
   border-color: var(--upkeep-gold-soft) !important;
-  color: var(--upkeep-gold) !important;
-  background: rgba(201, 164, 92, 0.08) !important;
+  background: rgba(201, 164, 92, 0.12) !important;
 }
 
-/* Bloc Décision & Auto-pass harmonisés Ardoise / Or mat */
+html[data-upkeep-active="true"] .wr-plate button[data-zone-anchor="opp-graveyard"][data-upkeep-has-cards="true"] [data-zone-count],
+html[data-upkeep-active="true"] .wr-plate button[data-zone-anchor="opp-graveyard"][data-upkeep-has-cards="true"]::after {
+  color: var(--upkeep-gold) !important;
+}
+
+html[data-upkeep-active="true"] .wr-plate button[data-zone-anchor="my-graveyard"][data-upkeep-has-cards="true"] {
+  border-color: rgba(124, 174, 230, 0.36) !important;
+  background: rgba(124, 174, 230, 0.12) !important;
+}
+
+html[data-upkeep-active="true"] .wr-plate button[data-zone-anchor="my-graveyard"][data-upkeep-has-cards="true"] [data-zone-count],
+html[data-upkeep-active="true"] .wr-plate button[data-zone-anchor="my-graveyard"][data-upkeep-has-cards="true"]::after {
+  color: #8cbef5 !important;
+}
+
+/* ============================================================================
+ * 3. DECISION SURFACE & AUTO-PASS (HIGH CONTRAST OBSIDIAN & GOLD)
+ * ============================================================================ */
+
 html[data-upkeep-active="true"] [data-zone="decision-surface"] {
   background: var(--upkeep-bg-surface) !important;
+  background-image: none !important;
   border: 1px solid var(--upkeep-gold-soft) !important;
   border-radius: 7px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-banner {
+  position: static !important;
+  transform: none !important;
+  margin: 0 !important;
+  width: 100% !important;
+  height: auto !important;
+  padding: 5px 10px !important;
+  background: var(--upkeep-bg-elevated) !important;
+  border-bottom: 1px solid var(--upkeep-border) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+}
+
+html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-banner-svg {
+  display: none !important;
+}
+
+html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-banner-label {
+  position: static !important;
+  transform: none !important;
+  font-family: var(--upkeep-font-sans) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  color: var(--upkeep-gold) !important;
+  text-shadow: none !important;
+}
+
+html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-body {
+  background: var(--upkeep-bg-surface) !important;
+  background-image: none !important;
+  padding: 10px 10px 10px !important;
+  border: none !important;
+  box-shadow: none !important;
   color: var(--upkeep-text-primary) !important;
 }
 
 html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-title {
-  color: var(--upkeep-text-primary) !important;
+  color: #ffffff !important;
+  font-family: var(--upkeep-font-sans) !important;
+  font-style: normal !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  text-shadow: none !important;
 }
 
 html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-message {
-  color: var(--upkeep-text-secondary) !important;
+  color: #c8d1e0 !important;
+  font-family: var(--upkeep-font-sans) !important;
+  font-style: normal !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  line-height: 1.35 !important;
+  margin-top: 2px !important;
+  text-shadow: none !important;
+}
+
+html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions {
+  margin-top: 8px !important;
+}
+
+html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions button {
+  background: #232d40 !important;
+  border: 1px solid rgba(201, 164, 92, 0.55) !important;
+  color: #ffffff !important;
+  font-family: var(--upkeep-font-sans) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  border-radius: 5px !important;
+  box-shadow: none !important;
+}
+
+html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions button:hover {
+  background: #2c3850 !important;
+  border-color: var(--upkeep-gold) !important;
+}
+
+html[data-upkeep-active="true"] [data-zone="decision-surface"] [data-testid="kcap"] {
+  background: #111620 !important;
+  border-color: rgba(244, 246, 250, 0.22) !important;
+  color: var(--upkeep-gold) !important;
+  box-shadow: none !important;
 }
 
 html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button {
@@ -233,7 +443,45 @@ html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button:ho
 }
 
 /* ============================================================================
- * 3. JOURNAL DES LOGS ANCRÉ DANS L'ESPACE VIDE DU RAIL GAUCHE (ZÉRO DÉCALAGE)
+ * 4. FLOATING MODALS & "THE STACK" (OBSIDIAN SLATE + DEFAULT TOP-LEFT OF BOARD)
+ * ============================================================================ */
+
+html[data-upkeep-active="true"] [data-upkeep-panel="stack"],
+html[data-upkeep-active="true"] [data-stack-panel],
+html[data-upkeep-active="true"] [data-zone*="stack" i],
+html[data-upkeep-active="true"] [role="dialog"]:not([data-zone="decision-surface"]),
+html[data-upkeep-active="true"] [data-radix-popper-content-wrapper] > div,
+html[data-upkeep-active="true"] [role="menu"] {
+  background: var(--upkeep-bg-surface) !important;
+  background-image: none !important;
+  border: 1px solid var(--upkeep-gold-soft) !important;
+  border-radius: 8px !important;
+  color: var(--upkeep-text-primary) !important;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.65) !important;
+}
+
+/* Titlebars inside The Stack & dialogs */
+html[data-upkeep-active="true"] [data-upkeep-panel="stack"] > div:first-child,
+html[data-upkeep-active="true"] [data-stack-panel] > div:first-child,
+html[data-upkeep-active="true"] [data-zone*="stack" i] > div:first-child {
+  background: var(--upkeep-bg-elevated) !important;
+  border-bottom: 1px solid var(--upkeep-border) !important;
+  color: var(--upkeep-text-primary) !important;
+  border-radius: 7px 7px 0 0 !important;
+}
+
+/* Default position of The Stack: top-left corner of the battlefield until user drags it */
+html[data-upkeep-active="true"][data-upkeep-stack-anchor="true"] [data-upkeep-panel="stack"]:not([data-upkeep-user-moved="true"]) {
+  position: fixed !important;
+  left: var(--upkeep-stack-left, 288px) !important;
+  top: var(--upkeep-stack-top, 10px) !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+}
+
+/* ============================================================================
+ * 5. GAME LOG DOCKED IN LEFT RAIL EMPTY SPACE (ZERO BATTLEFIELD SHRINKAGE)
  * ============================================================================ */
 
 html[data-upkeep-active="true"] [data-gamelog-panel] {
@@ -269,7 +517,6 @@ html[data-upkeep-active="true"] [data-gamelog-panel] [data-gamelog-titlebar] {
 }
 
 html[data-upkeep-active="true"] [data-gamelog-panel] .gl-title {
-  font-family: var(--upkeep-font-sans) !important;
   font-size: 12px !important;
   font-weight: 700 !important;
   letter-spacing: 0.02em !important;
@@ -277,7 +524,7 @@ html[data-upkeep-active="true"] [data-gamelog-panel] .gl-title {
 }
 
 html[data-upkeep-active="true"] [data-gamelog-panel] .gl-turn {
-  background: rgba(201, 164, 92, 0.09) !important;
+  background: rgba(201, 164, 92, 0.1) !important;
   border-color: var(--upkeep-border) !important;
   color: var(--upkeep-gold) !important;
 }
@@ -314,67 +561,17 @@ html[data-upkeep-active="true"] [data-gamelog-panel] .gl-card-name {
 }
 
 /* ============================================================================
- * 4. RAIL DROIT : CIMETIÈRE ADVERSE CONTINU + BARRE DE PHASES COMPACTÉE
- *    (S'intègre DANS aside.wr-rail-right -> 0px retiré au champ de bataille)
+ * 6. RIGHT RAIL: DUAL LIVE GRAVEYARDS (OPPONENT + YOURS) AS COLLAPSIBLE LISTS
+ *    (Vertical phase bar is completely removed when midline timeline is active)
  * ============================================================================ */
 
-html[data-upkeep-active="true"][data-upkeep-gy-docked="true"] aside.wr-rail-right {
-  gap: 5px !important;
-}
-
-html[data-upkeep-active="true"][data-upkeep-gy-docked="true"] aside.wr-rail-right .wr-phase-bar--vertical {
-  flex: 0 0 auto !important;
-  min-height: 0 !important;
-  padding: 4px 6px !important;
-  gap: 3px !important;
-}
-
-html[data-upkeep-active="true"] aside.wr-rail-right .wr-turn-chip {
-  background: var(--upkeep-bg-surface) !important;
-  border-color: var(--upkeep-gold-soft) !important;
-  padding: 4px 8px !important;
-}
-
-html[data-upkeep-active="true"][data-upkeep-gy-docked="true"] aside.wr-rail-right .wr-pb-rail {
-  gap: 2px !important;
-  flex: 0 0 auto !important;
-}
-
-html[data-upkeep-active="true"][data-upkeep-gy-docked="true"] aside.wr-rail-right .wr-pb {
-  min-height: 19px !important;
-  height: 21px !important;
-  flex: 0 0 auto !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  border-radius: 4px !important;
-}
-
-html[data-upkeep-active="true"][data-upkeep-gy-docked="true"] aside.wr-rail-right .wr-pb--current {
-  min-height: 34px !important;
-  height: 36px !important;
-}
-
-html[data-upkeep-active="true"][data-upkeep-gy-docked="true"] aside.wr-rail-right .wr-pb-now {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  justify-content: center !important;
+html[data-upkeep-active="true"] aside.wr-rail-right {
   gap: 6px !important;
+  padding-top: 4px !important;
 }
 
-html[data-upkeep-active="true"][data-upkeep-gy-docked="true"] aside.wr-rail-right .wr-pb-now-name {
-  font-size: 13px !important;
-  line-height: 1 !important;
-}
-
-html[data-upkeep-active="true"][data-upkeep-gy-docked="true"] aside.wr-rail-right .wr-pb-now-help {
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] aside.wr-rail-right .wr-phase-bar--vertical {
   display: none !important;
-}
-
-html[data-upkeep-active="true"][data-upkeep-gy-docked="true"] aside.wr-rail-right .wr-pb-section {
-  margin: 0 !important;
-  padding: 0 !important;
-  line-height: 1 !important;
 }
 
 html[data-upkeep-active="true"] aside.wr-rail-right button[data-testid="reveals-button"] {
@@ -391,48 +588,97 @@ html[data-upkeep-active="true"] aside.wr-rail-right button[data-testid="hold-pri
   color: var(--upkeep-text-secondary) !important;
 }
 
-/* Panneau Cimetière Adverse (Ancré dans aside.wr-rail-right OU Flottant par-dessus) */
-#upkeep-opp-graveyard {
+/* Unified Dual Graveyards Dock */
+#upkeep-graveyards-dock {
   display: flex;
   flex-direction: column;
-  background: var(--upkeep-bg-surface);
-  border: 1px solid var(--upkeep-gold-soft);
-  border-radius: 7px;
-  color: var(--upkeep-text-primary);
+  gap: 6px;
   font-family: var(--upkeep-font-sans);
-  overflow: hidden;
+  color: var(--upkeep-text-primary);
   box-sizing: border-box;
+  min-height: 0;
 }
 
-#upkeep-opp-graveyard[data-mode="docked"] {
+#upkeep-graveyards-dock[data-mode="docked"] {
   flex: 1 1 0;
-  min-height: 165px;
-  max-height: 46vh;
   margin: 0 6px;
+  overflow: hidden;
 }
 
-#upkeep-opp-graveyard[data-mode="floating"] {
+html[data-upkeep-timeline="false"] #upkeep-graveyards-dock[data-mode="docked"] {
+  flex: 0 1 auto;
+  max-height: 44vh;
+}
+
+#upkeep-graveyards-dock[data-mode="floating"] {
   position: fixed;
   top: 10px;
   right: 280px;
   width: var(--upkeep-gy-width, 268px);
-  max-height: 62vh;
+  height: 74vh;
+  max-height: calc(100vh - 20px);
   z-index: 44;
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.7);
+  padding: 6px;
+  border-radius: 9px;
+  background: rgba(11, 14, 20, 0.94);
+  border: 1px solid var(--upkeep-border-strong);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.75);
 }
 
-#upkeep-opp-graveyard[data-hidden="true"] {
+#upkeep-graveyards-dock[data-hidden="true"] {
   display: none !important;
+}
+
+/* Individual Collapsible Graveyard Section (Opponent / Yours) */
+.upkeep-gy-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 112px;
+  background: var(--upkeep-bg-surface);
+  border: 1px solid var(--upkeep-border-strong);
+  border-radius: 7px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.upkeep-gy-section[data-owner="opp"] {
+  border-color: var(--upkeep-gold-soft);
+}
+
+.upkeep-gy-section[data-owner="self"] {
+  border-color: rgba(124, 174, 230, 0.34);
+}
+
+.upkeep-gy-section[data-collapsed="true"] {
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+.upkeep-gy-section[data-collapsed="true"] .upkeep-gy-body {
+  display: none !important;
+}
+
+.upkeep-gy-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .upkeep-gy-header {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 8px 10px;
+  gap: 2px;
+  padding: 7px 9px;
   background: var(--upkeep-bg-elevated);
   border-bottom: 1px solid var(--upkeep-border);
   flex-shrink: 0;
+}
+
+.upkeep-gy-section[data-collapsed="true"] .upkeep-gy-header {
+  border-bottom: none;
 }
 
 .upkeep-gy-title-row {
@@ -442,11 +688,35 @@ html[data-upkeep-active="true"] aside.wr-rail-right button[data-testid="hold-pri
   gap: 6px;
 }
 
-.upkeep-gy-title-group {
+.upkeep-gy-collapse-btn {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   min-width: 0;
+  flex: 1 1 auto;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-family: var(--upkeep-font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+
+.upkeep-gy-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  font-size: 10px;
+  color: var(--upkeep-text-muted);
+  flex-shrink: 0;
+  transition: transform 120ms ease, color 120ms ease;
+}
+
+.upkeep-gy-collapse-btn:hover .upkeep-gy-chevron {
+  color: var(--upkeep-text-primary);
 }
 
 .upkeep-gy-title {
@@ -461,11 +731,16 @@ html[data-upkeep-active="true"] aside.wr-rail-right button[data-testid="hold-pri
 }
 
 .upkeep-gy-count {
-  font-family: var(--upkeep-font-mono);
+  font-family: var(--upkeep-font-sans);
   font-variant-numeric: tabular-nums;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--upkeep-gold);
+  flex-shrink: 0;
+}
+
+.upkeep-gy-section[data-owner="self"] .upkeep-gy-count {
+  color: #8cbef5;
 }
 
 .upkeep-gy-actions {
@@ -479,13 +754,13 @@ html[data-upkeep-active="true"] aside.wr-rail-right button[data-testid="hold-pri
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 4px;
   border: 1px solid var(--upkeep-border);
   background: var(--upkeep-bg-surface);
   color: var(--upkeep-text-secondary);
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1;
   cursor: pointer;
   transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
@@ -498,8 +773,9 @@ html[data-upkeep-active="true"] aside.wr-rail-right button[data-testid="hold-pri
 }
 
 .upkeep-gy-meta {
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--upkeep-text-muted);
+  padding-left: 20px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -539,6 +815,20 @@ html[data-upkeep-active="true"] aside.wr-rail-right button[data-testid="hold-pri
   color: var(--upkeep-gold);
 }
 
+.upkeep-gy-section[data-owner="self"] .upkeep-gy-filter-btn[aria-pressed="true"] {
+  background: rgba(124, 174, 230, 0.16);
+  border-color: rgba(124, 174, 230, 0.42);
+  color: #8cbef5;
+}
+
+.upkeep-gy-section[data-owner="self"] .upkeep-gy-card-qty {
+  color: #8cbef5;
+}
+
+.upkeep-gy-section[data-owner="self"] .upkeep-gy-row:hover {
+  border-color: rgba(124, 174, 230, 0.42);
+}
+
 .upkeep-gy-list {
   flex: 1 1 auto;
   overflow-y: auto;
@@ -553,7 +843,7 @@ html[data-upkeep-active="true"] aside.wr-rail-right button[data-testid="hold-pri
 }
 
 .upkeep-gy-list::-webkit-scrollbar-thumb {
-  background: rgba(242, 238, 230, 0.14);
+  background: rgba(244, 246, 250, 0.14);
   border-radius: 3px;
 }
 
@@ -563,7 +853,7 @@ html[data-upkeep-active="true"] aside.wr-rail-right button[data-testid="hold-pri
   gap: 8px;
   padding: 4px 6px;
   border-radius: 5px;
-  background: rgba(28, 36, 51, 0.55);
+  background: rgba(30, 38, 54, 0.65);
   border: 1px solid var(--upkeep-border);
   cursor: pointer;
   text-align: left;
@@ -584,7 +874,7 @@ html[data-upkeep-active="true"] aside.wr-rail-right button[data-testid="hold-pri
   object-fit: cover;
   flex-shrink: 0;
   background: var(--upkeep-bg-void);
-  border: 1px solid rgba(242, 238, 230, 0.12);
+  border: 1px solid rgba(244, 246, 250, 0.12);
 }
 
 .upkeep-gy-card-info {
@@ -612,7 +902,7 @@ html[data-upkeep-active="true"] aside.wr-rail-right button[data-testid="hold-pri
 }
 
 .upkeep-gy-card-qty {
-  font-family: var(--upkeep-font-mono);
+  font-family: var(--upkeep-font-sans);
   font-variant-numeric: tabular-nums;
   font-size: 11px;
   font-weight: 700;
@@ -654,7 +944,18 @@ html[data-upkeep-active="true"] aside.wr-rail-right button[data-testid="hold-pri
 }
 
 /* ============================================================================
- * 5. APERÇU ZOOM CARTE NATIVE AU SURVOL DU CIMETIÈRE ADVERSE
+ * 7. HIDE REDUNDANT RIGHT-SIDE OPPONENT ACTION NOTIFICATIONS (LOGS ARE OPEN)
+ * ============================================================================ */
+
+html[data-upkeep-active="true"][data-upkeep-hide-toasts="true"] #root > div.fixed.pointer-events-none[class*="z-[200]"],
+html[data-upkeep-active="true"][data-upkeep-hide-toasts="true"] div.fixed.bottom-20[class*="z-[200]"],
+html[data-upkeep-active="true"][data-upkeep-hide-toasts="true"] [data-upkeep-hidden-toast="true"] {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* ============================================================================
+ * 8. NATIVE CARD HOVER ZOOM PREVIEW
  * ============================================================================ */
 
 #upkeep-card-zoom {
@@ -686,7 +987,229 @@ html[data-upkeep-active="true"] aside.wr-rail-right button[data-testid="hold-pri
 }
 
 /* ============================================================================
- * 6. LECTURE SILENCIEUSE DU DIALOGUE CIMETIÈRE NATIF (ZÉRO CLIGNOTEMENT)
+ * 10. HORIZONTAL BATTLEFIELD MIDLINE CHRONOLOGICAL PHASE BAR
+ * ============================================================================ */
+
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-main-col > [style*="--gradient-midline"] {
+  height: 36px !important;
+  min-height: 36px !important;
+  background-image: none !important;
+  background-color: var(--upkeep-bg-void) !important;
+  flex-shrink: 0 !important;
+}
+
+#upkeep-phase-timeline {
+  position: fixed;
+  left: var(--upkeep-tl-left, 278px);
+  top: var(--upkeep-tl-top, 380px);
+  width: var(--upkeep-tl-width, 800px);
+  height: 36px;
+  z-index: 32;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  background: #121722;
+  border-top: 1px solid rgba(201, 164, 92, 0.28);
+  border-bottom: 1px solid rgba(201, 164, 92, 0.28);
+  font-family: var(--upkeep-font-sans);
+  color: var(--upkeep-text-primary);
+  user-select: none;
+}
+
+#upkeep-phase-timeline[data-hidden="true"] {
+  display: none !important;
+}
+
+.upkeep-tl-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding-right: 8px;
+  border-right: 1px solid var(--upkeep-border);
+}
+
+.upkeep-tl-turn {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.upkeep-tl-turn--mine {
+  background: rgba(201, 164, 92, 0.16);
+  border: 1px solid rgba(201, 164, 92, 0.45);
+  color: var(--upkeep-gold);
+}
+
+.upkeep-tl-turn--opp {
+  background: rgba(116, 168, 224, 0.16);
+  border: 1px solid rgba(116, 168, 224, 0.45);
+  color: #8cbef5;
+}
+
+.upkeep-tl-storm {
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--upkeep-text-secondary);
+  white-space: nowrap;
+}
+
+.upkeep-tl-priority {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #111620;
+  background: var(--upkeep-gold);
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.upkeep-tl-steps {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 3px;
+  height: 100%;
+}
+
+.upkeep-tl-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--upkeep-border-strong);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+.upkeep-tl-step {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--upkeep-text-secondary);
+  font-family: var(--upkeep-font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: background-color 110ms ease, border-color 110ms ease, color 110ms ease;
+}
+
+.upkeep-tl-step:hover {
+  background: var(--upkeep-bg-hover);
+  border-color: var(--upkeep-border-strong);
+  color: #ffffff;
+}
+
+.upkeep-tl-step--past {
+  color: #5e687a;
+  background: transparent;
+}
+
+.upkeep-tl-step--current.upkeep-tl-step--mine {
+  background: rgba(201, 164, 92, 0.24);
+  border-color: var(--upkeep-gold);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.upkeep-tl-step--current.upkeep-tl-step--opp {
+  background: rgba(116, 168, 224, 0.24);
+  border-color: #7caee6;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.upkeep-tl-step--readonly {
+  cursor: default;
+}
+
+/* Interactive stop indicator bars (top = Your turn gold, bottom = Opp turn blue) */
+.upkeep-tl-step[data-stop-mine="true"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 3px;
+  right: 3px;
+  height: 2.5px;
+  border-radius: 0 0 2px 2px;
+  background: var(--upkeep-gold);
+}
+
+.upkeep-tl-step[data-stop-opp="true"]::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 3px;
+  right: 3px;
+  height: 2.5px;
+  border-radius: 2px 2px 0 0;
+  background: #7caee6;
+}
+
+.upkeep-tl-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding-left: 8px;
+  border-left: 1px solid var(--upkeep-border);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--upkeep-text-muted);
+}
+
+.upkeep-tl-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.upkeep-tl-swatch {
+  width: 7px;
+  height: 7px;
+  border-radius: 1.5px;
+}
+
+.upkeep-tl-swatch--mine {
+  background: var(--upkeep-gold);
+}
+
+.upkeep-tl-swatch--opp {
+  background: #7caee6;
+}
+
+@media (max-width: 1180px) {
+  .upkeep-tl-legend {
+    display: none;
+  }
+}
+
+/* ============================================================================
+ * 9. SILENT NATIVE GRAVEYARD PEEK (ZERO MODAL FLICKER)
  * ============================================================================ */
 
 html[data-upkeep-peeking-gy="true"] [role="dialog"]:not([data-zone="decision-surface"]),

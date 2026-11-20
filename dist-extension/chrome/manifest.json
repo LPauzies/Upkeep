@@ -3,7 +3,7 @@
   "name": "Upkeep",
   "short_name": "Upkeep",
   "version": "1.0.0",
-  "description": "Surcharge CSS/JS côté client pour endstep.cc/game/* : cimetière adverse en continu, compteurs PV/Deck/Main haute lisibilité et journal ouvert à gauche, sans modifier les cartes.",
+  "description": "Client-side UI overhaul for endstep.cc/game/*: dual live graveyards (opponent & yours), horizontal midline phase bar, docked game log, and crisp Helvetica typography without touching Magic cards.",
   "homepage_url": "https://github.com/LPauzies/Upkeep",
   "permissions": [
     "storage"
@@ -18,7 +18,7 @@
     "128": "icons/icon-128.png"
   },
   "action": {
-    "default_title": "Upkeep — Refonte UI Endstep",
+    "default_title": "Upkeep — Endstep UI Settings",
     "default_popup": "src/popup/popup.html",
     "default_icon": {
       "16": "icons/icon-16.png",

@@ -1,53 +1,72 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Upkeep</title>
+    <title>Upkeep Settings</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <header class="header">
-      <div class="brand">Upkeep</div>
-      <label class="toggle">
+      <div class="brand-wrap">
+        <img src="../../icons/icon-32.png" alt="Upkeep" class="brand-icon" width="24" height="24" />
+        <div class="brand-meta">
+          <div class="brand">Upkeep</div>
+          <div class="status-text" id="status-text">Active on endstep.cc</div>
+        </div>
+      </div>
+      <label class="power-switch" title="Enable or disable Upkeep on endstep.cc">
         <input type="checkbox" id="toggle-enabled" />
-        <span>Actif sur endstep.cc</span>
+        <span class="power-track" aria-hidden="true">
+          <span class="power-thumb"></span>
+        </span>
       </label>
     </header>
-    <main class="content">
+
+    <div class="disabled-banner" id="disabled-banner" hidden>
+      Upkeep is disabled — original Endstep UI is active.
+    </div>
+
+    <main class="content" id="settings-content">
+      <div class="section-label">Layout &amp; Panels</div>
       <label class="row">
-        <span>Ouvrir les logs à gauche au démarrage</span>
-        <input type="checkbox" id="toggle-logs" />
+        <span>Horizontal Phase Timeline (midline)</span>
+        <input type="checkbox" id="toggle-timeline" />
       </label>
       <label class="row">
-        <span>Afficher le cimetière adverse en continu</span>
+        <span>Dual Graveyards in right rail (Opp + You)</span>
         <input type="checkbox" id="toggle-gy" />
       </label>
       <label class="row">
-        <span>Agrandir PV / Deck / Main</span>
+        <span>Auto-open &amp; dock Game Log (left rail)</span>
+        <input type="checkbox" id="toggle-logs" />
+      </label>
+      <label class="row">
+        <span>Hide right-side action notifications</span>
+        <input type="checkbox" id="toggle-toasts" />
+      </label>
+      <label class="row">
+        <span>Anchor "The Stack" at top-left of board</span>
+        <input type="checkbox" id="toggle-stack" />
+      </label>
+
+      <div class="divider"></div>
+      <div class="section-label">Readability</div>
+      <label class="row">
+        <span>High-legibility Player Plates</span>
         <input type="checkbox" id="toggle-hud" />
       </label>
       <label class="row">
-        <span>Zoom carte native au survol du cimetière</span>
+        <span>Card hover zoom in Graveyards</span>
         <input type="checkbox" id="toggle-zoom" />
       </label>
-      <div class="slider-row">
-        <div class="slider-meta">
-          <span>Largeur logs (gauche)</span>
-          <span class="mono" id="val-logs-width">264px</span>
-        </div>
-        <input type="range" id="range-logs" min="210" max="340" step="4" />
-      </div>
-      <div class="slider-row">
-        <div class="slider-meta">
-          <span>Largeur cimetière (droite)</span>
-          <span class="mono" id="val-gy-width">268px</span>
-        </div>
-        <input type="range" id="range-gy" min="220" max="350" step="4" />
-      </div>
     </main>
+
     <footer class="footer">
-      <button type="button" id="btn-options" class="btn-primary">Sélecteurs DOM</button>
+      <div class="shortcuts-hint">
+        Shortcuts: <kbd>U</kbd> On/Off · <kbd>G</kbd> Graveyards · <kbd>L</kbd> Logs
+      </div>
+      <button type="button" id="btn-options" class="btn-secondary">DOM Selectors</button>
     </footer>
     <script src="popup.js"></script>
   </body>

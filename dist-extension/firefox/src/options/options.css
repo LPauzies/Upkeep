@@ -2,7 +2,7 @@ body {
   margin: 0;
   background: #0E1116;
   color: #F2EEE6;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Helvetica Neue', Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .shell {

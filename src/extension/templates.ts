@@ -2,6 +2,12 @@ import type { UpkeepConfig } from './types';
 import rawWsSpyJs from '../../extension/src/content/ws-spy.js?raw';
 import rawUpkeepCss from '../../extension/src/content/upkeep.css?raw';
 import rawUpkeepJs from '../../extension/src/content/upkeep.js?raw';
+import rawPopupHtml from '../../extension/src/popup/popup.html?raw';
+import rawPopupCss from '../../extension/src/popup/popup.css?raw';
+import rawPopupJs from '../../extension/src/popup/popup.js?raw';
+import rawOptionsHtml from '../../extension/src/options/options.html?raw';
+import rawOptionsCss from '../../extension/src/options/options.css?raw';
+import rawOptionsJs from '../../extension/src/options/options.js?raw';
 
 export interface GeneratedRepoFile {
   path: string;
@@ -18,7 +24,7 @@ export function generateChromeManifest(config: UpkeepConfig): string {
     short_name: 'Upkeep',
     version: config.version,
     description:
-      "Refonte ergonomique de endstep.cc en partie : cimetière adverse en continu, compteurs PV/Deck/Main haute lisibilité et journal ouvert à gauche.",
+      'Client-side UI overhaul for endstep.cc/game/*: dual live graveyards (opponent & yours), horizontal midline phase bar, docked game log, and crisp Helvetica typography without touching Magic cards.',
     homepage_url: 'https://github.com/LPauzies/Upkeep',
     permissions: ['storage'],
     host_permissions: ['https://endstep.cc/*'],
@@ -29,7 +35,7 @@ export function generateChromeManifest(config: UpkeepConfig): string {
       '128': 'icons/icon-128.png',
     },
     action: {
-      default_title: 'Upkeep — Options Endstep',
+      default_title: 'Upkeep — Endstep UI Settings',
       default_popup: 'src/popup/popup.html',
       default_icon: {
         '16': 'icons/icon-16.png',
@@ -64,6 +70,10 @@ export function generateFirefoxManifest(config: UpkeepConfig): string {
   const base = JSON.parse(generateChromeManifest(config));
   const firefoxManifest = {
     ...base,
+    action: {
+      ...base.action,
+      default_area: 'navbar',
+    },
     browser_specific_settings: {
       gecko: {
         id: 'upkeep@lpauzies.dev',
@@ -92,14 +102,20 @@ export function generateContentJs(config: UpkeepConfig): string {
   const injectedConfig = JSON.stringify(
     {
       enabled: config.enabled,
+      showMidlineTimeline: true,
       autoOpenLogsLeft: config.autoOpenLogsLeft,
       alwaysShowOpponentGraveyard: config.alwaysShowOpponentGraveyard,
+      hideActionToasts: true,
+      anchorStackTopLeft: true,
       highContrastHud: config.highContrastHud,
       enableHoverZoom: config.enableHoverZoom,
       logsWidth: config.logsWidth,
       graveyardWidth: config.graveyardWidth,
       shortcuts: config.shortcuts,
-      selectors: config.selectors,
+      selectors: {
+        ...config.selectors,
+        selfGraveyardZone: 'button[data-zone-anchor="my-graveyard"]',
+      },
     },
     null,
     2
@@ -112,452 +128,30 @@ export function generateContentJs(config: UpkeepConfig): string {
 
 
 export function generatePopupHtml(): string {
-  return `<!doctype html>
-<html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Upkeep</title>
-    <link rel="stylesheet" href="popup.css" />
-  </head>
-  <body>
-    <header class="header">
-      <div class="brand">Upkeep</div>
-      <label class="switch">
-        <input type="checkbox" id="toggle-enabled" />
-        <span class="slider"></span>
-      </label>
-    </header>
-
-    <main class="content">
-      <section class="group">
-        <label class="row">
-          <span>Logs ouverts à gauche au démarrage</span>
-          <input type="checkbox" id="toggle-logs" />
-        </label>
-        <label class="row">
-          <span>Cimetière adverse en continu</span>
-          <input type="checkbox" id="toggle-gy" />
-        </label>
-        <label class="row">
-          <span>HUD PV / Deck / Main agrandi</span>
-          <input type="checkbox" id="toggle-hud" />
-        </label>
-        <label class="row">
-          <span>Zoom carte au survol</span>
-          <input type="checkbox" id="toggle-zoom" />
-        </label>
-      </section>
-
-      <section class="group">
-        <div class="slider-row">
-          <div class="slider-meta">
-            <span>Largeur logs (gauche)</span>
-            <span class="mono" id="val-logs-width">264px</span>
-          </div>
-          <input type="range" id="range-logs" min="210" max="340" step="4" />
-        </div>
-        <div class="slider-row">
-          <div class="slider-meta">
-            <span>Largeur cimetière (droite)</span>
-            <span class="mono" id="val-gy-width">276px</span>
-          </div>
-          <input type="range" id="range-gy" min="220" max="350" step="4" />
-        </div>
-      </section>
-
-      <div class="shortcuts">
-        <span>Raccourcis sur Endstep :</span>
-        <span class="mono">L Logs · G Cimetière · U Thème</span>
-      </div>
-    </main>
-
-    <footer class="footer">
-      <button type="button" id="btn-pick-gy" class="btn-secondary">Cibler cimetière</button>
-      <button type="button" id="btn-options" class="btn-primary">Sélecteurs DOM</button>
-    </footer>
-
-    <script src="popup.js"></script>
-  </body>
-</html>
-`;
+  return rawPopupHtml;
 }
 
 export function generatePopupCss(): string {
-  return `body {
-  width: 312px;
-  margin: 0;
-  background: #0E1116;
-  color: #F2EEE6;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: 13px;
+  return rawPopupCss;
 }
 
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  border-bottom: 1px solid rgba(242, 238, 230, 0.09);
-  background: #151922;
-}
-
-.brand {
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-
-.content {
-  padding: 12px 16px;
-}
-
-.group {
-  padding-bottom: 10px;
-  margin-bottom: 10px;
-  border-bottom: 1px solid rgba(242, 238, 230, 0.08);
-}
-
-.row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 0;
-  color: #E2DDD3;
-  cursor: pointer;
-}
-
-.slider-row {
-  padding: 6px 0;
-}
-
-.slider-meta {
-  display: flex;
-  justify-content: space-between;
-  color: #9CA3B2;
-  font-size: 12px;
-  margin-bottom: 4px;
-}
-
-input[type="range"] {
-  width: 100%;
-  accent-color: #C9A45C;
-}
-
-input[type="checkbox"] {
-  accent-color: #C9A45C;
-  width: 15px;
-  height: 15px;
-}
-
-.mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-variant-numeric: tabular-nums;
-  color: #C9A45C;
-}
-
-.shortcuts {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 11px;
-  color: #9CA3B2;
-}
-
-.footer {
-  display: flex;
-  gap: 8px;
-  padding: 12px 16px;
-  border-top: 1px solid rgba(242, 238, 230, 0.09);
-  background: #151922;
-}
-
-button {
-  flex: 1;
-  padding: 8px 10px;
-  border-radius: 7px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid transparent;
-}
-
-.btn-primary {
-  background: #C9A45C;
-  color: #0E1116;
-}
-
-.btn-secondary {
-  background: #1C222E;
-  color: #F2EEE6;
-  border-color: rgba(242, 238, 230, 0.14);
-}
-`;
-}
-
-export function generatePopupJs(config: UpkeepConfig): string {
-  return `(() => {
-  const extApi = globalThis.browser ?? globalThis.chrome;
-  const STORAGE_KEY = 'upkeep_config_v2';
-  const DEFAULTS = ${JSON.stringify(config, null, 2)};
-
-  let current = structuredClone(DEFAULTS);
-
-  async function save() {
-    await extApi.storage.sync.set({ [STORAGE_KEY]: current });
-  }
-
-  function bindUI() {
-    const elEnabled = document.getElementById('toggle-enabled');
-    const elLogs = document.getElementById('toggle-logs');
-    const elGy = document.getElementById('toggle-gy');
-    const elHud = document.getElementById('toggle-hud');
-    const elZoom = document.getElementById('toggle-zoom');
-    const rangeLogs = document.getElementById('range-logs');
-    const rangeGy = document.getElementById('range-gy');
-    const valLogs = document.getElementById('val-logs-width');
-    const valGy = document.getElementById('val-gy-width');
-
-    elEnabled.checked = current.enabled;
-    elLogs.checked = current.autoOpenLogsLeft;
-    elGy.checked = current.alwaysShowOpponentGraveyard;
-    elHud.checked = current.highContrastHud;
-    elZoom.checked = current.enableHoverZoom;
-    rangeLogs.value = String(current.logsWidth);
-    rangeGy.value = String(current.graveyardWidth);
-    valLogs.textContent = current.logsWidth + 'px';
-    valGy.textContent = current.graveyardWidth + 'px';
-
-    elEnabled.addEventListener('change', () => { current.enabled = elEnabled.checked; save(); });
-    elLogs.addEventListener('change', () => { current.autoOpenLogsLeft = elLogs.checked; save(); });
-    elGy.addEventListener('change', () => { current.alwaysShowOpponentGraveyard = elGy.checked; save(); });
-    elHud.addEventListener('change', () => { current.highContrastHud = elHud.checked; save(); });
-    elZoom.addEventListener('change', () => { current.enableHoverZoom = elZoom.checked; save(); });
-
-    rangeLogs.addEventListener('input', () => {
-      current.logsWidth = Number(rangeLogs.value);
-      valLogs.textContent = current.logsWidth + 'px';
-      save();
-    });
-
-    rangeGy.addEventListener('input', () => {
-      current.graveyardWidth = Number(rangeGy.value);
-      valGy.textContent = current.graveyardWidth + 'px';
-      save();
-    });
-
-    document.getElementById('btn-options').addEventListener('click', () => {
-      extApi.runtime.openOptionsPage();
-    });
-
-    document.getElementById('btn-pick-gy').addEventListener('click', async () => {
-      const [tab] = await extApi.tabs.query({ active: true, currentWindow: true });
-      if (tab?.id) {
-        extApi.tabs.sendMessage(tab.id, { type: 'UPKEEP_PICK_SELECTOR', key: 'opponentGraveyardZone' });
-        window.close();
-      }
-    });
-  }
-
-  async function init() {
-    const stored = await extApi.storage.sync.get(STORAGE_KEY);
-    if (stored && stored[STORAGE_KEY]) {
-      current = { ...DEFAULTS, ...stored[STORAGE_KEY] };
-    }
-    bindUI();
-  }
-
-  init();
-})();
-`;
+export function generatePopupJs(_config: UpkeepConfig): string {
+  return rawPopupJs;
 }
 
 export function generateOptionsHtml(): string {
-  return `<!doctype html>
-<html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Upkeep — Sélecteurs DOM &amp; Préférences</title>
-    <link rel="stylesheet" href="options.css" />
-  </head>
-  <body>
-    <div class="shell">
-      <header class="topbar">
-        <div>
-          <h1>Upkeep — Adaptateur DOM Endstep</h1>
-          <p>Ajustez les sélecteurs CSS si endstep.cc met à jour sa structure HTML.</p>
-        </div>
-        <div class="actions">
-          <button type="button" id="btn-reset" class="btn-secondary">Réinitialiser</button>
-          <button type="button" id="btn-save" class="btn-primary">Enregistrer</button>
-        </div>
-      </header>
-      <div id="status" class="status" aria-live="polite"></div>
-      <div id="selectors-grid" class="grid"></div>
-    </div>
-    <script src="options.js"></script>
-  </body>
-</html>
-`;
+  return rawOptionsHtml;
 }
 
 export function generateOptionsCss(): string {
-  return `body {
-  margin: 0;
-  background: #0E1116;
-  color: #F2EEE6;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
-
-.shell {
-  max-width: 920px;
-  margin: 0 auto;
-  padding: 32px 24px 64px;
-}
-
-.topbar {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid rgba(242, 238, 230, 0.1);
-}
-
-h1 {
-  margin: 0 0 6px;
-  font-size: 24px;
-}
-
-p {
-  margin: 0;
-  color: #9CA3B2;
-  font-size: 14px;
-}
-
-.actions {
-  display: flex;
-  gap: 10px;
-}
-
-button {
-  padding: 9px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid transparent;
-}
-
-.btn-primary {
-  background: #C9A45C;
-  color: #0E1116;
-}
-
-.btn-secondary {
-  background: #151922;
-  color: #F2EEE6;
-  border-color: rgba(242, 238, 230, 0.16);
-}
-
-.status {
-  min-height: 22px;
-  margin: 14px 0;
-  font-size: 13px;
-  color: #3FA372;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 14px;
-}
-
-.field {
-  background: #151922;
-  border: 1px solid rgba(242, 238, 230, 0.09);
-  border-radius: 10px;
-  padding: 14px 16px;
-}
-
-.field label {
-  display: block;
-  font-weight: 600;
-  font-size: 13px;
-  margin-bottom: 6px;
-}
-
-.field input {
-  width: 100%;
-  box-sizing: border-box;
-  background: #0E1116;
-  color: #F2EEE6;
-  border: 1px solid rgba(242, 238, 230, 0.14);
-  border-radius: 6px;
-  padding: 8px 10px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
-}
-`;
+  return rawOptionsCss;
 }
 
 export function generateOptionsJs(config: UpkeepConfig): string {
-  return `(() => {
-  const extApi = globalThis.browser ?? globalThis.chrome;
-  const STORAGE_KEY = 'upkeep_config_v2';
-  const DEFAULTS = ${JSON.stringify(config, null, 2)};
-
-  let current = structuredClone(DEFAULTS);
-
-  function render() {
-    const grid = document.getElementById('selectors-grid');
-    grid.innerHTML = '';
-    Object.entries(current.selectors).forEach(([key, value]) => {
-      const wrap = document.createElement('div');
-      wrap.className = 'field';
-      const label = document.createElement('label');
-      label.setAttribute('for', 'sel-' + key);
-      label.textContent = key;
-      const input = document.createElement('input');
-      input.id = 'sel-' + key;
-      input.value = value;
-      input.addEventListener('input', () => {
-        current.selectors[key] = input.value;
-      });
-      wrap.appendChild(label);
-      wrap.appendChild(input);
-      grid.appendChild(wrap);
-    });
-  }
-
-  document.getElementById('btn-save').addEventListener('click', async () => {
-    await extApi.storage.sync.set({ [STORAGE_KEY]: current });
-    document.getElementById('status').textContent = 'Sélecteurs enregistrés et synchronisés.';
-  });
-
-  document.getElementById('btn-reset').addEventListener('click', async () => {
-    current = structuredClone(DEFAULTS);
-    await extApi.storage.sync.set({ [STORAGE_KEY]: current });
-    render();
-    document.getElementById('status').textContent = 'Valeurs par défaut restaurées.';
-  });
-
-  async function init() {
-    const stored = await extApi.storage.sync.get(STORAGE_KEY);
-    if (stored && stored[STORAGE_KEY]) {
-      current = {
-        ...DEFAULTS,
-        ...stored[STORAGE_KEY],
-        selectors: { ...DEFAULTS.selectors, ...(stored[STORAGE_KEY].selectors || {}) },
-      };
-    }
-    render();
-  }
-
-  init();
-})();
-`;
+  return rawOptionsJs.replace(
+    /const DEFAULT_SELECTORS = \{[\s\S]*?\n  \};/,
+    `const DEFAULT_SELECTORS = ${JSON.stringify(config.selectors, null, 2)};`
+  );
 }
 
 export function generateBuildScript(): string {
