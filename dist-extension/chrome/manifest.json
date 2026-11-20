@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Upkeep",
   "short_name": "Upkeep",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Surcharge CSS/JS côté client pour endstep.cc/game/* : cimetière adverse en continu, compteurs PV/Deck/Main haute lisibilité et journal ouvert à gauche, sans modifier les cartes.",
   "homepage_url": "https://github.com/LPauzies/Upkeep",
   "permissions": [

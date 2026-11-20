@@ -1453,10 +1453,16 @@ export function generateReleaseWorkflowYaml(): string {
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   workflow_dispatch:
     inputs:
+      version:
+        description: 'Version explicite (ex: 1.1.0). Laisser vide pour auto-versioning 1.0.<run_number>'
+        required: false
+        default: ''
       publish_stores:
         description: 'Publier sur Chrome Web Store et Firefox AMO si les secrets sont configurés'
         type: boolean
@@ -1467,8 +1473,11 @@ permissions:
 
 jobs:
   build-release:
-    name: Build & Create GitHub Release
+    name: Build & Publish GitHub Release
     runs-on: ubuntu-latest
+    outputs:
+      version: \${{ steps.meta.outputs.version }}
+      tag: \${{ steps.meta.outputs.tag }}
 
     steps:
       - name: Checkout repository
@@ -1479,11 +1488,25 @@ jobs:
         with:
           node-version: 22
 
+      - name: Compute SemVer version (Chrome & Firefox MV3 compatible)
+        id: meta
+        run: |
+          if [[ "\${GITHUB_REF}" == refs/tags/v* ]]; then
+            RAW="\${GITHUB_REF#refs/tags/v}"
+          elif [[ -n "\${{ inputs.version }}" ]]; then
+            RAW="\${{ inputs.version }}"
+            RAW="\${RAW#v}"
+          else
+            RAW="1.0.\${GITHUB_RUN_NUMBER}"
+          fi
+          echo "version=\${RAW}" >> "$GITHUB_OUTPUT"
+          echo "tag=v\${RAW}" >> "$GITHUB_OUTPUT"
+
       - name: Build Chrome & Firefox MV3 ZIP archives
-        run: npm run build:all
+        run: node scripts/build-extension.mjs --target=all --version=\${{ steps.meta.outputs.version }}
 
       - name: Validate Firefox bundle with web-ext lint
-        run: npx --yes web-ext lint --source-dir dist/firefox
+        run: npx --yes web-ext lint --source-dir dist-extension/firefox --warnings-as-errors
 
       - name: Upload build artifacts for deploy jobs
         uses: actions/upload-artifact@v4
@@ -1492,16 +1515,18 @@ jobs:
           path: |
             artifacts/upkeep-chrome-*.zip
             artifacts/upkeep-firefox-*.zip
-            dist/firefox/**
+            dist-extension/firefox/**
 
       - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: \${{ steps.meta.outputs.tag }}
+          name: Upkeep \${{ steps.meta.outputs.tag }}
           generate_release_notes: true
+          make_latest: true
           files: |
-            artifacts/upkeep-chrome-*.zip
-            artifacts/upkeep-firefox-*.zip
+            artifacts/upkeep-chrome-v\${{ steps.meta.outputs.version }}.zip
+            artifacts/upkeep-firefox-v\${{ steps.meta.outputs.version }}.zip
 
   publish-chrome-web-store:
     name: Publish to Chrome Web Store
@@ -1534,7 +1559,7 @@ jobs:
         if: steps.check_chrome.outputs.ready == 'true'
         uses: mnao305/chrome-extension-upload@v5.0.0
         with:
-          file-path: release-bundle/artifacts/upkeep-chrome-*.zip
+          file-path: release-bundle/artifacts/upkeep-chrome-v\${{ needs.build-release.outputs.version }}.zip
           extension-id: \${{ secrets.CHROME_EXTENSION_ID }}
           client-id: \${{ secrets.CHROME_CLIENT_ID }}
           client-secret: \${{ secrets.CHROME_CLIENT_SECRET }}
@@ -1578,7 +1603,7 @@ jobs:
           WEB_EXT_API_SECRET: \${{ secrets.AMO_JWT_SECRET }}
         run: |
           npx --yes web-ext sign \\
-            --source-dir release-bundle/dist/firefox \\
+            --source-dir release-bundle/dist-extension/firefox \\
             --artifacts-dir release-bundle/amo-signed \\
             --channel=listed
 `;

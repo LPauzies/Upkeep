@@ -13,13 +13,17 @@ const extRoot = fs.existsSync(path.join(rootDir, 'extension', 'manifest.chrome.j
   : rootDir;
 
 const argTarget = process.argv.find((a) => a.startsWith('--target='));
+const argVersion = process.argv.find((a) => a.startsWith('--version='));
 const requested = argTarget ? argTarget.split('=')[1] : 'all';
 const targets = requested === 'all' ? ['chrome', 'firefox'] : [requested];
 
 const chromeBase = JSON.parse(
   fs.readFileSync(path.join(extRoot, 'manifest.chrome.json'), 'utf8')
 );
-const version = chromeBase.version || '1.0.0';
+const version = (argVersion ? argVersion.split('=')[1] : chromeBase.version || '1.0.0').replace(/^v/, '');
+if (!/^\d+(\.\d+){1,3}$/.test(version)) {
+  throw new Error(`Version invalide pour Chrome/Firefox MV3 : "${version}" (format attendu : X.Y.Z)`);
+}
 
 function crc32(buf) {
   let c = 0xffffffff;
