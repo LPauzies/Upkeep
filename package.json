@@ -12,7 +12,7 @@
     "build:chrome": "node scripts/build-extension.mjs --target=chrome",
     "build:firefox": "node scripts/build-extension.mjs --target=firefox",
     "build:all": "node scripts/build-extension.mjs --target=all",
-    "lint:firefox": "npx --yes web-ext lint --source-dir dist-extension/firefox"
+    "lint:firefox": "npx --yes web-ext lint --source-dir dist-extension/firefox --self-hosted"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

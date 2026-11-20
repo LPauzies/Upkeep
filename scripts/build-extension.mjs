@@ -134,6 +134,9 @@ function validateManifest(manifest, target) {
   if (target === 'firefox') {
     const gecko = manifest.browser_specific_settings?.gecko;
     if (!gecko?.id) throw new Error('[firefox] browser_specific_settings.gecko.id manquant');
+    if (!gecko?.update_url || !gecko.update_url.startsWith('https://')) {
+      throw new Error('[firefox] browser_specific_settings.gecko.update_url (HTTPS) manquant');
+    }
     if (!gecko?.data_collection_permissions?.required) {
       throw new Error('[firefox] data_collection_permissions.required obligatoire pour AMO');
     }
@@ -165,4 +168,31 @@ for (const target of targets) {
   const zipPath = path.join(artifactsDir, zipName);
   fs.writeFileSync(zipPath, createZipBuffer(outDir));
   console.log(`✔ Package ${target} MV3 prêt : artifacts/${zipName}`);
+
+  if (target === 'firefox') {
+    const gecko = manifest.browser_specific_settings.gecko;
+    const xpiName = `upkeep-firefox-v${version}.xpi`;
+    const updatesManifest = {
+      addons: {
+        [gecko.id]: {
+          updates: [
+            {
+              version,
+              update_link: `https://github.com/LPauzies/Upkeep/releases/download/v${version}/${xpiName}`,
+              applications: {
+                gecko: {
+                  strict_min_version: gecko.strict_min_version || '142.0',
+                },
+              },
+            },
+          ],
+        },
+      },
+    };
+    fs.writeFileSync(
+      path.join(artifactsDir, 'updates.json'),
+      JSON.stringify(updatesManifest, null, 2) + '\n'
+    );
+    console.log(`✔ Manifeste auto-update Firefox généré : artifacts/updates.json`);
+  }
 }

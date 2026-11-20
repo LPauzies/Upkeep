@@ -78,6 +78,7 @@ export function generateFirefoxManifest(config: UpkeepConfig): string {
       gecko: {
         id: 'upkeep@lpauzies.dev',
         strict_min_version: '142.0',
+        update_url: 'https://github.com/LPauzies/Upkeep/releases/latest/download/updates.json',
         data_collection_permissions: {
           required: ['none'],
         },
@@ -251,7 +252,7 @@ export function generateRepoPackageJson(config: UpkeepConfig): string {
           'build:chrome': 'node scripts/build-extension.mjs --target=chrome',
           'build:firefox': 'node scripts/build-extension.mjs --target=firefox',
           'build:all': 'node scripts/build-extension.mjs --target=all',
-          'lint:firefox': 'npx --yes web-ext lint --source-dir dist/firefox',
+          'lint:firefox': 'npx --yes web-ext lint --source-dir dist/firefox --self-hosted',
           verify: 'npm run build:all && npm run lint:firefox',
         },
         devDependencies: {
@@ -290,8 +291,8 @@ jobs:
       - name: Build & validate Chrome and Firefox manifests
         run: npm run build:all
 
-      - name: Lint Firefox MV3 package with Mozilla web-ext
-        run: npx --yes web-ext lint --source-dir dist/firefox --warnings-as-errors
+      - name: Lint Firefox MV3 package with Mozilla web-ext (self-hosted)
+        run: npx --yes web-ext lint --source-dir dist/firefox --self-hosted --warnings-as-errors
 
       - name: Upload preview extension artifacts
         uses: actions/upload-artifact@v4
@@ -303,7 +304,7 @@ jobs:
 }
 
 export function generateReleaseWorkflowYaml(): string {
-  return `name: Release & Publish (Chrome Web Store + Firefox AMO)
+  return `name: Release & Publish (GitHub Releases + Self-Hosted Firefox XPI)
 
 on:
   push:
@@ -318,7 +319,7 @@ on:
         required: false
         default: ''
       publish_stores:
-        description: 'Publier sur Chrome Web Store et Firefox AMO si les secrets sont configurés'
+        description: 'Signer sur Mozilla AMO (unlisted .xpi) et publier sur Chrome Web Store si les secrets sont configurés'
         type: boolean
         default: true
 
@@ -327,7 +328,7 @@ permissions:
 
 jobs:
   build-release:
-    name: Build & Publish GitHub Release
+    name: Build, Sign Firefox XPI & Publish GitHub Release
     runs-on: ubuntu-latest
     outputs:
       version: \${{ steps.meta.outputs.version }}
@@ -356,88 +357,13 @@ jobs:
           echo "version=\${RAW}" >> "$GITHUB_OUTPUT"
           echo "tag=v\${RAW}" >> "$GITHUB_OUTPUT"
 
-      - name: Build Chrome & Firefox MV3 ZIP archives
+      - name: Build Chrome & Firefox MV3 packages + updates.json
         run: node scripts/build-extension.mjs --target=all --version=\${{ steps.meta.outputs.version }}
 
-      - name: Validate Firefox bundle with web-ext lint
-        run: npx --yes web-ext lint --source-dir dist-extension/firefox --warnings-as-errors
+      - name: Validate Firefox bundle with web-ext lint (self-hosted)
+        run: npx --yes web-ext lint --source-dir dist-extension/firefox --self-hosted --warnings-as-errors
 
-      - name: Upload build artifacts for deploy jobs
-        uses: actions/upload-artifact@v4
-        with:
-          name: upkeep-release-zips
-          path: |
-            artifacts/upkeep-chrome-*.zip
-            artifacts/upkeep-firefox-*.zip
-            dist-extension/firefox/**
-
-      - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: \${{ steps.meta.outputs.tag }}
-          name: Upkeep \${{ steps.meta.outputs.tag }}
-          generate_release_notes: true
-          make_latest: true
-          files: |
-            artifacts/upkeep-chrome-v\${{ steps.meta.outputs.version }}.zip
-            artifacts/upkeep-firefox-v\${{ steps.meta.outputs.version }}.zip
-
-  publish-chrome-web-store:
-    name: Publish to Chrome Web Store
-    needs: build-release
-    runs-on: ubuntu-latest
-    if: \${{ github.event_name == 'push' || inputs.publish_stores == true }}
-    steps:
-      - name: Download Chrome ZIP artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: upkeep-release-zips
-          path: release-bundle
-
-      - name: Check Chrome Web Store secrets
-        id: check_chrome
-        env:
-          CHROME_EXTENSION_ID: \${{ secrets.CHROME_EXTENSION_ID }}
-          CHROME_CLIENT_ID: \${{ secrets.CHROME_CLIENT_ID }}
-          CHROME_CLIENT_SECRET: \${{ secrets.CHROME_CLIENT_SECRET }}
-          CHROME_REFRESH_TOKEN: \${{ secrets.CHROME_REFRESH_TOKEN }}
-        run: |
-          if [ -n "$CHROME_EXTENSION_ID" ] && [ -n "$CHROME_CLIENT_ID" ] && [ -n "$CHROME_CLIENT_SECRET" ] && [ -n "$CHROME_REFRESH_TOKEN" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "Chrome Web Store secrets non configurés — étape ignorée."
-          fi
-
-      - name: Upload & publish to Chrome Web Store
-        if: steps.check_chrome.outputs.ready == 'true'
-        uses: mnao305/chrome-extension-upload@v5.0.0
-        with:
-          file-path: release-bundle/artifacts/upkeep-chrome-v\${{ needs.build-release.outputs.version }}.zip
-          extension-id: \${{ secrets.CHROME_EXTENSION_ID }}
-          client-id: \${{ secrets.CHROME_CLIENT_ID }}
-          client-secret: \${{ secrets.CHROME_CLIENT_SECRET }}
-          refresh-token: \${{ secrets.CHROME_REFRESH_TOKEN }}
-          publish: true
-
-  publish-firefox-amo:
-    name: Publish to Firefox Add-ons (AMO)
-    needs: build-release
-    runs-on: ubuntu-latest
-    if: \${{ github.event_name == 'push' || inputs.publish_stores == true }}
-    steps:
-      - name: Download Firefox bundle
-        uses: actions/download-artifact@v4
-        with:
-          name: upkeep-release-zips
-          path: release-bundle
-
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Check AMO secrets
+      - name: Check Mozilla AMO signing secrets
         id: check_amo
         env:
           AMO_JWT_ISSUER: \${{ secrets.AMO_JWT_ISSUER }}
@@ -447,19 +373,45 @@ jobs:
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "Secrets Firefox AMO non configurés — étape ignorée."
           fi
 
-      - name: Sign & submit to Mozilla AMO (listed)
-        if: steps.check_amo.outputs.ready == 'true'
+      - name: Sign Firefox add-on via Mozilla AMO (self-hosted unlisted .xpi)
+        if: steps.check_amo.outputs.ready == 'true' && (github.event_name == 'push' || inputs.publish_stores == true)
         env:
           WEB_EXT_API_KEY: \${{ secrets.AMO_JWT_ISSUER }}
           WEB_EXT_API_SECRET: \${{ secrets.AMO_JWT_SECRET }}
+          VERSION: \${{ steps.meta.outputs.version }}
         run: |
+          mkdir -p artifacts/amo-signed
           npx --yes web-ext sign \\
-            --source-dir release-bundle/dist-extension/firefox \\
-            --artifacts-dir release-bundle/amo-signed \\
-            --channel=listed
+            --source-dir dist-extension/firefox \\
+            --artifacts-dir artifacts/amo-signed \\
+            --channel=unlisted
+          SIGNED_XPI=$(find artifacts/amo-signed -maxdepth 1 -name '*.xpi' | head -n 1)
+          TARGET_XPI="artifacts/upkeep-firefox-v\${VERSION}.xpi"
+          cp "$SIGNED_XPI" "$TARGET_XPI"
+          SHA256=$(sha256sum "$TARGET_XPI" | awk '{print $1}')
+          node -e '
+            const fs = require("node:fs");
+            const p = "artifacts/updates.json";
+            const data = JSON.parse(fs.readFileSync(p, "utf8"));
+            data.addons["upkeep@lpauzies.dev"].updates[0].update_hash = "sha256:" + process.env.SHA256;
+            fs.writeFileSync(p, JSON.stringify(data, null, 2) + "\\n");
+          ' SHA256="$SHA256"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: \${{ steps.meta.outputs.tag }}
+          name: Upkeep \${{ steps.meta.outputs.tag }}
+          generate_release_notes: true
+          make_latest: true
+          fail_on_unmatched_files: false
+          files: |
+            artifacts/upkeep-firefox-v\${{ steps.meta.outputs.version }}.xpi
+            artifacts/updates.json
+            artifacts/upkeep-firefox-v\${{ steps.meta.outputs.version }}.zip
+            artifacts/upkeep-chrome-v\${{ steps.meta.outputs.version }}.zip
 `;
 }
 

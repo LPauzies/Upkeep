@@ -757,12 +757,12 @@
     if (shouldShow && gyDockMode === 'docked' && rightRail) {
       document.documentElement.dataset.upkeepGyDocked = 'true';
       const phaseBar = rightRail.querySelector('.wr-phase-bar');
-      if (dock.parentElement !== rightRail) {
-        if (phaseBar) {
-          rightRail.insertBefore(dock, phaseBar);
-        } else {
-          rightRail.appendChild(dock);
+      if (phaseBar) {
+        if (dock.parentElement !== rightRail || phaseBar.nextElementSibling !== dock) {
+          rightRail.insertBefore(dock, phaseBar.nextSibling);
         }
+      } else if (dock.parentElement !== rightRail) {
+        rightRail.appendChild(dock);
       }
     } else {
       document.documentElement.dataset.upkeepGyDocked = 'false';
@@ -1126,165 +1126,28 @@
   }
 
   // ==========================================================================
-  // HORIZONTAL CHRONOLOGICAL PHASE TIMELINE ON BATTLEFIELD MIDLINE
+  // REAL ENDSTEP PHASE TRACKER: MIDLINE COORDINATE SYNC (ZERO FEATURE DELTA)
   // ==========================================================================
-  function ensurePhaseTimeline() {
-    let bar = document.getElementById('upkeep-phase-timeline');
-    if (!bar) {
-      bar = document.createElement('div');
-      bar.id = 'upkeep-phase-timeline';
-      bar.setAttribute('role', 'region');
-      bar.setAttribute('aria-label', 'Phase timeline (Upkeep)');
-      document.body.appendChild(bar);
-    }
-    return bar;
-  }
-
   function syncPhaseTimeline() {
     const root = document.documentElement;
     const nativePhaseBar = document.querySelector('aside.wr-rail-right .wr-phase-bar--vertical');
+    const nativeRail = nativePhaseBar?.querySelector('.wr-pb-rail');
     const midline = document.querySelector('.wr-main-col > [style*="--gradient-midline"]');
 
-    if (!config.enabled || !config.showMidlineTimeline || !isGameRoute() || !nativePhaseBar || !midline) {
+    if (!config.enabled || !config.showMidlineTimeline || !isGameRoute() || !nativePhaseBar || !nativeRail || !midline) {
       root.dataset.upkeepTimeline = 'false';
-      const existing = document.getElementById('upkeep-phase-timeline');
-      if (existing) existing.dataset.hidden = 'true';
       return;
     }
 
     root.dataset.upkeepTimeline = 'true';
-    const bar = ensurePhaseTimeline();
-    bar.dataset.hidden = 'false';
 
+    // Lock the REAL Endstep .wr-pb-rail pixel-for-pixel onto the reserved 36px battlefield midline
     const rect = midline.getBoundingClientRect();
     if (rect.width > 120 && rect.height >= 20) {
       root.style.setProperty('--upkeep-tl-left', `${Math.round(rect.left)}px`);
       root.style.setProperty('--upkeep-tl-top', `${Math.round(rect.top)}px`);
       root.style.setProperty('--upkeep-tl-width', `${Math.round(rect.width)}px`);
     }
-
-    const turnChip = nativePhaseBar.querySelector('.wr-turn-chip');
-    const turnOwner = turnChip?.getAttribute('data-live') === 'opp' ? 'opp' : 'mine';
-    const turnNum = (turnChip?.querySelector('.wr-turn-num')?.textContent || '').trim();
-    const stormNum = (turnChip?.querySelector('.wr-turn-storm-num')?.textContent || '').trim();
-    const priorityBadge = nativePhaseBar.querySelector('.wr-priority-badge');
-    const hasMyPriority = Boolean(priorityBadge && priorityBadge.classList.contains('wr-priority-badge-mine'));
-
-    const rail = nativePhaseBar.querySelector('.wr-pb-rail');
-    if (!rail) return;
-
-    const meta = document.createElement('div');
-    meta.className = 'upkeep-tl-meta';
-
-    const turnEl = document.createElement('span');
-    turnEl.className = `upkeep-tl-turn ${turnOwner === 'mine' ? 'upkeep-tl-turn--mine' : 'upkeep-tl-turn--opp'}`;
-    turnEl.textContent = `${turnOwner === 'mine' ? 'Your Turn' : 'Opp Turn'}${turnNum ? ` · ${turnNum}` : ''}`;
-    meta.appendChild(turnEl);
-
-    if (stormNum && stormNum !== '0') {
-      const stormEl = document.createElement('span');
-      stormEl.className = 'upkeep-tl-storm';
-      stormEl.textContent = `Storm ${stormNum}`;
-      meta.appendChild(stormEl);
-    }
-
-    if (hasMyPriority) {
-      const prioEl = document.createElement('span');
-      prioEl.className = 'upkeep-tl-priority';
-      prioEl.textContent = 'Priority';
-      meta.appendChild(prioEl);
-    }
-
-    const stepsWrap = document.createElement('div');
-    stepsWrap.className = 'upkeep-tl-steps';
-
-    const children = Array.from(rail.children);
-    for (const child of children) {
-      if (child.classList.contains('wr-pb-section')) {
-        const sep = document.createElement('span');
-        sep.className = 'upkeep-tl-sep';
-        sep.setAttribute('aria-hidden', 'true');
-        stepsWrap.appendChild(sep);
-        continue;
-      }
-
-      if (!child.classList.contains('wr-pb')) continue;
-
-      const isPast = child.classList.contains('wr-pb--past');
-      const isCurrent = child.classList.contains('wr-pb--current');
-      const stepTurn = child.getAttribute('data-turn') === 'opp' ? 'opp' : 'mine';
-      const labelNode = child.querySelector('.wr-pb-now-name, .wr-pb-label');
-      const label = (labelNode?.textContent || '').trim();
-      const fullName = labelNode?.getAttribute('title') || label;
-
-      const mineBlade = child.querySelector('.wr-pb-blade--mine');
-      const oppBlade = child.querySelector('.wr-pb-blade--opp');
-      const stopMine = Boolean(
-        mineBlade && (mineBlade.getAttribute('aria-pressed') === 'true' || mineBlade.classList.contains('is-set'))
-      );
-      const stopOpp = Boolean(
-        oppBlade && (oppBlade.getAttribute('aria-pressed') === 'true' || oppBlade.classList.contains('is-set'))
-      );
-      const canToggle = Boolean(mineBlade || oppBlade);
-
-      const stepBtn = document.createElement('button');
-      stepBtn.type = 'button';
-      stepBtn.className =
-        'upkeep-tl-step' +
-        (isPast ? ' upkeep-tl-step--past' : '') +
-        (isCurrent ? ` upkeep-tl-step--current upkeep-tl-step--${stepTurn}` : '') +
-        (!canToggle ? ' upkeep-tl-step--readonly' : '');
-      stepBtn.textContent = label;
-      stepBtn.dataset.stopMine = stopMine ? 'true' : 'false';
-      stepBtn.dataset.stopOpp = stopOpp ? 'true' : 'false';
-
-      if (canToggle) {
-        stepBtn.title = `${fullName} — Left-click: toggle Your stop · Right-click: toggle Opp stop`;
-        stepBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          if (e.shiftKey && oppBlade) {
-            oppBlade.click();
-          } else if (mineBlade) {
-            mineBlade.click();
-          }
-        });
-        stepBtn.addEventListener('contextmenu', (e) => {
-          e.preventDefault();
-          if (oppBlade) oppBlade.click();
-        });
-      } else {
-        stepBtn.title = fullName;
-      }
-
-      stepsWrap.appendChild(stepBtn);
-    }
-
-    const legend = document.createElement('div');
-    legend.className = 'upkeep-tl-legend';
-    legend.setAttribute('aria-hidden', 'true');
-
-    const legMine = document.createElement('span');
-    legMine.className = 'upkeep-tl-legend-item';
-    const swMine = document.createElement('span');
-    swMine.className = 'upkeep-tl-swatch upkeep-tl-swatch--mine';
-    const txtMine = document.createElement('span');
-    txtMine.textContent = 'You';
-    legMine.appendChild(swMine);
-    legMine.appendChild(txtMine);
-
-    const legOpp = document.createElement('span');
-    legOpp.className = 'upkeep-tl-legend-item';
-    const swOpp = document.createElement('span');
-    swOpp.className = 'upkeep-tl-swatch upkeep-tl-swatch--opp';
-    const txtOpp = document.createElement('span');
-    txtOpp.textContent = 'Opp';
-    legOpp.appendChild(swOpp);
-    legOpp.appendChild(txtOpp);
-
-    legend.appendChild(legMine);
-    legend.appendChild(legOpp);
-
-    bar.replaceChildren(meta, stepsWrap, legend);
   }
 
   // ==========================================================================
@@ -1373,7 +1236,6 @@
     delete document.documentElement.dataset.upkeepPeekingGy;
     document.getElementById('upkeep-graveyards-dock')?.remove();
     document.getElementById('upkeep-card-zoom')?.remove();
-    document.getElementById('upkeep-phase-timeline')?.remove();
     document.querySelectorAll('.upkeep-life-delta').forEach((n) => n.remove());
     document.querySelectorAll('[data-upkeep-hidden-toast]').forEach((n) => {
       delete n.dataset.upkeepHiddenToast;

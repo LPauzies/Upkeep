@@ -23,8 +23,8 @@ jobs:
       - name: Build & validate Chrome and Firefox manifests
         run: npm run build:all
 
-      - name: Lint Firefox MV3 package with Mozilla web-ext
-        run: npx --yes web-ext lint --source-dir dist-extension/firefox --warnings-as-errors
+      - name: Lint Firefox MV3 package with Mozilla web-ext (self-hosted)
+        run: npx --yes web-ext lint --source-dir dist-extension/firefox --self-hosted --warnings-as-errors
 
       - name: Upload preview extension artifacts
         uses: actions/upload-artifact@v4

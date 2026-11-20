@@ -348,13 +348,21 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-banner {
   transform: none !important;
   margin: 0 !important;
   width: 100% !important;
+  min-height: 0 !important;
   height: auto !important;
-  padding: 5px 10px !important;
+  padding: 6px 10px !important;
   background: var(--upkeep-bg-elevated) !important;
+  background-image: none !important;
   border-bottom: 1px solid var(--upkeep-border) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: flex-start !important;
+}
+
+html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-banner::before,
+html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-banner::after {
+  display: none !important;
+  content: none !important;
 }
 
 html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-banner-svg {
@@ -371,12 +379,13 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-banner-lab
   text-transform: uppercase !important;
   color: var(--upkeep-gold) !important;
   text-shadow: none !important;
+  line-height: 1.2 !important;
 }
 
 html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-body {
   background: var(--upkeep-bg-surface) !important;
   background-image: none !important;
-  padding: 10px 10px 10px !important;
+  padding: 10px !important;
   border: none !important;
   box-shadow: none !important;
   color: var(--upkeep-text-primary) !important;
@@ -393,13 +402,26 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-title {
 }
 
 html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-message {
-  color: #c8d1e0 !important;
+  color: #d4dce9 !important;
   font-family: var(--upkeep-font-sans) !important;
   font-style: normal !important;
   font-size: 12px !important;
   font-weight: 400 !important;
   line-height: 1.35 !important;
   margin-top: 2px !important;
+  text-shadow: none !important;
+}
+
+/* Replace Endstep's unreadable dark-red parchment text (e.g., "CLICK TO SELECT") with high-contrast bright amber-gold */
+html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-body > *:not(.wr-ds-title):not(.wr-ds-message):not(.wr-ds-actions),
+html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-body > *:not(.wr-ds-title):not(.wr-ds-message):not(.wr-ds-actions) *,
+html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="hint"],
+html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="prompt"],
+html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="cue"],
+html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="status"] {
+  color: #f3c969 !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
   text-shadow: none !important;
 }
 
@@ -412,8 +434,10 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions bu
   border: 1px solid rgba(201, 164, 92, 0.55) !important;
   color: #ffffff !important;
   font-family: var(--upkeep-font-sans) !important;
+  font-size: 11px !important;
   font-weight: 700 !important;
-  letter-spacing: 0.08em !important;
+  letter-spacing: 0.04em !important;
+  padding: 7px 8px !important;
   border-radius: 5px !important;
   box-shadow: none !important;
 }
@@ -421,6 +445,12 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions bu
 html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions button:hover {
   background: #2c3850 !important;
   border-color: var(--upkeep-gold) !important;
+}
+
+html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions button .overflow-label {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
 }
 
 html[data-upkeep-active="true"] [data-zone="decision-surface"] [data-testid="kcap"] {
@@ -443,7 +473,7 @@ html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button:ho
 }
 
 /* ============================================================================
- * 4. FLOATING MODALS & "THE STACK" (OBSIDIAN SLATE + DEFAULT TOP-LEFT OF BOARD)
+ * 4. FLOATING MODALS, CONTEXT MENUS & "THE STACK" (OBSIDIAN SLATE & GOLD)
  * ============================================================================ */
 
 html[data-upkeep-active="true"] [data-upkeep-panel="stack"],
@@ -458,6 +488,22 @@ html[data-upkeep-active="true"] [role="menu"] {
   border-radius: 8px !important;
   color: var(--upkeep-text-primary) !important;
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.65) !important;
+}
+
+html[data-upkeep-active="true"] [role="menu"] [role="menuitem"],
+html[data-upkeep-active="true"] [role="menu"] [role="menuitemcheckbox"],
+html[data-upkeep-active="true"] [role="menu"] [role="menuitemradio"],
+html[data-upkeep-active="true"] [role="menu"] button {
+  color: var(--upkeep-text-primary) !important;
+  font-family: var(--upkeep-font-sans) !important;
+}
+
+html[data-upkeep-active="true"] [role="menu"] [role="menuitem"]:hover,
+html[data-upkeep-active="true"] [role="menu"] [role="menuitemcheckbox"]:hover,
+html[data-upkeep-active="true"] [role="menu"] [role="menuitemradio"]:hover,
+html[data-upkeep-active="true"] [role="menu"] button:hover {
+  background: var(--upkeep-bg-hover) !important;
+  color: #ffffff !important;
 }
 
 /* Titlebars inside The Stack & dialogs */
@@ -561,17 +607,17 @@ html[data-upkeep-active="true"] [data-gamelog-panel] .gl-card-name {
 }
 
 /* ============================================================================
- * 6. RIGHT RAIL: DUAL LIVE GRAVEYARDS (OPPONENT + YOURS) AS COLLAPSIBLE LISTS
- *    (Vertical phase bar is completely removed when midline timeline is active)
+ * 6. RIGHT RAIL: COMPACT TURN/PRIORITY HEADER + DUAL LIVE GRAVEYARDS
+ *    (Real Endstep .wr-pb-rail moves onto the battlefield midline via CSS fixed)
  * ============================================================================ */
 
 html[data-upkeep-active="true"] aside.wr-rail-right {
   gap: 6px !important;
   padding-top: 4px !important;
-}
-
-html[data-upkeep-active="true"][data-upkeep-timeline="true"] aside.wr-rail-right .wr-phase-bar--vertical {
-  display: none !important;
+  transform: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  contain: none !important;
 }
 
 html[data-upkeep-active="true"] aside.wr-rail-right button[data-testid="reveals-button"] {
@@ -987,7 +1033,10 @@ html[data-upkeep-active="true"][data-upkeep-hide-toasts="true"] [data-upkeep-hid
 }
 
 /* ============================================================================
- * 10. HORIZONTAL BATTLEFIELD MIDLINE CHRONOLOGICAL PHASE BAR
+ * 10. REAL ENDSTEP PHASE TRACKER:
+ *     - Turn / Storm / Active Player / Priority stay compact at top of right rail
+ *     - Real interactive .wr-pb-rail sits horizontally on the battlefield midline
+ *       (100% native click, right-click yield popup, stops, tooltips, zero delta)
  * ============================================================================ */
 
 html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-main-col > [style*="--gradient-midline"] {
@@ -998,214 +1047,304 @@ html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-main-col > [sty
   flex-shrink: 0 !important;
 }
 
-#upkeep-phase-timeline {
-  position: fixed;
-  left: var(--upkeep-tl-left, 278px);
-  top: var(--upkeep-tl-top, 380px);
-  width: var(--upkeep-tl-width, 800px);
-  height: 36px;
-  z-index: 32;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 10px;
-  box-sizing: border-box;
-  background: #121722;
-  border-top: 1px solid rgba(201, 164, 92, 0.28);
-  border-bottom: 1px solid rgba(201, 164, 92, 0.28);
-  font-family: var(--upkeep-font-sans);
-  color: var(--upkeep-text-primary);
-  user-select: none;
+/* Compact Turn & Priority Card at Top of Right Rail */
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] aside.wr-rail-right .wr-phase-bar--vertical {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+  flex: 0 0 auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: 8px 9px !important;
+  margin: 0 6px !important;
+  background: var(--upkeep-bg-surface) !important;
+  background-image: none !important;
+  border: 1px solid var(--upkeep-gold-soft) !important;
+  border-radius: 7px !important;
+  overflow: visible !important;
+  transform: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  contain: none !important;
+  will-change: auto !important;
 }
 
-#upkeep-phase-timeline[data-hidden="true"] {
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] aside.wr-rail-right .wr-phase-bar--vertical[data-turn="opp"] {
+  border-color: rgba(124, 174, 230, 0.42) !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] aside.wr-rail-right .wr-turn-chip {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 3px 6px !important;
+  padding: 5px 8px !important;
+  margin: 0 !important;
+  border-radius: 5px !important;
+  background: var(--upkeep-bg-elevated) !important;
+  background-image: none !important;
+  border: 1px solid var(--upkeep-border) !important;
+  box-shadow: none !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] aside.wr-rail-right .wr-turn-owner {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  color: var(--upkeep-gold) !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] aside.wr-rail-right .wr-turn-chip[data-live="opp"] .wr-turn-owner {
+  color: #8cbef5 !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] aside.wr-rail-right .wr-turn-meta {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  font-variant-numeric: tabular-nums !important;
+  color: var(--upkeep-text-primary) !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] aside.wr-rail-right .wr-turn-sep {
   display: none !important;
 }
 
-.upkeep-tl-meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-  padding-right: 8px;
-  border-right: 1px solid var(--upkeep-border);
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] aside.wr-rail-right .wr-turn-player {
+  width: 100% !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: var(--upkeep-text-secondary) !important;
+  font-style: normal !important;
+  text-align: left !important;
+  margin-top: 1px !important;
 }
 
-.upkeep-tl-turn {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  font-variant-numeric: tabular-nums;
-  padding: 2px 7px;
-  border-radius: 4px;
-  white-space: nowrap;
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] aside.wr-rail-right .wr-priority-badge {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  padding: 4px 8px !important;
+  margin: 0 !important;
+  border-radius: 5px !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid var(--upkeep-border) !important;
+  color: var(--upkeep-text-muted) !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
 }
 
-.upkeep-tl-turn--mine {
-  background: rgba(201, 164, 92, 0.16);
-  border: 1px solid rgba(201, 164, 92, 0.45);
-  color: var(--upkeep-gold);
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] aside.wr-rail-right .wr-priority-badge.wr-priority-badge-mine {
+  background: rgba(201, 164, 92, 0.16) !important;
+  border-color: rgba(201, 164, 92, 0.5) !important;
+  color: var(--upkeep-gold) !important;
 }
 
-.upkeep-tl-turn--opp {
-  background: rgba(116, 168, 224, 0.16);
-  border: 1px solid rgba(116, 168, 224, 0.45);
-  color: #8cbef5;
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] aside.wr-rail-right .wr-phase-legend {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  padding: 1px 0 0 !important;
+  margin: 0 !important;
+  font-size: 9.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  color: var(--upkeep-text-muted) !important;
 }
 
-.upkeep-tl-storm {
-  font-size: 10px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--upkeep-text-secondary);
-  white-space: nowrap;
+/* Real Endstep .wr-pb-rail positioned horizontally along the battlefield midline */
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] aside.wr-rail-right .wr-phase-bar--vertical .wr-pb-rail {
+  position: fixed !important;
+  left: var(--upkeep-tl-left, 278px) !important;
+  top: var(--upkeep-tl-top, 380px) !important;
+  width: var(--upkeep-tl-width, 800px) !important;
+  height: 36px !important;
+  z-index: 32 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: stretch !important;
+  gap: 3px !important;
+  padding: 0 8px !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  background: #121722 !important;
+  border-top: 1px solid rgba(201, 164, 92, 0.28) !important;
+  border-bottom: 1px solid rgba(201, 164, 92, 0.28) !important;
+  overflow: visible !important;
+  user-select: none !important;
 }
 
-.upkeep-tl-priority {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #111620;
-  background: var(--upkeep-gold);
-  padding: 2px 6px;
-  border-radius: 3px;
-  white-space: nowrap;
+/* Section dividers (combat / main / ending) become crisp vertical hairlines */
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-section {
+  flex: 0 0 1px !important;
+  width: 1px !important;
+  min-width: 1px !important;
+  max-width: 1px !important;
+  height: 18px !important;
+  padding: 0 !important;
+  margin: 0 3px !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  color: transparent !important;
+  background: var(--upkeep-border-strong) !important;
+  border: none !important;
+  overflow: hidden !important;
 }
 
-.upkeep-tl-steps {
-  display: flex;
-  align-items: center;
-  flex: 1 1 auto;
-  min-width: 0;
-  gap: 3px;
-  height: 100%;
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-section::before,
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-section::after {
+  display: none !important;
 }
 
-.upkeep-tl-sep {
-  width: 1px;
-  height: 16px;
-  background: var(--upkeep-border-strong);
-  margin: 0 2px;
-  flex-shrink: 0;
+/* Each real chronological step inside .wr-pb-rail */
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb {
+  position: relative !important;
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  height: 26px !important;
+  min-height: 26px !important;
+  max-height: 26px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 4px !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  background-image: none !important;
+  border: 1px solid rgba(244, 246, 250, 0.07) !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+  transition: background-color 110ms ease, border-color 110ms ease !important;
 }
 
-.upkeep-tl-step {
-  position: relative;
-  flex: 1 1 0;
-  min-width: 0;
-  height: 24px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 3px;
-  border-radius: 4px;
-  border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.025);
-  color: var(--upkeep-text-secondary);
-  font-family: var(--upkeep-font-sans);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  cursor: pointer;
-  transition: background-color 110ms ease, border-color 110ms ease, color 110ms ease;
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb:hover {
+  border-color: var(--upkeep-border-strong) !important;
 }
 
-.upkeep-tl-step:hover {
-  background: var(--upkeep-bg-hover);
-  border-color: var(--upkeep-border-strong);
-  color: #ffffff;
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb--past {
+  background: transparent !important;
+  border-color: rgba(244, 246, 250, 0.04) !important;
 }
 
-.upkeep-tl-step--past {
-  color: #5e687a;
-  background: transparent;
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb--current[data-turn="mine"] {
+  flex: 1.25 1 0 !important;
+  background: rgba(201, 164, 92, 0.24) !important;
+  border-color: var(--upkeep-gold) !important;
+  box-shadow: 0 0 0 1px rgba(201, 164, 92, 0.28) !important;
 }
 
-.upkeep-tl-step--current.upkeep-tl-step--mine {
-  background: rgba(201, 164, 92, 0.24);
-  border-color: var(--upkeep-gold);
-  color: #ffffff;
-  font-weight: 700;
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb--current[data-turn="opp"] {
+  flex: 1.25 1 0 !important;
+  background: rgba(116, 168, 224, 0.24) !important;
+  border-color: #7caee6 !important;
+  box-shadow: 0 0 0 1px rgba(116, 168, 224, 0.28) !important;
 }
 
-.upkeep-tl-step--current.upkeep-tl-step--opp {
-  background: rgba(116, 168, 224, 0.24);
-  border-color: #7caee6;
-  color: #ffffff;
-  font-weight: 700;
+/* Hide decorative corner brackets & subtext inside horizontal step */
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-now-sub,
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-corner {
+  display: none !important;
 }
 
-.upkeep-tl-step--readonly {
-  cursor: default;
+/* Real interactive stop blades: left half = Your Turn (gold), right half = Opp Turn (blue) */
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade {
+  position: absolute !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: 50% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
+  clip-path: none !important;
+  opacity: 1 !important;
+  z-index: 2 !important;
+  cursor: pointer !important;
+  transition: background-color 110ms ease, box-shadow 110ms ease !important;
 }
 
-/* Interactive stop indicator bars (top = Your turn gold, bottom = Opp turn blue) */
-.upkeep-tl-step[data-stop-mine="true"]::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 3px;
-  right: 3px;
-  height: 2.5px;
-  border-radius: 0 0 2px 2px;
-  background: var(--upkeep-gold);
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade-face {
+  display: none !important;
 }
 
-.upkeep-tl-step[data-stop-opp="true"]::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 3px;
-  right: 3px;
-  height: 2.5px;
-  border-radius: 2px 2px 0 0;
-  background: #7caee6;
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--mine {
+  left: 0 !important;
+  right: auto !important;
 }
 
-.upkeep-tl-legend {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-  padding-left: 8px;
-  border-left: 1px solid var(--upkeep-border);
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--upkeep-text-muted);
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--mine:hover {
+  background: rgba(201, 164, 92, 0.22) !important;
 }
 
-.upkeep-tl-legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--mine.is-set,
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--mine[aria-pressed="true"] {
+  background: linear-gradient(180deg, rgba(201, 164, 92, 0.34) 0%, rgba(201, 164, 92, 0.12) 100%) !important;
+  box-shadow: inset 0 2.5px 0 var(--upkeep-gold) !important;
 }
 
-.upkeep-tl-swatch {
-  width: 7px;
-  height: 7px;
-  border-radius: 1.5px;
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--opp {
+  right: 0 !important;
+  left: auto !important;
 }
 
-.upkeep-tl-swatch--mine {
-  background: var(--upkeep-gold);
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--opp:hover {
+  background: rgba(124, 174, 230, 0.22) !important;
 }
 
-.upkeep-tl-swatch--opp {
-  background: #7caee6;
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--opp.is-set,
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--opp[aria-pressed="true"] {
+  background: linear-gradient(180deg, rgba(124, 174, 230, 0.12) 0%, rgba(124, 174, 230, 0.34) 100%) !important;
+  box-shadow: inset 0 -2.5px 0 #7caee6 !important;
 }
 
-@media (max-width: 1180px) {
-  .upkeep-tl-legend {
-    display: none;
-  }
+/* Centered step label — pointer-events: none so all clicks & right-clicks hit real blades/steps */
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-label,
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-now-name {
+  position: relative !important;
+  z-index: 3 !important;
+  pointer-events: none !important;
+  font-family: var(--upkeep-font-sans) !important;
+  font-style: normal !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.03em !important;
+  text-transform: uppercase !important;
+  color: var(--upkeep-text-secondary) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  padding: 0 3px !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6) !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb--past .wr-pb-label {
+  color: #6b7588 !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb--current .wr-pb-now-name,
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb--current .wr-pb-label {
+  color: #ffffff !important;
+  font-weight: 700 !important;
 }
 
 /* ============================================================================

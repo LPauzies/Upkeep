@@ -1,0 +1,34 @@
+name: Feature / UI Improvement
+description: Suggest an improvement, layout tweak, or new setting for Upkeep on endstep.cc
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area of the UI
+      options:
+        - Battlefield / Midline Phase Timeline
+        - Right Rail (Turn/Priority & Dual Graveyards)
+        - Left Rail (Player Plates, Game Log & Decision)
+        - Floating Modals (The Stack, Menus, Dialogs)
+        - Toolbar Popup / Settings / Shortcuts
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem or friction are you running into?
+      placeholder: "e.g. During combat, it's hard to see..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Improvement
+      description: Describe how you'd like it to look or behave. Feel free to attach a screenshot or mockup.
+    validations:
+      required: true

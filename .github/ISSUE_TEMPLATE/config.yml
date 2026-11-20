@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Latest Upkeep Releases (.xpi / .zip)
+    url: https://github.com/LPauzies/Upkeep/releases/latest
+    about: Check if a newer release already fixes your issue before opening a report.

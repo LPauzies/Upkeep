@@ -1,0 +1,83 @@
+name: Bug Report
+description: Report a visual glitch, broken interaction, or Endstep DOM change in Upkeep
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting an issue with **Upkeep** on `endstep.cc`.
+        Please fill in the details below so we can reproduce and fix it quickly.
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      options:
+        - Firefox (Desktop)
+        - Chrome
+        - Brave / Edge / Other Chromium
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Upkeep Version
+      description: Found in your browser's Extensions page or the GitHub Release you installed.
+      placeholder: "e.g. v1.0.12"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected Area
+      multiple: true
+      options:
+        - Horizontal Phase Timeline (midline)
+        - Turn / Priority header (top-right)
+        - Opponent Graveyard / Your Graveyard (right rail)
+        - Game Log (left rail)
+        - Decision Surface / Auto-Pass
+        - Player Plates (Life / Deck / Hand / GY / Exile / Targeting)
+        - The Stack / Floating Modals / Right-click Menus
+        - Toolbar Icon / Settings Popup (ON/OFF)
+        - Auto-update / Installation (.xpi / .zip)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the bug clearly, including what you expected to happen instead.
+      placeholder: "e.g. When right-clicking Main 2 on the midline phase bar, the yield menu did not appear..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: How can we trigger this during a match on endstep.cc?
+      placeholder: |
+        1. Start or join a game on endstep.cc/game/...
+        2. ...
+        3. Observe the issue.
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or DOM Snippet (optional)
+      description: Drag & drop screenshots directly here. If an Endstep UI update broke a selector, pasting the element's HTML helps a lot!
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Quick Checks
+      options:
+        - label: I tested with the latest GitHub Release of Upkeep.
+        - label: Turning Upkeep OFF in the toolbar popup restores normal Endstep behavior.
