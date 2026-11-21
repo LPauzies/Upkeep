@@ -3,7 +3,7 @@
   "name": "Upkeep",
   "short_name": "Upkeep",
   "version": "1.0.0",
-  "description": "Client-side UI overhaul for endstep.cc/game/*: dual live graveyards (opponent & yours), horizontal midline phase bar, docked game log, and crisp Helvetica typography without touching Magic cards.",
+  "description": "Client UI Extension for endstep",
   "homepage_url": "https://github.com/LPauzies/Upkeep",
   "permissions": ["storage"],
   "host_permissions": ["https://endstep.cc/*"],
