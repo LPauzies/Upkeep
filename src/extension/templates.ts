@@ -78,7 +78,6 @@ export function generateFirefoxManifest(config: UpkeepConfig): string {
       gecko: {
         id: 'upkeep@lpauzies.dev',
         strict_min_version: '142.0',
-        update_url: 'https://github.com/LPauzies/Upkeep/releases/latest/download/updates.json',
         data_collection_permissions: {
           required: ['none'],
         },

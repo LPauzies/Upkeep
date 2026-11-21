@@ -134,8 +134,8 @@ function validateManifest(manifest, target) {
   if (target === 'firefox') {
     const gecko = manifest.browser_specific_settings?.gecko;
     if (!gecko?.id) throw new Error('[firefox] browser_specific_settings.gecko.id manquant');
-    if (!gecko?.update_url || !gecko.update_url.startsWith('https://')) {
-      throw new Error('[firefox] browser_specific_settings.gecko.update_url (HTTPS) manquant');
+    if (gecko?.update_url && !gecko.update_url.startsWith('https://')) {
+      throw new Error('[firefox] browser_specific_settings.gecko.update_url doit utiliser HTTPS');
     }
     if (!gecko?.data_collection_permissions?.required) {
       throw new Error('[firefox] data_collection_permissions.required obligatoire pour AMO');
