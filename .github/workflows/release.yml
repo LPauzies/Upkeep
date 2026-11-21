@@ -1,15 +1,21 @@
-name: Release & Publish (GitHub Releases + Self-Hosted Firefox XPI)
+name: CD — Release & Publish (Manual / Tag Only)
 
 on:
   push:
-    branches:
-      - main
     tags:
       - 'v*'
   workflow_dispatch:
     inputs:
+      bump:
+        description: 'Incrément SemVer automatique depuis le dernier tag (ignoré si Version explicite renseignée)'
+        type: choice
+        default: 'patch'
+        options:
+          - patch
+          - minor
+          - major
       version:
-        description: 'Version explicite (ex: 1.1.0). Laisser vide pour auto-versioning 1.0.<run_number>'
+        description: 'Version explicite optionnelle (ex: 1.2.0 — laisser vide pour utiliser le bump ci-dessus)'
         required: false
         default: ''
       publish_stores:
@@ -29,8 +35,10 @@ jobs:
       tag: ${{ steps.meta.outputs.tag }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repository (with tags)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js 22
         uses: actions/setup-node@v4
@@ -46,8 +54,38 @@ jobs:
             RAW="${{ inputs.version }}"
             RAW="${RAW#v}"
           else
-            RAW="1.0.${GITHUB_RUN_NUMBER}"
+            LATEST_TAG=$(git tag --list 'v*' --sort=-v:refname | head -n 1)
+            if [[ -z "$LATEST_TAG" ]]; then
+              RAW="1.0.0"
+            else
+              BASE="${LATEST_TAG#v}"
+              IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE"
+              MAJOR=${MAJOR:-1}
+              MINOR=${MINOR:-0}
+              PATCH=${PATCH:-0}
+              case "${{ inputs.bump }}" in
+                major)
+                  MAJOR=$((MAJOR + 1))
+                  MINOR=0
+                  PATCH=0
+                  ;;
+                minor)
+                  MINOR=$((MINOR + 1))
+                  PATCH=0
+                  ;;
+                *)
+                  PATCH=$((PATCH + 1))
+                  ;;
+              esac
+              RAW="${MAJOR}.${MINOR}.${PATCH}"
+            fi
           fi
+
+          if [[ ! "$RAW" =~ ^[0-9]+(\.[0-9]+){1,3}$ ]]; then
+            echo "Erreur: version SemVer invalide '$RAW' (format attendu: X.Y.Z)"
+            exit 1
+          fi
+
           echo "version=${RAW}" >> "$GITHUB_OUTPUT"
           echo "tag=v${RAW}" >> "$GITHUB_OUTPUT"
           echo "Resolved release version: v${RAW}"
@@ -119,6 +157,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           name: Upkeep ${{ steps.meta.outputs.tag }}
           generate_release_notes: true
           make_latest: true
