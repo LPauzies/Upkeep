@@ -855,17 +855,38 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
               <div
                 className={`h-[184px] shrink-0 rounded-[7px] flex flex-col overflow-hidden ${
                   decisionMode === 'waiting'
-                    ? 'bg-[#151A24] border border-[rgba(242,238,230,0.09)] p-2.5'
+                    ? 'bg-[#151A24] border border-[rgba(242,238,230,0.14)]'
                     : 'bg-[#151A24] border border-[#C9A45C]/45 shadow-md'
                 }`}
+                style={
+                  decisionMode === 'waiting'
+                    ? {
+                        backgroundImage:
+                          'radial-gradient(ellipse at 50% 48%, rgba(201, 164, 92, 0.065) 0%, transparent 72%)',
+                      }
+                    : undefined
+                }
               >
                 {decisionMode === 'waiting' ? (
-                  <div className="space-y-1">
-                    <div className="text-[10px] font-bold tracking-[0.12em] text-[#C9A45C]">
-                      WAITING
+                  <>
+                    <div className="h-[28px] shrink-0 px-2.5 bg-[#1B2230] border-b border-[rgba(242,238,230,0.08)] flex items-center justify-between">
+                      <span className="text-[10px] font-bold tracking-[0.12em] text-[#A9B3C5]">
+                        WAITING
+                      </span>
                     </div>
-                    <div className="text-xs text-[#9CA3B2]">CACB is deciding.</div>
-                  </div>
+                    <div className="flex-1 min-h-0 px-4 py-4 flex flex-col items-center justify-center text-center gap-2">
+                      <span
+                        aria-hidden="true"
+                        className="w-6 h-6 rounded-full border-2 border-[#C9A45C]/20 border-t-[#C9A45C] animate-spin"
+                      />
+                      <div className="text-[13px] font-semibold text-[#F4F6FA] leading-snug">
+                        CACB is deciding.
+                      </div>
+                      <div className="text-[11px] text-[#7E889C] leading-tight">
+                        Opponent has priority
+                      </div>
+                    </div>
+                  </>
                 ) : (
                   <>
                     {/* Sleek 28px header bar (no 70px SVG bloat) */}

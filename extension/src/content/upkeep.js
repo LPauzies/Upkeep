@@ -1137,6 +1137,35 @@
     });
   }
 
+  function enhanceWaitingCard() {
+    const pendingGroup = document.querySelector('aside.wr-rail-left [aria-label="Pending actions"]');
+    if (!pendingGroup) return;
+    if (pendingGroup.querySelector('[data-zone="decision-surface"]')) return;
+
+    const stack = pendingGroup.firstElementChild || pendingGroup;
+    const candidates = Array.from(stack.children).filter(
+      (el) =>
+        el.getAttribute('aria-label') !== 'Pass priority shortcuts' &&
+        !el.hasAttribute('data-zone') &&
+        !el.querySelector('[aria-label="Pass priority shortcuts"]')
+    );
+
+    const waitingCard = candidates.find((el) => /\bwaiting\b/i.test((el.textContent || '').trim()));
+    if (!waitingCard) return;
+
+    waitingCard.dataset.upkeepWaiting = 'true';
+    const children = Array.from(waitingCard.children);
+    const headEl =
+      children.find((el) => /^waiting$/i.test((el.textContent || '').replace(/\s+/g, ' ').trim())) ||
+      children[0];
+    const msgEl =
+      children.find((el) => el !== headEl && /deciding|waiting|opponent/i.test(el.textContent || '')) ||
+      children[1];
+
+    if (headEl) headEl.dataset.upkeepWaitingHead = 'true';
+    if (msgEl) msgEl.dataset.upkeepWaitingMsg = 'true';
+  }
+
   function syncLogDockGeometry() {
     const root = document.documentElement;
     if (!config.enabled || !isGameRoute()) {
@@ -1442,6 +1471,15 @@
     document.querySelectorAll('[data-upkeep-ap-key]').forEach((n) => {
       delete n.dataset.upkeepApKey;
     });
+    document.querySelectorAll('[data-upkeep-waiting]').forEach((n) => {
+      delete n.dataset.upkeepWaiting;
+    });
+    document.querySelectorAll('[data-upkeep-waiting-head]').forEach((n) => {
+      delete n.dataset.upkeepWaitingHead;
+    });
+    document.querySelectorAll('[data-upkeep-waiting-msg]').forEach((n) => {
+      delete n.dataset.upkeepWaitingMsg;
+    });
   }
 
   function resetGameStateIfChanged() {
@@ -1469,6 +1507,7 @@
     syncTargetablePlayers();
     passiveScanOpenDialogs();
     enhanceAutoPassBar();
+    enhanceWaitingCard();
     syncLogDockGeometry();
     syncStackPanel();
     hideRightRailNotifications();

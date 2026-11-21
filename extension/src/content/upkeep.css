@@ -354,6 +354,7 @@ html[data-upkeep-active="true"] aside.wr-rail-left [aria-label="Pending actions"
 
 /* Lock BOTH Decision and Waiting boxes to the exact same fixed height so Game Log never jumps */
 html[data-upkeep-active="true"] aside.wr-rail-left [aria-label="Pending actions"] > div > :first-child:not([aria-label="Pass priority shortcuts"]),
+html[data-upkeep-active="true"] [data-upkeep-waiting="true"],
 html[data-upkeep-active="true"] [data-zone="decision-surface"] {
   height: var(--upkeep-ds-height, 248px) !important;
   min-height: var(--upkeep-ds-height, 248px) !important;
@@ -364,16 +365,103 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] {
   overflow: hidden !important;
   box-sizing: border-box !important;
   border-radius: 7px !important;
+  padding: 0 !important;
+  gap: 0 !important;
 }
 
-/* Waiting state card (matches Decision frame cleanly with muted slate border) */
-html[data-upkeep-active="true"] aside.wr-rail-left [aria-label="Pending actions"] > div > :first-child:not([data-zone="decision-surface"]):not([aria-label="Pass priority shortcuts"]) {
+/* Waiting state card (mirrors Decision anatomy: 28px header + calm centered status body) */
+html[data-upkeep-active="true"] aside.wr-rail-left [aria-label="Pending actions"] > div > :first-child:not([data-zone="decision-surface"]):not([aria-label="Pass priority shortcuts"]),
+html[data-upkeep-active="true"] [data-upkeep-waiting="true"] {
   background: var(--upkeep-bg-surface) !important;
-  background-image: none !important;
-  border: 1px solid var(--upkeep-border) !important;
-  padding: 10px 11px !important;
+  background-image: radial-gradient(ellipse at 50% 48%, rgba(201, 164, 92, 0.065) 0%, transparent 72%) !important;
+  border: 1px solid var(--upkeep-border-strong) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
   justify-content: flex-start !important;
-  gap: 4px !important;
+}
+
+/* Waiting 28px header bar (matches .wr-ds-banner pixel-for-pixel) */
+html[data-upkeep-active="true"] [data-upkeep-waiting="true"] [data-upkeep-waiting-head="true"],
+html[data-upkeep-active="true"] aside.wr-rail-left [aria-label="Pending actions"] > div > :first-child:not([data-zone="decision-surface"]):not([aria-label="Pass priority shortcuts"]) > :first-child {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  max-height: 28px !important;
+  flex: 0 0 28px !important;
+  margin: 0 !important;
+  padding: 0 10px !important;
+  box-sizing: border-box !important;
+  background: var(--upkeep-bg-elevated) !important;
+  border-bottom: 1px solid var(--upkeep-border) !important;
+  font-family: var(--upkeep-font-sans) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  color: var(--upkeep-text-secondary) !important;
+  line-height: 1 !important;
+}
+
+/* Waiting centered body with delicate gold activity ring + helper subtitle */
+html[data-upkeep-active="true"] [data-upkeep-waiting="true"] [data-upkeep-waiting-msg="true"],
+html[data-upkeep-active="true"] aside.wr-rail-left [aria-label="Pending actions"] > div > :first-child:not([data-zone="decision-surface"]):not([aria-label="Pass priority shortcuts"]) > :nth-child(2) {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 16px 18px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  text-align: center !important;
+  font-family: var(--upkeep-font-sans) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--upkeep-text-primary) !important;
+  line-height: 1.35 !important;
+}
+
+html[data-upkeep-active="true"] [data-upkeep-waiting="true"] [data-upkeep-waiting-msg="true"]::before,
+html[data-upkeep-active="true"] aside.wr-rail-left [aria-label="Pending actions"] > div > :first-child:not([data-zone="decision-surface"]):not([aria-label="Pass priority shortcuts"]) > :nth-child(2)::before {
+  content: '';
+  display: block;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid rgba(201, 164, 92, 0.18);
+  border-top-color: var(--upkeep-gold);
+  box-sizing: border-box;
+  margin-bottom: 2px;
+  animation: upkeep-wait-spin 1.6s linear infinite;
+}
+
+html[data-upkeep-active="true"] [data-upkeep-waiting="true"] [data-upkeep-waiting-msg="true"]::after,
+html[data-upkeep-active="true"] aside.wr-rail-left [aria-label="Pending actions"] > div > :first-child:not([data-zone="decision-surface"]):not([aria-label="Pass priority shortcuts"]) > :nth-child(2)::after {
+  content: 'Opponent has priority';
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: var(--upkeep-text-muted);
+  line-height: 1.2;
+}
+
+@keyframes upkeep-wait-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-upkeep-active="true"] [data-upkeep-waiting="true"] [data-upkeep-waiting-msg="true"]::before,
+  html[data-upkeep-active="true"] aside.wr-rail-left [aria-label="Pending actions"] > div > :first-child:not([data-zone="decision-surface"]):not([aria-label="Pass priority shortcuts"]) > :nth-child(2)::before {
+    animation: none;
+  }
 }
 
 html[data-upkeep-active="true"] [data-zone="decision-surface"] {
