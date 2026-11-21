@@ -70,14 +70,14 @@ export function ConfigView({ config, onChange }: ConfigViewProps) {
           <button
             type="button"
             onClick={handleCopyJson}
-            className="px-3.5 py-2 text-xs font-medium rounded-lg bg-[#151922] hover:bg-[#1C222E] text-[#F2EEE6] border border-[rgba(242,238,230,0.12)] transition-colors whitespace-nowrap cursor-pointer"
+            className="px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.06em] rounded-none bg-[#151922] hover:bg-[#1C222E] text-[#F2EEE6] border border-[rgba(242,238,230,0.16)] hover:border-[#C9A45C]/60 transition-colors whitespace-nowrap cursor-pointer"
           >
             Copier JSON
           </button>
           <button
             type="button"
             onClick={handleReset}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-lg bg-[#151922] hover:bg-[#1C222E] text-[#9CA3B2] hover:text-[#F2EEE6] border border-[rgba(242,238,230,0.12)] transition-colors whitespace-nowrap cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.06em] rounded-none bg-[#151922] hover:bg-[#1C222E] text-[#9CA3B2] hover:text-[#F2EEE6] border border-[rgba(242,238,230,0.16)] hover:border-[rgba(242,238,230,0.3)] transition-colors whitespace-nowrap cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             Réinitialiser
@@ -89,7 +89,7 @@ export function ConfigView({ config, onChange }: ConfigViewProps) {
         {/* LEFT COLUMN: Faithful Toolbar Popup Preview + Dimensions */}
         <div className="lg:col-span-5 space-y-6">
           {/* Interactive Miniature Chrome/Firefox Toolbar Popup (mirrors extension/src/popup/popup.html) */}
-          <div className="rounded-xl border border-[rgba(242,238,230,0.09)] bg-[#151922] p-6 space-y-4">
+          <div className="rounded-none border border-[rgba(242,238,230,0.12)] bg-[#151922] p-6 space-y-4">
             <div>
               <h2 className="font-display text-base font-semibold text-[#F2EEE6]">
                 Popup de la barre d’outils (interactif)
@@ -100,11 +100,11 @@ export function ConfigView({ config, onChange }: ConfigViewProps) {
               </p>
             </div>
 
-            <div className="max-w-[320px] mx-auto rounded-lg border border-[rgba(242,238,230,0.16)] bg-[#0F131B] overflow-hidden shadow-lg">
+            <div className="max-w-[320px] mx-auto rounded-none border border-[rgba(242,238,230,0.18)] bg-[#0F131B] overflow-hidden shadow-lg">
               {/* Popup Header */}
               <div className="flex items-center justify-between px-3.5 py-3 bg-[#151B26] border-b border-[rgba(242,238,230,0.09)]">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-6 h-6 rounded-[5px] bg-[#0E1116] border border-[#C9A45C] flex items-center justify-center font-display text-xs font-bold text-[#F2EEE6]">
+                  <div className="w-6 h-6 rounded-none bg-[#0E1116] border border-[#C9A45C] flex items-center justify-center font-display text-xs font-bold text-[#F2EEE6]">
                     U
                   </div>
                   <div>
@@ -119,13 +119,15 @@ export function ConfigView({ config, onChange }: ConfigViewProps) {
                   role="switch"
                   aria-checked={config.enabled}
                   onClick={() => updateField('enabled', !config.enabled)}
-                  className={`relative w-10 h-5 rounded-full transition-colors cursor-pointer ${
-                    config.enabled ? 'bg-[#C9A45C]' : 'bg-[#283142]'
+                  className={`relative w-10 h-5 rounded-none border transition-colors cursor-pointer ${
+                    config.enabled
+                      ? 'bg-[#C9A45C]/25 border-[#C9A45C]'
+                      : 'bg-[#1D2534] border-[rgba(242,238,230,0.18)]'
                   }`}
                 >
                   <span
-                    className={`absolute top-0.5 w-4 h-4 rounded-full bg-[#0E1116] transition-transform ${
-                      config.enabled ? 'left-[22px]' : 'left-0.5'
+                    className={`absolute top-[2px] w-3.5 h-3.5 rounded-none transition-all ${
+                      config.enabled ? 'left-[22px] bg-[#C9A45C]' : 'left-[2px] bg-[#7E889C]'
                     }`}
                   />
                 </button>
@@ -201,7 +203,7 @@ export function ConfigView({ config, onChange }: ConfigViewProps) {
           </div>
 
           {/* Rail Dimensions */}
-          <div className="rounded-xl border border-[rgba(242,238,230,0.09)] bg-[#151922] p-6 space-y-4">
+          <div className="rounded-none border border-[rgba(242,238,230,0.12)] bg-[#151922] p-6 space-y-4">
             <h2 className="font-display text-base font-semibold text-[#F2EEE6]">
               Dimensions des rails
             </h2>
@@ -240,7 +242,7 @@ export function ConfigView({ config, onChange }: ConfigViewProps) {
         </div>
 
         {/* RIGHT COLUMN: Resilient Endstep DOM Selector Editor */}
-        <div className="lg:col-span-7 rounded-xl border border-[rgba(242,238,230,0.09)] bg-[#151922] p-6 space-y-5">
+        <div className="lg:col-span-7 rounded-none border border-[rgba(242,238,230,0.12)] bg-[#151922] p-6 space-y-5">
           <div>
             <h2 className="font-display text-base font-semibold text-[#F2EEE6]">
               Sélecteurs CSS Endstep (fallback multi-sélecteurs)
@@ -273,9 +275,9 @@ export function ConfigView({ config, onChange }: ConfigViewProps) {
                     type="text"
                     value={value}
                     onChange={(e) => updateSelector(key, e.target.value)}
-                    className={`w-full rounded-md bg-[#0E1116] px-3 py-2 font-mono-tabular text-xs text-[#F2EEE6] border focus:outline-none ${
+                    className={`w-full rounded-none bg-[#0E1116] px-3 py-2 font-mono-tabular text-xs text-[#F2EEE6] border focus:outline-none ${
                       valid
-                        ? 'border-[rgba(242,238,230,0.12)] focus:border-[#C9A45C]'
+                        ? 'border-[rgba(242,238,230,0.14)] focus:border-[#C9A45C]'
                         : 'border-[#D9534F] focus:border-[#D9534F]'
                     }`}
                   />

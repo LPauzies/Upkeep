@@ -99,7 +99,7 @@ export default function App() {
               type="button"
               disabled={quickDownloading}
               onClick={handleQuickDownload}
-              className="px-4 py-2 text-xs font-semibold rounded-lg bg-[#C9A45C] hover:bg-[#DFBD78] text-[#0E1116] transition-colors whitespace-nowrap shrink-0 disabled:opacity-60 cursor-pointer"
+              className="px-4 py-2 text-[11px] font-bold uppercase tracking-[0.07em] rounded-none bg-[#C9A45C] hover:bg-[#DFBD78] text-[#0E1116] border border-[#DFBD78]/60 transition-colors whitespace-nowrap shrink-0 disabled:opacity-60 cursor-pointer"
             >
               {quickDownloading
                 ? 'Export...'

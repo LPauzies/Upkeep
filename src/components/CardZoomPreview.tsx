@@ -16,7 +16,7 @@ export function CardZoomPreview({ card, scale }: CardZoomPreviewProps) {
 
   return (
     <div
-      className="pointer-events-none fixed bottom-6 right-[304px] z-50 rounded-xl border border-[#C9A45C]/60 bg-[#151922] shadow-2xl overflow-hidden transition-opacity duration-150"
+      className="pointer-events-none fixed bottom-6 right-[304px] z-50 rounded-none border border-[#C9A45C]/60 bg-[#151922] shadow-2xl overflow-hidden transition-opacity duration-150"
       style={{ width: `${widthPx}px` }}
       role="tooltip"
       aria-label={`Aperçu de ${card.name}`}

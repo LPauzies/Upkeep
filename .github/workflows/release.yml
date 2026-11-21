@@ -18,8 +18,8 @@ on:
         description: 'Version explicite optionnelle (ex: 1.2.0 — laisser vide pour utiliser le bump ci-dessus)'
         required: false
         default: ''
-      publish_stores:
-        description: 'Signer sur Mozilla AMO (unlisted .xpi) et publier sur Chrome Web Store si les secrets sont configurés'
+      publish_chrome_store:
+        description: 'Publier sur le Chrome Web Store si les secrets sont configurés'
         type: boolean
         default: true
 
@@ -28,7 +28,7 @@ permissions:
 
 jobs:
   build-release:
-    name: Build, Sign Firefox XPI & Publish GitHub Release
+    name: Build & Publish GitHub Release
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.meta.outputs.version }}
@@ -90,68 +90,19 @@ jobs:
           echo "tag=v${RAW}" >> "$GITHUB_OUTPUT"
           echo "Resolved release version: v${RAW}"
 
-      - name: Build Chrome & Firefox MV3 packages + updates.json
+      - name: Build Chrome & Firefox MV3 packages
         run: node scripts/build-extension.mjs --target=all --version=${{ steps.meta.outputs.version }}
 
-      - name: Validate Firefox bundle with web-ext lint (self-hosted)
-        run: npx --yes web-ext lint --source-dir dist-extension/firefox --self-hosted --warnings-as-errors
+      - name: Validate Firefox bundle with web-ext lint (AMO listed)
+        run: npx --yes web-ext lint --source-dir dist-extension/firefox --warnings-as-errors
 
-      - name: Check Mozilla AMO signing secrets
-        id: check_amo
-        env:
-          AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
-          AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
-        run: |
-          if [ -n "$AMO_JWT_ISSUER" ] && [ -n "$AMO_JWT_SECRET" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "Secrets AMO_JWT_ISSUER / AMO_JWT_SECRET non configurés — le .zip Firefox + updates.json seront publiés dans la release."
-          fi
-
-      - name: Sign Firefox add-on via Mozilla AMO (self-hosted unlisted .xpi)
-        if: steps.check_amo.outputs.ready == 'true' && (github.event_name == 'push' || inputs.publish_stores == true)
-        env:
-          WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
-          WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
-          VERSION: ${{ steps.meta.outputs.version }}
-        run: |
-          mkdir -p artifacts/amo-signed
-          npx --yes web-ext sign \
-            --source-dir dist-extension/firefox \
-            --artifacts-dir artifacts/amo-signed \
-            --channel=unlisted
-
-          SIGNED_XPI=$(find artifacts/amo-signed -maxdepth 1 -name '*.xpi' | head -n 1)
-          if [ -z "$SIGNED_XPI" ]; then
-            echo "Erreur: aucun fichier .xpi généré par web-ext sign."
-            exit 1
-          fi
-
-          TARGET_XPI="artifacts/upkeep-firefox-v${VERSION}.xpi"
-          cp "$SIGNED_XPI" "$TARGET_XPI"
-          SHA256=$(sha256sum "$TARGET_XPI" | awk '{print $1}')
-
-          node -e '
-            const fs = require("node:fs");
-            const p = "artifacts/updates.json";
-            const data = JSON.parse(fs.readFileSync(p, "utf8"));
-            const entry = data.addons["upkeep-endstep@lpauzies.dev"].updates[0];
-            entry.update_hash = "sha256:" + process.env.SHA256;
-            fs.writeFileSync(p, JSON.stringify(data, null, 2) + "\n");
-          ' SHA256="$SHA256"
-
-          echo "Signed XPI ready: $TARGET_XPI (sha256:$SHA256)"
-
-      - name: Upload build artifacts for store deploy jobs
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: upkeep-release-zips
           path: |
             artifacts/upkeep-chrome-*.zip
             artifacts/upkeep-firefox-*.zip
-            artifacts/upkeep-firefox-*.xpi
-            artifacts/updates.json
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -161,10 +112,7 @@ jobs:
           name: Upkeep ${{ steps.meta.outputs.tag }}
           generate_release_notes: true
           make_latest: true
-          fail_on_unmatched_files: false
           files: |
-            artifacts/upkeep-firefox-v${{ steps.meta.outputs.version }}.xpi
-            artifacts/updates.json
             artifacts/upkeep-firefox-v${{ steps.meta.outputs.version }}.zip
             artifacts/upkeep-chrome-v${{ steps.meta.outputs.version }}.zip
 
@@ -172,7 +120,7 @@ jobs:
     name: Publish to Chrome Web Store
     needs: build-release
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' || inputs.publish_stores == true }}
+    if: ${{ github.event_name == 'push' || inputs.publish_chrome_store == true }}
     steps:
       - name: Download Chrome ZIP artifact
         uses: actions/download-artifact@v4
@@ -180,27 +128,45 @@ jobs:
           name: upkeep-release-zips
           path: release-bundle
 
-      - name: Check Chrome Web Store secrets
+      - name: Check Chrome Web Store secrets & archive path
         id: check_chrome
         env:
           CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
           CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
           CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
           CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
         run: |
-          if [ -n "$CHROME_EXTENSION_ID" ] && [ -n "$CHROME_CLIENT_ID" ] && [ -n "$CHROME_CLIENT_SECRET" ] && [ -n "$CHROME_REFRESH_TOKEN" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
+          MISSING=()
+          [ -z "$CHROME_EXTENSION_ID" ] && MISSING+=("CHROME_EXTENSION_ID")
+          [ -z "$CHROME_PUBLISHER_ID" ] && MISSING+=("CHROME_PUBLISHER_ID")
+          [ -z "$CHROME_CLIENT_ID" ] && MISSING+=("CHROME_CLIENT_ID")
+          [ -z "$CHROME_CLIENT_SECRET" ] && MISSING+=("CHROME_CLIENT_SECRET")
+          [ -z "$CHROME_REFRESH_TOKEN" ] && MISSING+=("CHROME_REFRESH_TOKEN")
+
+          if [ "${#MISSING[@]}" -gt 0 ]; then
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "Chrome Web Store secrets non configurés — étape ignorée."
+            echo "Chrome Web Store secrets manquants (${MISSING[*]}) — étape ignorée."
+            exit 0
           fi
 
-      - name: Upload & publish to Chrome Web Store
+          CHROME_ZIP=$(find release-bundle -type f -name "upkeep-chrome-v${{ needs.build-release.outputs.version }}.zip" | head -n 1)
+          if [ -z "$CHROME_ZIP" ]; then
+            echo "Erreur: archive upkeep-chrome-v${{ needs.build-release.outputs.version }}.zip introuvable dans release-bundle/"
+            find release-bundle -maxdepth 3 -ls
+            exit 1
+          fi
+
+          echo "zip_path=${CHROME_ZIP}" >> "$GITHUB_OUTPUT"
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+
+      - name: Upload & publish to Chrome Web Store (API v2)
         if: steps.check_chrome.outputs.ready == 'true'
-        uses: mnao305/chrome-extension-upload@v5.0.0
+        uses: mnao305/chrome-extension-upload@v7.0.0
         with:
-          file-path: release-bundle/artifacts/upkeep-chrome-v${{ needs.build-release.outputs.version }}.zip
+          file-path: ${{ steps.check_chrome.outputs.zip_path }}
           extension-id: ${{ secrets.CHROME_EXTENSION_ID }}
+          publisher-id: ${{ secrets.CHROME_PUBLISHER_ID }}
           client-id: ${{ secrets.CHROME_CLIENT_ID }}
           client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
           refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}

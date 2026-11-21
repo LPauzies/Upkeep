@@ -185,13 +185,13 @@ npm run lint:firefox
 ## 2. CI / CD GitHub Actions (LPauzies/Upkeep)
 
 - **CI (\`.github/workflows/ci.yml\`)** : exécutée sur \`main\` et chaque PR — build Chrome + Firefox et \`web-ext lint --warnings-as-errors\`.
-- **CD indépendante (\`.github/workflows/release.yml\`)** : déclenchée uniquement **à la main** (\`Actions → Run workflow\` avec bump \`patch\`/\`minor\`/\`major\` ou version explicite) ou sur push d'un tag \`v*\`. Génère les \`.zip\`, signe le \`.xpi\` si les secrets AMO sont configurés, puis publie la GitHub Release.
+- **CD indépendante (\`.github/workflows/release.yml\`)** : déclenchée uniquement **à la main** (\`Actions → Run workflow\` avec bump \`patch\`/\`minor\`/\`major\` ou version explicite) ou sur push d'un tag \`v*\`. Génère et valide les \`.zip\` Chrome et Firefox puis publie la GitHub Release (publication Chrome Web Store optionnelle si les secrets sont définis ; mise à jour Firefox AMO à la main depuis le \`.zip\` de la release).
 - **Templates d'issues (\`.github/ISSUE_TEMPLATE/\`)** : formulaires structurés pour signaler un bug ou proposer une fonctionnalité sur [github.com/LPauzies/Upkeep/issues](https://github.com/LPauzies/Upkeep/issues).
 
-| Store | Secrets GitHub Actions requis |
+| Store | Déploiement |
 | --- | --- |
-| **Chrome Web Store** | \`CHROME_EXTENSION_ID\`, \`CHROME_CLIENT_ID\`, \`CHROME_CLIENT_SECRET\`, \`CHROME_REFRESH_TOKEN\` |
-| **Firefox Add-ons (AMO)** | \`AMO_JWT_ISSUER\`, \`AMO_JWT_SECRET\` |
+| **Chrome Web Store** | Optionnel en CD (API v2) via \`CHROME_EXTENSION_ID\`, \`CHROME_PUBLISHER_ID\`, \`CHROME_CLIENT_ID\`, \`CHROME_CLIENT_SECRET\`, \`CHROME_REFRESH_TOKEN\` |
+| **Firefox Add-ons (AMO)** | Upload manuel du \`upkeep-firefox-v*.zip\` généré dans la GitHub Release |
 `;
 }
 

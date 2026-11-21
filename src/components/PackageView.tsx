@@ -66,7 +66,7 @@ export function PackageView({ config }: PackageViewProps) {
       {/* 3 Store-Ready Download Targets */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Chrome Web Store */}
-        <div className="rounded-xl border border-[rgba(242,238,230,0.1)] bg-[#151922] p-6 flex flex-col justify-between gap-6">
+        <div className="rounded-none border border-[rgba(242,238,230,0.12)] bg-[#151922] p-6 flex flex-col justify-between gap-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-lg font-semibold text-[#F2EEE6]">
@@ -95,7 +95,7 @@ export function PackageView({ config }: PackageViewProps) {
             type="button"
             disabled={busyTarget !== null}
             onClick={() => handleDownload('chrome')}
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#C9A45C] hover:bg-[#DFBD78] text-[#0E1116] text-xs font-semibold transition-colors disabled:opacity-60 cursor-pointer"
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-none bg-[#C9A45C] hover:bg-[#DFBD78] text-[#0E1116] border border-[#DFBD78]/60 text-[11px] font-bold uppercase tracking-[0.07em] transition-colors disabled:opacity-60 cursor-pointer"
           >
             <Download className="w-4 h-4" />
             <span>{busyTarget === 'chrome' ? 'Génération...' : 'Télécharger ZIP Chrome'}</span>
@@ -103,7 +103,7 @@ export function PackageView({ config }: PackageViewProps) {
         </div>
 
         {/* Firefox AMO */}
-        <div className="rounded-xl border border-[rgba(242,238,230,0.1)] bg-[#151922] p-6 flex flex-col justify-between gap-6">
+        <div className="rounded-none border border-[rgba(242,238,230,0.12)] bg-[#151922] p-6 flex flex-col justify-between gap-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-lg font-semibold text-[#F2EEE6]">
@@ -132,7 +132,7 @@ export function PackageView({ config }: PackageViewProps) {
             type="button"
             disabled={busyTarget !== null}
             onClick={() => handleDownload('firefox')}
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#1C222E] hover:bg-[#252D3D] text-[#F2EEE6] border border-[#C9A45C]/45 text-xs font-semibold transition-colors disabled:opacity-60 cursor-pointer"
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-none bg-[#1C222E] hover:bg-[#252D3D] text-[#F2EEE6] border border-[#C9A45C]/50 hover:border-[#C9A45C] text-[11px] font-bold uppercase tracking-[0.07em] transition-colors disabled:opacity-60 cursor-pointer"
           >
             <Package className="w-4 h-4 text-[#C9A45C]" />
             <span>{busyTarget === 'firefox' ? 'Génération...' : 'Télécharger ZIP Firefox'}</span>
@@ -140,7 +140,7 @@ export function PackageView({ config }: PackageViewProps) {
         </div>
 
         {/* Complete Git Repository Bundle */}
-        <div className="rounded-xl border border-[rgba(242,238,230,0.1)] bg-[#151922] p-6 flex flex-col justify-between gap-6">
+        <div className="rounded-none border border-[rgba(242,238,230,0.12)] bg-[#151922] p-6 flex flex-col justify-between gap-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-lg font-semibold text-[#F2EEE6]">
@@ -187,7 +187,7 @@ export function PackageView({ config }: PackageViewProps) {
             type="button"
             disabled={busyTarget !== null}
             onClick={() => handleDownload('repo')}
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#1C222E] hover:bg-[#252D3D] text-[#F2EEE6] border border-[rgba(242,238,230,0.16)] text-xs font-semibold transition-colors disabled:opacity-60 cursor-pointer"
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-none bg-[#1C222E] hover:bg-[#252D3D] text-[#F2EEE6] border border-[rgba(242,238,230,0.18)] hover:border-[rgba(242,238,230,0.34)] text-[11px] font-bold uppercase tracking-[0.07em] transition-colors disabled:opacity-60 cursor-pointer"
           >
             <GitBranch className="w-4 h-4 text-[#C9A45C]" />
             <span>
@@ -198,7 +198,7 @@ export function PackageView({ config }: PackageViewProps) {
       </div>
 
       {/* GitHub Actions Workflows & Secrets Table */}
-      <div className="rounded-xl border border-[rgba(242,238,230,0.09)] bg-[#151922] p-6 space-y-4">
+      <div className="rounded-none border border-[rgba(242,238,230,0.12)] bg-[#151922] p-6 space-y-4">
         <div>
           <h2 className="font-display text-base font-semibold text-[#F2EEE6]">
             Pipeline CI / CD &amp; Secrets GitHub Actions
@@ -226,8 +226,8 @@ export function PackageView({ config }: PackageViewProps) {
                   Chrome Web Store
                 </td>
                 <td className="py-3 pr-4 font-mono-tabular text-[#C9A45C]">
-                  CHROME_EXTENSION_ID · CHROME_CLIENT_ID · CHROME_CLIENT_SECRET ·
-                  CHROME_REFRESH_TOKEN
+                  CHROME_EXTENSION_ID · CHROME_PUBLISHER_ID · CHROME_CLIENT_ID ·
+                  CHROME_CLIENT_SECRET · CHROME_REFRESH_TOKEN
                 </td>
                 <td className="py-3 text-[#9CA3B2] whitespace-nowrap">
                   Manuel (<span className="font-mono-tabular text-[#D8D3C9]">workflow_dispatch</span>
@@ -238,12 +238,14 @@ export function PackageView({ config }: PackageViewProps) {
                 <td className="py-3 pr-4 font-medium text-[#F2EEE6] whitespace-nowrap">
                   Firefox Add-ons (AMO)
                 </td>
-                <td className="py-3 pr-4 font-mono-tabular text-[#C9A45C]">
-                  AMO_JWT_ISSUER · AMO_JWT_SECRET
+                <td className="py-3 pr-4 text-[#9CA3B2]">
+                  Aucun secret requis — upload manuel du{' '}
+                  <span className="font-mono-tabular text-[#D8D3C9]">upkeep-firefox-v*.zip</span>{' '}
+                  depuis la GitHub Release
                 </td>
                 <td className="py-3 text-[#9CA3B2] whitespace-nowrap">
-                  Manuel (<span className="font-mono-tabular text-[#D8D3C9]">workflow_dispatch</span>
-                  ) ou tag <span className="font-mono-tabular text-[#D8D3C9]">v*</span>
+                  Validation <span className="font-mono-tabular text-[#D8D3C9]">web-ext lint</span>{' '}
+                  auto en CI/CD
                 </td>
               </tr>
             </tbody>
@@ -252,7 +254,7 @@ export function PackageView({ config }: PackageViewProps) {
       </div>
 
       {/* Live Source Code & Workflow Inspector */}
-      <div className="rounded-xl border border-[rgba(242,238,230,0.09)] bg-[#151922] overflow-hidden">
+      <div className="rounded-none border border-[rgba(242,238,230,0.12)] bg-[#151922] overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 border-b border-[rgba(242,238,230,0.08)]">
           <div className="flex items-center gap-2 min-w-0">
             <FileCode2 className="w-4 h-4 text-[#C9A45C] shrink-0" />
@@ -268,7 +270,7 @@ export function PackageView({ config }: PackageViewProps) {
           <button
             type="button"
             onClick={handleCopyFile}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#1C222E] hover:bg-[#252D3D] text-xs font-medium text-[#F2EEE6] border border-[rgba(242,238,230,0.12)] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-none bg-[#1C222E] hover:bg-[#252D3D] text-[11px] font-bold uppercase tracking-[0.06em] text-[#F2EEE6] border border-[rgba(242,238,230,0.16)] hover:border-[#C9A45C]/60 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
             {copied ? (
               <Check className="w-3.5 h-3.5 text-[#3FA372]" />
@@ -286,10 +288,10 @@ export function PackageView({ config }: PackageViewProps) {
                 key={file.path}
                 type="button"
                 onClick={() => setSelectedPath(file.path)}
-                className={`w-full text-left px-3 py-2 rounded-md font-mono-tabular text-xs transition-colors truncate cursor-pointer ${
+                className={`w-full text-left px-3 py-2 rounded-none font-mono-tabular text-xs transition-colors truncate cursor-pointer border-l-2 ${
                   file.path === activeFile.path
-                    ? 'bg-[#1F2634] text-[#C9A45C] font-medium'
-                    : 'text-[#9CA3B2] hover:text-[#F2EEE6] hover:bg-[#171C27]'
+                    ? 'bg-[#1F2634] text-[#C9A45C] border-[#C9A45C] font-medium'
+                    : 'text-[#9CA3B2] border-transparent hover:text-[#F2EEE6] hover:bg-[#171C27]'
                 }`}
               >
                 {file.path}

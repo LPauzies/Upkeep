@@ -54,7 +54,7 @@
 
 .upkeep-scroll::-webkit-scrollbar-thumb {
   background: rgba(242, 238, 230, 0.14);
-  border-radius: 3px;
+  border-radius: 0;
 }
 
 .upkeep-scroll::-webkit-scrollbar-thumb:hover {

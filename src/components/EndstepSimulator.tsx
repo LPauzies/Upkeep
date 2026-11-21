@@ -526,7 +526,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
             type="button"
             disabled={downloading !== null}
             onClick={() => quickDownload('chrome')}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#C9A45C] hover:bg-[#DFBD78] text-[#0E1116] text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer disabled:opacity-60"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-none bg-[#C9A45C] hover:bg-[#DFBD78] text-[#0E1116] border border-[#DFBD78]/60 text-[11px] font-bold uppercase tracking-[0.07em] transition-colors whitespace-nowrap cursor-pointer disabled:opacity-60"
           >
             <Download className="w-3.5 h-3.5" />
             <span>{downloading === 'chrome' ? 'Build...' : 'ZIP Chrome (MV3)'}</span>
@@ -535,7 +535,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
             type="button"
             disabled={downloading !== null}
             onClick={() => quickDownload('firefox')}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#181D27] hover:bg-[#232A38] text-[#F2EEE6] border border-[#C9A45C]/40 text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer disabled:opacity-60"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-none bg-[#181D27] hover:bg-[#232A38] text-[#F2EEE6] border border-[#C9A45C]/50 hover:border-[#C9A45C] text-[11px] font-bold uppercase tracking-[0.07em] transition-colors whitespace-nowrap cursor-pointer disabled:opacity-60"
           >
             <Package className="w-3.5 h-3.5 text-[#C9A45C]" />
             <span>{downloading === 'firefox' ? 'Build...' : 'ZIP Firefox (AMO)'}</span>
@@ -548,14 +548,14 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
         <div className="flex flex-wrap items-center gap-3">
           {/* Before / After toggle */}
           <div
-            className="inline-flex items-center p-1 rounded-lg bg-[#151922] border border-[rgba(242,238,230,0.1)]"
+            className="inline-flex items-center p-0.5 rounded-none bg-[#151922] border border-[rgba(242,238,230,0.14)]"
             role="group"
             aria-label="Basculer l'injection CSS/JS Upkeep"
           >
             <button
               type="button"
               onClick={() => setExtensionActive(true)}
-              className={`px-3.5 py-1.5 text-xs font-semibold rounded-md transition-colors whitespace-nowrap cursor-pointer ${
+              className={`px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.06em] rounded-none transition-colors whitespace-nowrap cursor-pointer ${
                 extensionActive
                   ? 'bg-[#C9A45C] text-[#0E1116]'
                   : 'text-[#9CA3B2] hover:text-[#F2EEE6]'
@@ -566,7 +566,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
             <button
               type="button"
               onClick={() => setExtensionActive(false)}
-              className={`px-3.5 py-1.5 text-xs font-semibold rounded-md transition-colors whitespace-nowrap cursor-pointer ${
+              className={`px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.06em] rounded-none transition-colors whitespace-nowrap cursor-pointer ${
                 !extensionActive
                   ? 'bg-[#26211B] text-[#F2EEE6]'
                   : 'text-[#9CA3B2] hover:text-[#F2EEE6]'
@@ -578,7 +578,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
 
           {/* Decision state switcher (proves ZERO Game Log jump) */}
           <div
-            className="inline-flex items-center p-1 rounded-lg bg-[#151922] border border-[rgba(242,238,230,0.1)]"
+            className="inline-flex items-center p-0.5 rounded-none bg-[#151922] border border-[rgba(242,238,230,0.14)]"
             role="group"
             aria-label="Tester la hauteur fixe Decision / Waiting"
           >
@@ -593,7 +593,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                 key={mode}
                 type="button"
                 onClick={() => setDecisionMode(mode)}
-                className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer ${
+                className={`px-2.5 py-1.5 text-[10.5px] font-bold uppercase tracking-[0.05em] rounded-none transition-colors whitespace-nowrap cursor-pointer ${
                   decisionMode === mode
                     ? 'bg-[#222B3B] text-[#F3C969]'
                     : 'text-[#9CA3B2] hover:text-[#F2EEE6]'
@@ -610,24 +610,24 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
           <button
             type="button"
             onClick={triggerOpponentSpell}
-            className="px-3 py-1.5 text-xs font-medium rounded-md bg-[#151922] hover:bg-[#1E2432] text-[#F2EEE6] border border-[rgba(242,238,230,0.12)] whitespace-nowrap cursor-pointer"
+            className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] rounded-none bg-[#151922] hover:bg-[#1E2432] text-[#F2EEE6] border border-[rgba(242,238,230,0.16)] hover:border-[#C9A45C]/60 whitespace-nowrap cursor-pointer transition-colors"
           >
             + Cimetière adv.
           </button>
           <button
             type="button"
             onClick={triggerSelfSpell}
-            className="px-3 py-1.5 text-xs font-medium rounded-md bg-[#151922] hover:bg-[#1E2432] text-[#F2EEE6] border border-[rgba(242,238,230,0.12)] whitespace-nowrap cursor-pointer"
+            className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] rounded-none bg-[#151922] hover:bg-[#1E2432] text-[#F2EEE6] border border-[rgba(242,238,230,0.16)] hover:border-[#C9A45C]/60 whitespace-nowrap cursor-pointer transition-colors"
           >
             + Mon cimetière
           </button>
           <button
             type="button"
             onClick={() => setShowStack((v) => !v)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border whitespace-nowrap cursor-pointer transition-colors ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] rounded-none border whitespace-nowrap cursor-pointer transition-colors ${
               showStack
-                ? 'bg-[#C9A45C]/15 border-[#C9A45C]/50 text-[#C9A45C]'
-                : 'bg-[#151922] hover:bg-[#1E2432] text-[#F2EEE6] border-[rgba(242,238,230,0.12)]'
+                ? 'bg-[#C9A45C]/15 border-[#C9A45C] text-[#C9A45C]'
+                : 'bg-[#151922] hover:bg-[#1E2432] text-[#F2EEE6] border-[rgba(242,238,230,0.16)] hover:border-[#C9A45C]/60'
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
@@ -636,7 +636,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
           <button
             type="button"
             onClick={triggerLifeLoss}
-            className="px-3 py-1.5 text-xs font-medium rounded-md bg-[#151922] hover:bg-[#1E2432] text-[#F2EEE6] border border-[rgba(242,238,230,0.12)] whitespace-nowrap cursor-pointer"
+            className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] rounded-none bg-[#151922] hover:bg-[#1E2432] text-[#F2EEE6] border border-[rgba(242,238,230,0.16)] hover:border-[#C9A45C]/60 whitespace-nowrap cursor-pointer transition-colors"
           >
             -3 PV adv.
           </button>
@@ -644,7 +644,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
             type="button"
             onClick={resetDemo}
             aria-label="Réinitialiser l'aperçu"
-            className="p-1.5 rounded-md bg-[#151922] hover:bg-[#1E2432] text-[#9CA3B2] hover:text-[#F2EEE6] border border-[rgba(242,238,230,0.12)] cursor-pointer"
+            className="p-1.5 rounded-none bg-[#151922] hover:bg-[#1E2432] text-[#9CA3B2] hover:text-[#F2EEE6] border border-[rgba(242,238,230,0.16)] hover:border-[rgba(242,238,230,0.32)] cursor-pointer transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
@@ -652,7 +652,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
       </div>
 
       {/* Simulated Browser Viewport */}
-      <div className="rounded-xl border border-[rgba(242,238,230,0.14)] overflow-hidden shadow-2xl">
+      <div className="rounded-none border border-[rgba(242,238,230,0.16)] overflow-hidden shadow-2xl">
         {/* Browser Chrome Bar */}
         <div className="flex items-center justify-between gap-4 px-4 py-2 bg-[#11141B] border-b border-[rgba(242,238,230,0.08)] text-xs">
           <span className="font-mono-tabular text-[#D8D3C9] truncate">
@@ -661,10 +661,10 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
           <button
             type="button"
             onClick={() => setExtensionActive((v) => !v)}
-            className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-md border text-[11px] font-medium whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+            className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-none border text-[11px] font-semibold tracking-wide whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
               extensionActive
-                ? 'bg-[#C9A45C]/15 border-[#C9A45C]/50 text-[#C9A45C]'
-                : 'bg-[#181C24] border-[rgba(242,238,230,0.12)] text-[#9CA3B2]'
+                ? 'bg-[#C9A45C]/15 border-[#C9A45C]/60 text-[#C9A45C]'
+                : 'bg-[#181C24] border-[rgba(242,238,230,0.16)] text-[#9CA3B2]'
             }`}
           >
             <span className="font-display font-bold">U</span>
@@ -695,7 +695,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
             <div
               className={
                 extensionActive
-                  ? 'rounded-[7px] bg-[#151A24] border border-[rgba(242,238,230,0.09)] p-2.5 shrink-0'
+                  ? 'rounded-none bg-[#151A24] border border-[rgba(242,238,230,0.1)] p-2.5 shrink-0'
                   : 'p-3 border-b border-[#292118] shrink-0'
               }
             >
@@ -726,13 +726,13 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                       LIFE
                     </span>
                     {oppDelta !== null && (
-                      <span className="font-mono-tabular text-[11px] font-bold px-1.5 py-0.5 rounded bg-[#E05A5A]/15 text-[#F07878]">
+                      <span className="font-mono-tabular text-[11px] font-bold px-1.5 py-0.5 rounded-none bg-[#E05A5A]/15 text-[#F07878]">
                         {oppDelta}
                       </span>
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-1.5">
-                    <div className="flex items-center justify-between px-2 py-1 rounded bg-[#10141D] border border-[rgba(242,238,230,0.07)]">
+                    <div className="flex items-center justify-between px-2 py-1 rounded-none bg-[#10141D] border border-[rgba(242,238,230,0.08)]">
                       <span className="font-mono-tabular text-xs font-bold text-[#F4F6FA]">
                         {oppLib}
                       </span>
@@ -740,7 +740,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                         DECK
                       </span>
                     </div>
-                    <div className="flex items-center justify-between px-2 py-1 rounded bg-[#10141D] border border-[rgba(242,238,230,0.07)]">
+                    <div className="flex items-center justify-between px-2 py-1 rounded-none bg-[#10141D] border border-[rgba(242,238,230,0.08)]">
                       <span className="font-mono-tabular text-xs font-bold text-[#F4F6FA]">
                         {oppHand}
                       </span>
@@ -748,7 +748,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                         HAND
                       </span>
                     </div>
-                    <div className="flex items-center justify-between px-2 py-1 rounded bg-[#C9A45C]/12 border border-[#C9A45C]/35">
+                    <div className="flex items-center justify-between px-2 py-1 rounded-none bg-[#C9A45C]/12 border border-[#C9A45C]/35">
                       <span className="font-mono-tabular text-xs font-bold text-[#C9A45C]">
                         {oppGy.length}
                       </span>
@@ -756,7 +756,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                         GRAVEYARD
                       </span>
                     </div>
-                    <div className="flex items-center justify-between px-2 py-1 rounded bg-[#10141D] border border-[rgba(242,238,230,0.07)]">
+                    <div className="flex items-center justify-between px-2 py-1 rounded-none bg-[#10141D] border border-[rgba(242,238,230,0.08)]">
                       <span className="font-mono-tabular text-xs font-bold text-[#F4F6FA]">0</span>
                       <span className="text-[9px] font-semibold tracking-wide text-[#7E889C]">
                         EXILE
@@ -799,7 +799,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
 
             {/* 2. DOCKED GAME LOG (STRICTLY FIXED HEIGHT IN UPKEEP, COLLAPSED TAB IN NATIVE) */}
             {extensionActive && config.autoOpenLogsLeft ? (
-              <div className="flex-1 min-h-0 rounded-[7px] bg-[#151A24] border border-[#C9A45C]/35 flex flex-col overflow-hidden">
+              <div className="flex-1 min-h-0 rounded-none bg-[#151A24] border border-[#C9A45C]/35 flex flex-col overflow-hidden">
                 <div className="px-2.5 py-1.5 bg-[#1B2230] border-b border-[rgba(242,238,230,0.08)] flex items-center justify-between shrink-0">
                   <span className="text-xs font-bold text-[#F4F6FA]">Game Log</span>
                   <span className="font-mono-tabular text-[10px] text-[#8E98AC]">
@@ -853,7 +853,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
             {/* 3. FIXED-HEIGHT DECISION / WAITING SLOT (184px fixed in Upkeep vs jumping in Original) */}
             {extensionActive ? (
               <div
-                className={`h-[184px] shrink-0 rounded-[7px] flex flex-col overflow-hidden ${
+                className={`h-[184px] shrink-0 rounded-none flex flex-col overflow-hidden ${
                   decisionMode === 'waiting'
                     ? 'bg-[#151A24] border border-[rgba(242,238,230,0.14)]'
                     : 'bg-[#151A24] border border-[#C9A45C]/45 shadow-md'
@@ -911,10 +911,10 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                             <button
                               type="button"
                               onClick={() => setDecisionMode('waiting')}
-                              className="w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded-[5px] bg-[#232D40] hover:bg-[#2C3850] border border-[#C9A45C]/55 text-[11px] font-bold tracking-wide text-white cursor-pointer"
+                              className="w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded-none bg-[#232D40] hover:bg-[#2C3850] border border-[#C9A45C]/55 hover:border-[#C9A45C] text-[11px] font-bold tracking-[0.06em] text-white cursor-pointer transition-colors"
                             >
                               <span>PASS PRIORITY</span>
-                              <span className="px-1.5 py-0.5 rounded bg-[#111620] border border-white/20 text-[9.5px] font-mono-tabular text-[#C9A45C]">
+                              <span className="px-1.5 py-0.5 rounded-none bg-[#111620] border border-white/20 text-[9.5px] font-mono-tabular text-[#C9A45C]">
                                 SPACE
                               </span>
                             </button>
@@ -938,7 +938,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                                 key={label}
                                 type="button"
                                 onClick={() => setDecisionMode('priority')}
-                                className="w-full px-2 py-1.5 rounded-[5px] bg-[#232D40] hover:bg-[#2C3850] border border-[#C9A45C]/55 text-[10.5px] font-bold tracking-wide text-white truncate cursor-pointer"
+                                className="w-full px-2 py-1.5 rounded-none bg-[#232D40] hover:bg-[#2C3850] border border-[#C9A45C]/55 hover:border-[#C9A45C] text-[10.5px] font-bold tracking-[0.06em] text-white truncate cursor-pointer transition-colors"
                               >
                                 {label}
                               </button>
@@ -987,11 +987,11 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                 {hoveredTooltipMeta && (
                   <div
                     role="tooltip"
-                    className="absolute bottom-[36px] left-0 right-0 z-40 px-2.5 py-2 rounded-md bg-[#0F141D] border border-[#C9A45C]/50 shadow-xl pointer-events-none"
+                    className="absolute bottom-[36px] left-0 right-0 z-40 px-2.5 py-2 rounded-none bg-[#0F141D] border border-[#C9A45C]/50 shadow-xl pointer-events-none"
                   >
                     <div className="flex items-center justify-between gap-2 text-[10.5px] font-bold tracking-wide uppercase text-[#C9A45C]">
                       <span>{hoveredTooltipMeta.full}</span>
-                      <span className="px-1.5 py-0.5 rounded bg-[#111620] border border-white/20 font-mono-tabular text-[9.5px] text-white">
+                      <span className="px-1.5 py-0.5 rounded-none bg-[#111620] border border-white/20 font-mono-tabular text-[9.5px] text-white">
                         {hoveredTooltipMeta.key}
                       </span>
                     </div>
@@ -1016,14 +1016,14 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                         onMouseLeave={() => setHoveredAutoPass(null)}
                         onFocus={() => setHoveredAutoPass(btn.key)}
                         onBlur={() => setHoveredAutoPass(null)}
-                        className={`h-[30px] px-1 rounded-[5px] border flex items-center justify-center gap-1 text-[9.5px] font-bold tracking-tight whitespace-nowrap cursor-pointer transition-colors ${
+                        className={`h-[30px] px-1 rounded-none border flex items-center justify-center gap-1 text-[9.5px] font-bold tracking-[0.04em] whitespace-nowrap cursor-pointer transition-colors ${
                           isPressed
                             ? 'bg-[#C9A45C]/18 border-[#C9A45C] text-[#C9A45C]'
-                            : 'bg-[#151A24] hover:bg-[#1E2636] border-[rgba(242,238,230,0.1)] hover:border-[#C9A45C]/45 text-[#B4BECE] hover:text-[#F4F6FA]'
+                            : 'bg-[#151A24] hover:bg-[#1E2636] border-[rgba(242,238,230,0.12)] hover:border-[#C9A45C]/50 text-[#B4BECE] hover:text-[#F4F6FA]'
                         }`}
                       >
                         <span>{btn.short}</span>
-                        <span className="inline-flex items-center justify-center min-w-[15px] h-[15px] px-0.5 rounded-[3px] bg-[#111620] border border-white/15 font-mono-tabular text-[9px] font-bold text-[#C9A45C]">
+                        <span className="inline-flex items-center justify-center min-w-[15px] h-[15px] px-0.5 rounded-none bg-[#111620] border border-white/15 font-mono-tabular text-[9px] font-bold text-[#C9A45C]">
                           {btn.key}
                         </span>
                       </button>
@@ -1053,7 +1053,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
             <div
               className={
                 extensionActive
-                  ? 'rounded-[7px] bg-[#151A24] border border-[rgba(242,238,230,0.09)] p-2.5 shrink-0'
+                  ? 'rounded-none bg-[#151A24] border border-[rgba(242,238,230,0.1)] p-2.5 shrink-0'
                   : 'p-3 border-t border-[#292118] shrink-0'
               }
             >
@@ -1085,7 +1085,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                     </span>
                     {selfDelta !== null && (
                       <span
-                        className={`font-mono-tabular text-[11px] font-bold px-1.5 py-0.5 rounded ${
+                        className={`font-mono-tabular text-[11px] font-bold px-1.5 py-0.5 rounded-none ${
                           selfDelta < 0
                             ? 'bg-[#E05A5A]/15 text-[#F07878]'
                             : 'bg-[#3FA372]/15 text-[#5BD196]'
@@ -1096,7 +1096,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-1.5">
-                    <div className="flex items-center justify-between px-2 py-1 rounded bg-[#10141D] border border-[rgba(242,238,230,0.07)]">
+                    <div className="flex items-center justify-between px-2 py-1 rounded-none bg-[#10141D] border border-[rgba(242,238,230,0.08)]">
                       <span className="font-mono-tabular text-xs font-bold text-[#F4F6FA]">
                         {selfLib}
                       </span>
@@ -1104,7 +1104,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                         DECK
                       </span>
                     </div>
-                    <div className="flex items-center justify-between px-2 py-1 rounded bg-[#10141D] border border-[rgba(242,238,230,0.07)]">
+                    <div className="flex items-center justify-between px-2 py-1 rounded-none bg-[#10141D] border border-[rgba(242,238,230,0.08)]">
                       <span className="font-mono-tabular text-xs font-bold text-[#F4F6FA]">
                         {NATIVE_HAND_CARDS.length}
                       </span>
@@ -1112,7 +1112,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                         HAND
                       </span>
                     </div>
-                    <div className="flex items-center justify-between px-2 py-1 rounded bg-[#7CAEE6]/12 border border-[#7CAEE6]/35">
+                    <div className="flex items-center justify-between px-2 py-1 rounded-none bg-[#7CAEE6]/12 border border-[#7CAEE6]/35">
                       <span className="font-mono-tabular text-xs font-bold text-[#8CBEF5]">
                         {selfGy.length}
                       </span>
@@ -1120,7 +1120,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                         GRAVEYARD
                       </span>
                     </div>
-                    <div className="flex items-center justify-between px-2 py-1 rounded bg-[#10141D] border border-[rgba(242,238,230,0.07)]">
+                    <div className="flex items-center justify-between px-2 py-1 rounded-none bg-[#10141D] border border-[rgba(242,238,230,0.08)]">
                       <span className="font-mono-tabular text-xs font-bold text-[#F4F6FA]">0</span>
                       <span className="text-[9px] font-semibold tracking-wide text-[#7E889C]">
                         EXILE
@@ -1148,10 +1148,14 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
             {/* Optional Floating "The Stack" anchored Top-Left of Battlefield */}
             {showStack && (
               <div
-                className={`absolute z-30 w-[228px] rounded-lg border shadow-2xl overflow-hidden ${
+                className={`absolute z-30 w-[228px] border shadow-2xl overflow-hidden ${
+                  extensionActive
+                    ? 'rounded-none bg-[#151A24] border-[#C9A45C]/45'
+                    : 'rounded-lg bg-[#1D160F] border-[#6E5937]'
+                } ${
                   extensionActive && config.anchorStackTopLeft
-                    ? 'top-2.5 left-2.5 bg-[#151A24] border-[#C9A45C]/45'
-                    : 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#1D160F] border-[#6E5937]'
+                    ? 'top-2.5 left-2.5'
+                    : 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'
                 }`}
               >
                 <div className="px-3 py-1.5 bg-[#1B2230] border-b border-[rgba(242,238,230,0.08)] flex items-center justify-between text-xs font-bold">
@@ -1165,11 +1169,11 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                   </button>
                 </div>
                 <div className="p-2 space-y-1.5 text-[11px]">
-                  <div className="px-2 py-1.5 rounded bg-[#0F131B] border border-[#C9A45C]/30 flex items-center justify-between">
+                  <div className="px-2 py-1.5 rounded-none bg-[#0F131B] border border-[#C9A45C]/30 flex items-center justify-between">
                     <span className="font-semibold text-[#F4F6FA]">Prismatic Strands</span>
                     <span className="text-[10px] text-[#C9A45C]">Top</span>
                   </div>
-                  <div className="px-2 py-1.5 rounded bg-[#0F131B] border border-[rgba(242,238,230,0.08)] flex items-center justify-between">
+                  <div className="px-2 py-1.5 rounded-none bg-[#0F131B] border border-[rgba(242,238,230,0.08)] flex items-center justify-between">
                     <span className="text-[#C8D1DF]">Lightning Bolt</span>
                     <span className="text-[10px] text-[#7E889C]">→ Jacques</span>
                   </div>
@@ -1210,7 +1214,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                         setPhaseStops((prev) => ({ ...prev, [phase.id]: !prev[phase.id] }))
                       }
                       title="Cliquer pour activer/retirer un stop de phase"
-                      className={`flex-1 min-w-0 h-[22px] px-1 rounded-[4px] font-mono-tabular text-[9px] font-bold tracking-tight transition-colors truncate cursor-pointer border ${
+                      className={`flex-1 min-w-0 h-[22px] px-1 rounded-none font-mono-tabular text-[9px] font-bold tracking-tight transition-colors truncate cursor-pointer border ${
                         phase.active
                           ? 'bg-[#C9A45C]/22 border-[#C9A45C] text-[#F4F6FA]'
                           : hasStop
@@ -1280,7 +1284,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
               className="shrink-0 bg-[#0F131B] border-l border-[rgba(242,238,230,0.09)] p-1.5 flex flex-col gap-1.5 overflow-hidden"
             >
               {/* Compact Turn / Priority Card */}
-              <div className="rounded-[7px] bg-[#151A24] border border-[rgba(242,238,230,0.09)] px-2.5 py-2 flex items-center justify-between gap-2 shrink-0">
+              <div className="rounded-none bg-[#151A24] border border-[rgba(242,238,230,0.1)] px-2.5 py-2 flex items-center justify-between gap-2 shrink-0">
                 <div>
                   <div className="text-[10px] font-bold tracking-wider text-[#C9A45C]">
                     YOUR TURN · T4
@@ -1290,10 +1294,10 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                 <button
                   type="button"
                   onClick={() => setHoldPriority((v) => !v)}
-                  className={`px-2 py-1 rounded-[4px] border text-[10px] font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                  className={`px-2 py-1 rounded-none border text-[10px] font-bold uppercase tracking-[0.04em] whitespace-nowrap cursor-pointer transition-colors ${
                     holdPriority
                       ? 'bg-[#C9A45C]/18 border-[#C9A45C] text-[#C9A45C]'
-                      : 'bg-[#10141D] border-[rgba(242,238,230,0.12)] text-[#9CA3B2] hover:text-white'
+                      : 'bg-[#10141D] border-[rgba(242,238,230,0.14)] text-[#9CA3B2] hover:text-white hover:border-[#C9A45C]/50'
                   }`}
                 >
                   {holdPriority ? 'Hold ON' : 'Hold Priority'}
@@ -1305,7 +1309,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                 <div className="flex-1 min-h-0 flex flex-col gap-1.5">
                   {/* OPPONENT GRAVEYARD (Matte Gold) */}
                   <div
-                    className={`rounded-[7px] bg-[#151A24] border border-[#C9A45C]/40 flex flex-col overflow-hidden ${
+                    className={`rounded-none bg-[#151A24] border border-[#C9A45C]/40 flex flex-col overflow-hidden ${
                       oppGyCollapsed ? 'shrink-0' : 'flex-1 min-h-0'
                     }`}
                   >
@@ -1350,9 +1354,9 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                               key={k}
                               type="button"
                               onClick={() => setOppGyFilter(k)}
-                              className={`py-0.5 text-[9.5px] font-semibold rounded-[4px] border cursor-pointer transition-colors ${
+                              className={`py-0.5 text-[9.5px] font-semibold rounded-none border cursor-pointer transition-colors ${
                                 oppGyFilter === k
-                                  ? 'bg-[#C9A45C]/15 border-[#C9A45C]/45 text-[#C9A45C]'
+                                  ? 'bg-[#C9A45C]/15 border-[#C9A45C]/50 text-[#C9A45C]'
                                   : 'border-transparent text-[#8E98AC] hover:text-white'
                               }`}
                             >
@@ -1376,7 +1380,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                                   config.enableHoverZoom && setHoveredCard(card)
                                 }
                                 onMouseLeave={() => setHoveredCard(null)}
-                                className="relative w-full aspect-[63/88] rounded-[6px] overflow-hidden border border-white/15 hover:border-[#C9A45C] hover:-translate-y-0.5 transition-all cursor-pointer p-0 text-left"
+                                className="relative w-full aspect-[63/88] rounded-none overflow-hidden border border-white/15 hover:border-[#C9A45C] hover:-translate-y-0.5 transition-all cursor-pointer p-0 text-left"
                               >
                                 <NativeMagicCard
                                   card={card}
@@ -1384,7 +1388,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                                   compact
                                 />
                                 {qty > 1 && (
-                                  <span className="absolute top-1 right-1 px-1.5 py-0.5 rounded bg-[#0B0E14]/90 border border-[#C9A45C]/50 font-mono-tabular text-[10px] font-bold leading-none text-[#C9A45C]">
+                                  <span className="absolute top-1 right-1 px-1.5 py-0.5 rounded-none bg-[#0B0E14]/90 border border-[#C9A45C]/50 font-mono-tabular text-[10px] font-bold leading-none text-[#C9A45C]">
                                     ×{qty}
                                   </span>
                                 )}
@@ -1398,7 +1402,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
 
                   {/* YOUR GRAVEYARD (Cool Steel Blue) */}
                   <div
-                    className={`rounded-[7px] bg-[#151A24] border border-[#7CAEE6]/35 flex flex-col overflow-hidden ${
+                    className={`rounded-none bg-[#151A24] border border-[#7CAEE6]/35 flex flex-col overflow-hidden ${
                       selfGyCollapsed ? 'shrink-0' : 'flex-1 min-h-0'
                     }`}
                   >
@@ -1443,9 +1447,9 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                               key={k}
                               type="button"
                               onClick={() => setSelfGyFilter(k)}
-                              className={`py-0.5 text-[9.5px] font-semibold rounded-[4px] border cursor-pointer transition-colors ${
+                              className={`py-0.5 text-[9.5px] font-semibold rounded-none border cursor-pointer transition-colors ${
                                 selfGyFilter === k
-                                  ? 'bg-[#7CAEE6]/18 border-[#7CAEE6]/45 text-[#8CBEF5]'
+                                  ? 'bg-[#7CAEE6]/18 border-[#7CAEE6]/50 text-[#8CBEF5]'
                                   : 'border-transparent text-[#8E98AC] hover:text-white'
                               }`}
                             >
@@ -1469,7 +1473,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                                   config.enableHoverZoom && setHoveredCard(card)
                                 }
                                 onMouseLeave={() => setHoveredCard(null)}
-                                className="relative w-full aspect-[63/88] rounded-[6px] overflow-hidden border border-white/15 hover:border-[#8CBEF5] hover:-translate-y-0.5 transition-all cursor-pointer p-0 text-left"
+                                className="relative w-full aspect-[63/88] rounded-none overflow-hidden border border-white/15 hover:border-[#8CBEF5] hover:-translate-y-0.5 transition-all cursor-pointer p-0 text-left"
                               >
                                 <NativeMagicCard
                                   card={card}
@@ -1477,7 +1481,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                                   compact
                                 />
                                 {qty > 1 && (
-                                  <span className="absolute top-1 right-1 px-1.5 py-0.5 rounded bg-[#0B0E14]/90 border border-[#7CAEE6]/50 font-mono-tabular text-[10px] font-bold leading-none text-[#8CBEF5]">
+                                  <span className="absolute top-1 right-1 px-1.5 py-0.5 rounded-none bg-[#0B0E14]/90 border border-[#7CAEE6]/50 font-mono-tabular text-[10px] font-bold leading-none text-[#8CBEF5]">
                                     ×{qty}
                                   </span>
                                 )}

@@ -94,6 +94,22 @@ html[data-upkeep-active="true"] aside.wr-rail-right {
   padding-bottom: 6px !important;
 }
 
+/* Crisp architectural square geometry on all UI controls (never touches .wr-main-col Magic cards) */
+html[data-upkeep-active="true"] aside.wr-rail-left button,
+html[data-upkeep-active="true"] aside.wr-rail-right button,
+html[data-upkeep-active="true"] .wr-pb-rail button,
+html[data-upkeep-active="true"] [data-gamelog-panel] button,
+html[data-upkeep-active="true"] [data-upkeep-panel="stack"] button,
+html[data-upkeep-active="true"] [role="dialog"]:not([data-zone="decision-surface"]) button,
+html[data-upkeep-active="true"] [role="menu"] button,
+html[data-upkeep-active="true"] [role="menu"] [role="menuitem"],
+html[data-upkeep-active="true"] [data-gamelog-panel] input,
+html[data-upkeep-active="true"] [data-gamelog-panel] [data-testid="kcap"],
+html[data-upkeep-active="true"] aside.wr-rail-left [data-testid="kcap"],
+html[data-upkeep-active="true"] aside.wr-rail-right [data-testid="kcap"] {
+  border-radius: 0 !important;
+}
+
 /* ============================================================================
  * 2. HIGH-LEGIBILITY PLAYER PLATES (LIFE / DECK / HAND / GRAVEYARD / EXILE)
  * ============================================================================ */
@@ -123,7 +139,7 @@ html[data-upkeep-active="true"] .wr-plate[data-valid-target="true"],
 html[data-upkeep-active="true"] .wr-plate[data-selectable="true"] {
   background: linear-gradient(135deg, rgba(201, 164, 92, 0.28) 0%, rgba(28, 36, 54, 0.96) 100%) !important;
   border: 2px solid #ecc672 !important;
-  border-radius: 6px !important;
+  border-radius: 0 !important;
   box-shadow: 0 0 0 2px rgba(236, 198, 114, 0.4), inset 0 0 20px rgba(201, 164, 92, 0.22) !important;
   cursor: pointer !important;
   position: relative !important;
@@ -149,7 +165,7 @@ html[data-upkeep-active="true"] .wr-plate[data-targetable="true"] [data-plate-se
   align-self: flex-start;
   margin-top: 2px;
   padding: 2px 6px;
-  border-radius: 3px;
+  border-radius: 0;
   background: #ecc672;
   color: #111620;
   font-size: 9px;
@@ -195,7 +211,7 @@ html[data-upkeep-active="true"][data-upkeep-hud="true"] [data-testid="me-life"][
   font-size: 12px;
   font-weight: 700;
   padding: 1px 6px;
-  border-radius: 4px;
+  border-radius: 0;
   line-height: 1.25;
 }
 
@@ -232,7 +248,7 @@ html[data-upkeep-active="true"][data-upkeep-hud="true"] .wr-plate button[data-zo
   gap: 4px !important;
   padding: 5px 7px !important;
   margin: 0 !important;
-  border-radius: 6px !important;
+  border-radius: 0 !important;
   background: var(--upkeep-bg-elevated) !important;
   border: 1px solid var(--upkeep-border) !important;
   color: var(--upkeep-text-primary) !important;
@@ -364,7 +380,7 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] {
   flex-direction: column !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
-  border-radius: 7px !important;
+  border-radius: 0 !important;
   padding: 0 !important;
   gap: 0 !important;
 }
@@ -539,7 +555,7 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-body::-web
 
 html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-body::-webkit-scrollbar-thumb {
   background: rgba(201, 164, 92, 0.32);
-  border-radius: 3px;
+  border-radius: 0;
 }
 
 html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-body::-webkit-scrollbar-track {
@@ -597,11 +613,11 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions bu
   font-family: var(--upkeep-font-sans) !important;
   font-size: 11px !important;
   font-weight: 700 !important;
-  letter-spacing: 0.04em !important;
+  letter-spacing: 0.06em !important;
   padding: 6px 8px !important;
   min-height: 30px !important;
   line-height: 1.2 !important;
-  border-radius: 5px !important;
+  border-radius: 0 !important;
   box-shadow: none !important;
 }
 
@@ -619,6 +635,7 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions bu
 html[data-upkeep-active="true"] [data-zone="decision-surface"] [data-testid="kcap"] {
   background: #111620 !important;
   border-color: rgba(244, 246, 250, 0.22) !important;
+  border-radius: 0 !important;
   color: var(--upkeep-gold) !important;
   box-shadow: none !important;
 }
@@ -665,7 +682,7 @@ html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button {
   margin: 0 !important;
   background: var(--upkeep-bg-surface) !important;
   border: 1px solid var(--upkeep-border) !important;
-  border-radius: 5px !important;
+  border-radius: 0 !important;
   color: var(--upkeep-text-secondary) !important;
   font-family: var(--upkeep-font-sans) !important;
   box-shadow: none !important;
@@ -690,7 +707,7 @@ html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button[da
   font-family: var(--upkeep-font-sans) !important;
   font-size: 9.5px !important;
   font-weight: 700 !important;
-  letter-spacing: 0.02em !important;
+  letter-spacing: 0.04em !important;
   color: inherit !important;
   line-height: 1 !important;
   white-space: nowrap !important;
@@ -715,7 +732,7 @@ html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button kb
   line-height: 1 !important;
   background: #111620 !important;
   border: 1px solid rgba(244, 246, 250, 0.18) !important;
-  border-radius: 3px !important;
+  border-radius: 0 !important;
   color: var(--upkeep-gold) !important;
   box-shadow: none !important;
 }
@@ -743,7 +760,7 @@ html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button[da
   pointer-events: none;
   max-width: 240px;
   padding: 7px 10px;
-  border-radius: 6px;
+  border-radius: 0;
   background: rgba(15, 20, 29, 0.97);
   border: 1px solid var(--upkeep-gold-soft);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65);
@@ -779,7 +796,7 @@ html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button[da
   min-width: 17px;
   height: 17px;
   padding: 0 4px;
-  border-radius: 3px;
+  border-radius: 0;
   background: #111620;
   border: 1px solid rgba(244, 246, 250, 0.22);
   font-family: var(--upkeep-font-mono);
@@ -809,7 +826,7 @@ html[data-upkeep-active="true"] [role="menu"] {
   background: var(--upkeep-bg-surface) !important;
   background-image: none !important;
   border: 1px solid var(--upkeep-gold-soft) !important;
-  border-radius: 8px !important;
+  border-radius: 0 !important;
   color: var(--upkeep-text-primary) !important;
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.65) !important;
 }
@@ -837,7 +854,7 @@ html[data-upkeep-active="true"] [data-zone*="stack" i] > div:first-child {
   background: var(--upkeep-bg-elevated) !important;
   border-bottom: 1px solid var(--upkeep-border) !important;
   color: var(--upkeep-text-primary) !important;
-  border-radius: 7px 7px 0 0 !important;
+  border-radius: 0 !important;
 }
 
 /* Default position of The Stack: top-left corner of the battlefield until user drags it */
@@ -857,7 +874,7 @@ html[data-upkeep-active="true"][data-upkeep-stack-anchor="true"] [data-upkeep-pa
 html[data-upkeep-active="true"] [data-gamelog-panel] {
   background: var(--upkeep-bg-surface) !important;
   border: 1px solid var(--upkeep-gold-soft) !important;
-  border-radius: 7px !important;
+  border-radius: 0 !important;
   color: var(--upkeep-text-primary) !important;
   font-family: var(--upkeep-font-sans) !important;
 }
@@ -883,7 +900,7 @@ html[data-upkeep-active="true"] [data-gamelog-panel] [data-gamelog-titlebar] {
   background: var(--upkeep-bg-elevated) !important;
   border-bottom: 1px solid var(--upkeep-border) !important;
   padding: 6px 10px !important;
-  border-radius: 6px 6px 0 0 !important;
+  border-radius: 0 !important;
 }
 
 html[data-upkeep-active="true"] [data-gamelog-panel] .gl-title {
@@ -916,7 +933,7 @@ html[data-upkeep-active="true"] [data-gamelog-panel] .gl-card-name {
   width: 22px;
   height: 22px;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: 0;
   background: transparent;
   color: var(--upkeep-text-secondary);
   cursor: pointer;
@@ -989,7 +1006,7 @@ html[data-upkeep-timeline="false"] #upkeep-graveyards-dock[data-mode="docked"] {
   max-height: calc(100vh - 20px);
   z-index: 44;
   padding: 6px;
-  border-radius: 9px;
+  border-radius: 0;
   background: rgba(11, 14, 20, 0.94);
   border: 1px solid var(--upkeep-border-strong);
   box-shadow: 0 20px 48px rgba(0, 0, 0, 0.75);
@@ -1007,7 +1024,7 @@ html[data-upkeep-timeline="false"] #upkeep-graveyards-dock[data-mode="docked"] {
   min-height: 112px;
   background: var(--upkeep-bg-surface);
   border: 1px solid var(--upkeep-border-strong);
-  border-radius: 7px;
+  border-radius: 0;
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -1126,7 +1143,7 @@ html[data-upkeep-timeline="false"] #upkeep-graveyards-dock[data-mode="docked"] {
   justify-content: center;
   width: 22px;
   height: 22px;
-  border-radius: 4px;
+  border-radius: 0;
   border: 1px solid var(--upkeep-border);
   background: var(--upkeep-bg-surface);
   color: var(--upkeep-text-secondary);
@@ -1169,7 +1186,7 @@ html[data-upkeep-timeline="false"] #upkeep-graveyards-dock[data-mode="docked"] {
   font-size: 10px;
   font-weight: 600;
   padding: 4px 2px;
-  border-radius: 4px;
+  border-radius: 0;
   cursor: pointer;
   transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
 }
@@ -1221,7 +1238,7 @@ html[data-upkeep-timeline="false"] #upkeep-graveyards-dock[data-mode="docked"] {
 
 .upkeep-gy-list::-webkit-scrollbar-thumb {
   background: rgba(244, 246, 250, 0.16);
-  border-radius: 3px;
+  border-radius: 0;
 }
 
 .upkeep-gy-list::-webkit-scrollbar-track {
@@ -1235,7 +1252,7 @@ html[data-upkeep-timeline="false"] #upkeep-graveyards-dock[data-mode="docked"] {
   aspect-ratio: 63 / 88;
   padding: 0;
   margin: 0;
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--upkeep-bg-void);
   border: 1px solid rgba(244, 246, 250, 0.14);
   cursor: pointer;
@@ -1289,7 +1306,7 @@ html[data-upkeep-timeline="false"] #upkeep-graveyards-dock[data-mode="docked"] {
   top: 4px;
   right: 4px;
   padding: 1px 5px;
-  border-radius: 4px;
+  border-radius: 0;
   background: rgba(11, 14, 20, 0.88);
   border: 1px solid var(--upkeep-gold-soft);
   font-family: var(--upkeep-font-sans);
@@ -1314,13 +1331,15 @@ html[data-upkeep-timeline="false"] #upkeep-graveyards-dock[data-mode="docked"] {
 .upkeep-gy-sync-btn {
   margin-top: 8px;
   padding: 5px 10px;
-  border-radius: 5px;
+  border-radius: 0;
   border: 1px solid var(--upkeep-gold-soft);
   background: var(--upkeep-gold-glow);
   color: var(--upkeep-gold);
   font-family: var(--upkeep-font-sans);
   font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   cursor: pointer;
 }
 
@@ -1351,7 +1370,7 @@ html[data-upkeep-active="true"][data-upkeep-hide-toasts="true"] [data-upkeep-hid
   width: 248px;
   z-index: 9500;
   pointer-events: none;
-  border-radius: 11px;
+  border-radius: 0;
   overflow: hidden;
   box-shadow: 0 22px 54px rgba(0, 0, 0, 0.8);
   border: 1px solid var(--upkeep-gold-soft);
@@ -1400,7 +1419,7 @@ html[data-upkeep-active="true"][data-upkeep-timeline="true"] aside.wr-rail-right
   background: var(--upkeep-bg-surface) !important;
   background-image: none !important;
   border: 1px solid var(--upkeep-gold-soft) !important;
-  border-radius: 7px !important;
+  border-radius: 0 !important;
   overflow: visible !important;
   transform: none !important;
   filter: none !important;
@@ -1421,7 +1440,7 @@ html[data-upkeep-active="true"][data-upkeep-timeline="true"] aside.wr-rail-right
   gap: 3px 6px !important;
   padding: 5px 8px !important;
   margin: 0 !important;
-  border-radius: 5px !important;
+  border-radius: 0 !important;
   background: var(--upkeep-bg-elevated) !important;
   background-image: none !important;
   border: 1px solid var(--upkeep-border) !important;
@@ -1471,7 +1490,7 @@ html[data-upkeep-active="true"][data-upkeep-timeline="true"] aside.wr-rail-right
   gap: 6px !important;
   padding: 4px 8px !important;
   margin: 0 !important;
-  border-radius: 5px !important;
+  border-radius: 0 !important;
   background: rgba(255, 255, 255, 0.03) !important;
   border: 1px solid var(--upkeep-border) !important;
   color: var(--upkeep-text-muted) !important;
@@ -1560,7 +1579,7 @@ html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb 
   justify-content: center !important;
   padding: 0 !important;
   margin: 0 !important;
-  border-radius: 4px !important;
+  border-radius: 0 !important;
   background: rgba(255, 255, 255, 0.03) !important;
   background-image: none !important;
   border: 1px solid rgba(244, 246, 250, 0.07) !important;

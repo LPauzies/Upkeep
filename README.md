@@ -64,12 +64,13 @@ npm run lint:firefox
    - **Collecte de données** : aucune donnée utilisateur collectée ni transmise à un serveur tiers.
 4. Soumettez pour validation et notez l'**ID d'extension** attribué par Google (`CHROME_EXTENSION_ID`).
 
-### Publication automatique via GitHub Actions
-Configurez les 4 secrets suivants dans `Settings → Secrets and variables → Actions` de `LPauzies/Upkeep` :
-- `CHROME_EXTENSION_ID` : identifiant de l'extension sur le Chrome Web Store
+### Publication automatique via GitHub Actions (API Chrome Web Store v2)
+Configurez les 5 secrets suivants dans `Settings → Secrets and variables → Actions` de `LPauzies/Upkeep` :
+- `CHROME_EXTENSION_ID` : identifiant de l'extension (32 caractères) sur le Chrome Web Store
+- `CHROME_PUBLISHER_ID` : identifiant éditeur visible dans *Developer Dashboard → Account / Publisher Settings*
 - `CHROME_CLIENT_ID` : Client ID OAuth Google Cloud (API Chrome Web Store activée)
 - `CHROME_CLIENT_SECRET` : Client Secret OAuth associé
-- `CHROME_REFRESH_TOKEN` : Refresh Token OAuth autorisé sur le scope `https://www.googleapis.com/auth/chromewebstore`
+- `CHROME_REFRESH_TOKEN` : Refresh Token OAuth autorisé sur le scope `https://www.googleapis.com/auth/chromewebstore` (générable via `npx chrome-webstore-upload-keys`)
 
 ---
 
@@ -80,17 +81,10 @@ Le manifeste Firefox (`manifest.firefox.json`) est pré-configuré pour les règ
 - `strict_min_version`: `"142.0"`
 - `data_collection_permissions.required`: `["none"]` (obligatoire pour la validation AMO)
 
-### Publication manuelle
+### Publication et mises à jour manuelles
 1. Connectez-vous sur le [Mozilla Add-on Developer Hub](https://addons.mozilla.org/developers/).
-2. Cliquez sur **Soumettre une nouvelle extension** (*Submit a New Add-on*).
-3. Choisissez **Sur ce site** (*On this site*, distribution publique) ou **Par vous-même** (*On your own*, fichier `.xpi` signé).
-4. Importez `upkeep-firefox-mv3-v1.0.0.zip`. Les contrôles automatiques AMO valident le manifeste et le code source.
-
-### Publication automatique via GitHub Actions (`web-ext sign`)
-1. Générez une paire de clés API sur [AMO Manage API Keys](https://addons.mozilla.org/developers/addon/api/key/).
-2. Ajoutez ces 2 secrets dans votre dépôt GitHub `LPauzies/Upkeep` :
-   - `AMO_JWT_ISSUER` (clé JWT issuer)
-   - `AMO_JWT_SECRET` (secret JWT)
+2. Téléchargez `upkeep-firefox-vX.Y.Z.zip` depuis la dernière GitHub Release (déjà validé par `web-ext lint --warnings-as-errors` en CI/CD).
+3. Importez l'archive dans votre fiche AMO pour soumettre la nouvelle version.
 
 ---
 
@@ -100,13 +94,13 @@ Le manifeste Firefox (`manifest.firefox.json`) est pré-configuré pour les règ
   - Construit les cibles Chrome MV3 et Firefox MV3 (`npm run build:all`)
   - Vérifie les manifestes et exécute `web-ext lint --warnings-as-errors` sur la cible Firefox
   - Met à disposition les archives `.zip` en artefacts de build
-- **`.github/workflows/release.yml`** (sur chaque tag `v*` ou déclenchement manuel) :
+- **`.github/workflows/release.yml`** (déclenchement manuel `workflow_dispatch` ou tag `v*`) :
   - Génère `upkeep-chrome-vX.Y.Z.zip` et `upkeep-firefox-vX.Y.Z.zip`
   - Crée automatiquement une **GitHub Release** avec notes générées et archives attachées
-  - Déploie automatiquement sur le **Chrome Web Store** et **Firefox AMO** dès que les secrets correspondants sont renseignés
+  - Déploie automatiquement sur le **Chrome Web Store** (API v2 via `mnao305/chrome-extension-upload@v7.0.0`) dès que les 5 secrets Chrome sont renseignés
 
 ```bash
-# Exemple de release complète
+# Exemple de release par tag (ou via GitHub → Actions → Run workflow)
 git tag v1.0.0
 git push origin v1.0.0
 ```
