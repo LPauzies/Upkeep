@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Check, RotateCcw, AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Check, RotateCcw } from 'lucide-react';
 import { DEFAULT_UPKEEP_CONFIG, SELECTOR_LABELS } from '../extension/defaults';
-import type { DensityMode, DomSelectorConfig, UpkeepConfig } from '../extension/types';
+import type { DomSelectorConfig, UpkeepConfig } from '../extension/types';
 
 interface ConfigViewProps {
   config: UpkeepConfig;
@@ -55,7 +55,7 @@ export function ConfigView({ config, onChange }: ConfigViewProps) {
             Préférences &amp; adaptateur DOM Endstep
           </h1>
           <p className="mt-1.5 text-sm text-[#9CA3B2] max-w-2xl">
-            Tous vos réglages sont directement injectés dans le simulateur ainsi que dans les
+            Tous vos réglages sont synchronisés en direct avec le simulateur et injectés dans les
             archives Chrome et Firefox téléchargées.
           </p>
         </div>
@@ -86,143 +86,155 @@ export function ConfigView({ config, onChange }: ConfigViewProps) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* LEFT COLUMN: Layout Preferences + Live Browser Popup Preview */}
+        {/* LEFT COLUMN: Faithful Toolbar Popup Preview + Dimensions */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="rounded-xl border border-[rgba(242,238,230,0.09)] bg-[#151922] p-6 space-y-5">
-            <h2 className="font-display text-base font-semibold text-[#F2EEE6]">
-              Comportement en partie
-            </h2>
-
-            <div className="space-y-3.5 text-sm">
-              {(
-                [
-                  ['autoOpenLogsLeft', 'Ouvrir les logs à gauche au démarrage'],
-                  ['alwaysShowOpponentGraveyard', 'Afficher le cimetière adverse en continu'],
-                  ['highContrastHud', 'HUD agrandi PV / Deck / Main'],
-                  ['showExtendedCounters', 'Afficher le compteur Exil'],
-                  ['enableHoverZoom', 'Activer le zoom carte au survol'],
-                ] as const
-              ).map(([key, label]) => (
-                <label
-                  key={key}
-                  className="flex items-center justify-between gap-4 cursor-pointer text-[#D8D3C9]"
-                >
-                  <span>{label}</span>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(config[key])}
-                    onChange={(e) => updateField(key, e.target.checked)}
-                    className="w-4 h-4 accent-[#C9A45C] cursor-pointer"
-                  />
-                </label>
-              ))}
+          {/* Interactive Miniature Chrome/Firefox Toolbar Popup (mirrors extension/src/popup/popup.html) */}
+          <div className="rounded-xl border border-[rgba(242,238,230,0.09)] bg-[#151922] p-6 space-y-4">
+            <div>
+              <h2 className="font-display text-base font-semibold text-[#F2EEE6]">
+                Popup de la barre d’outils (interactif)
+              </h2>
+              <p className="text-xs text-[#9CA3B2] mt-1">
+                Rendu fidèle du panneau Chrome / Firefox avec interrupteur principal ON/OFF et
+                activation module par module.
+              </p>
             </div>
 
-            <div className="pt-4 border-t border-[rgba(242,238,230,0.08)] space-y-4">
-              <div>
-                <div className="flex justify-between text-xs mb-1.5">
-                  <span className="text-[#9CA3B2]">Largeur du rail logs (gauche)</span>
-                  <span className="font-mono-tabular text-[#C9A45C]">{config.logsWidth}px</span>
+            <div className="max-w-[320px] mx-auto rounded-lg border border-[rgba(242,238,230,0.16)] bg-[#0F131B] overflow-hidden shadow-lg">
+              {/* Popup Header */}
+              <div className="flex items-center justify-between px-3.5 py-3 bg-[#151B26] border-b border-[rgba(242,238,230,0.09)]">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-[5px] bg-[#0E1116] border border-[#C9A45C] flex items-center justify-center font-display text-xs font-bold text-[#F2EEE6]">
+                    U
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-[#F4F6FA] leading-tight">Upkeep</div>
+                    <div className="text-[10.5px] text-[#8E98AC] leading-tight">
+                      {config.enabled ? 'Active on endstep.cc' : 'Paused — native Endstep UI'}
+                    </div>
+                  </div>
                 </div>
-                <input
-                  type="range"
-                  min={210}
-                  max={340}
-                  step={4}
-                  value={config.logsWidth}
-                  onChange={(e) => updateField('logsWidth', Number(e.target.value))}
-                  className="w-full accent-[#C9A45C]"
-                />
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={config.enabled}
+                  onClick={() => updateField('enabled', !config.enabled)}
+                  className={`relative w-10 h-5 rounded-full transition-colors cursor-pointer ${
+                    config.enabled ? 'bg-[#C9A45C]' : 'bg-[#283142]'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 w-4 h-4 rounded-full bg-[#0E1116] transition-transform ${
+                      config.enabled ? 'left-[22px]' : 'left-0.5'
+                    }`}
+                  />
+                </button>
               </div>
 
-              <div>
-                <div className="flex justify-between text-xs mb-1.5">
-                  <span className="text-[#9CA3B2]">Largeur du cimetière adverse (droite)</span>
-                  <span className="font-mono-tabular text-[#C9A45C]">{config.graveyardWidth}px</span>
+              {!config.enabled && (
+                <div className="px-3.5 py-2 bg-[#C9A45C]/12 border-b border-[#C9A45C]/25 text-[11px] text-[#DFBD78]">
+                  Upkeep is disabled — original Endstep UI is active.
                 </div>
-                <input
-                  type="range"
-                  min={220}
-                  max={350}
-                  step={4}
-                  value={config.graveyardWidth}
-                  onChange={(e) => updateField('graveyardWidth', Number(e.target.value))}
-                  className="w-full accent-[#C9A45C]"
-                />
+              )}
+
+              {/* Popup Feature Switches */}
+              <div
+                className={`p-3.5 space-y-2.5 text-xs transition-opacity ${
+                  config.enabled ? 'opacity-100' : 'opacity-45'
+                }`}
+              >
+                <div className="text-[10px] font-bold tracking-wider uppercase text-[#7E889C]">
+                  Layout &amp; Panels
+                </div>
+                {(
+                  [
+                    ['showMidlineTimeline', 'Horizontal Phase Timeline (midline)'],
+                    ['alwaysShowOpponentGraveyard', 'Dual Graveyards (2-card grid)'],
+                    ['autoOpenLogsLeft', 'Fixed Game Log & Decision (left rail)'],
+                    ['hideActionToasts', 'Hide right-side action notifications'],
+                    ['anchorStackTopLeft', 'Anchor "The Stack" at top-left'],
+                  ] as const
+                ).map(([key, label]) => (
+                  <label
+                    key={key}
+                    className="flex items-center justify-between gap-3 cursor-pointer text-[#D4DCE9]"
+                  >
+                    <span>{label}</span>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(config[key])}
+                      onChange={(e) => updateField(key, e.target.checked)}
+                      className="w-3.5 h-3.5 accent-[#C9A45C] cursor-pointer"
+                    />
+                  </label>
+                ))}
+
+                <div className="pt-2 border-t border-[rgba(242,238,230,0.08)] text-[10px] font-bold tracking-wider uppercase text-[#7E889C]">
+                  Readability
+                </div>
+                {(
+                  [
+                    ['highContrastHud', 'High-legibility Player Plates'],
+                    ['enableHoverZoom', 'Card hover zoom in Graveyards'],
+                  ] as const
+                ).map(([key, label]) => (
+                  <label
+                    key={key}
+                    className="flex items-center justify-between gap-3 cursor-pointer text-[#D4DCE9]"
+                  >
+                    <span>{label}</span>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(config[key])}
+                      onChange={(e) => updateField(key, e.target.checked)}
+                      className="w-3.5 h-3.5 accent-[#C9A45C] cursor-pointer"
+                    />
+                  </label>
+                ))}
               </div>
 
-              <div>
-                <div className="flex justify-between text-xs mb-2">
-                  <span className="text-[#9CA3B2]">Densité de la liste du cimetière</span>
-                </div>
-                <div className="grid grid-cols-3 gap-1.5 p-1 rounded-lg bg-[#0E1116]">
-                  {(
-                    [
-                      ['compact', 'Compacte'],
-                      ['balanced', 'Équilibrée'],
-                      ['spacious', 'Aérée'],
-                    ] as [DensityMode, string][]
-                  ).map(([mode, label]) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => updateField('density', mode)}
-                      className={`py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer ${
-                        config.density === mode
-                          ? 'bg-[#1C222E] text-[#C9A45C]'
-                          : 'text-[#9CA3B2] hover:text-[#F2EEE6]'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
+              <div className="px-3.5 py-2.5 bg-[#121721] border-t border-[rgba(242,238,230,0.08)] flex items-center justify-between text-[10.5px] text-[#8E98AC]">
+                <span>Shortcuts: U · G · L</span>
+                <span className="font-mono-tabular text-[#C9A45C]">v{config.version}</span>
               </div>
             </div>
           </div>
 
-          {/* Interactive Miniature Chrome/Firefox Toolbar Popup Preview */}
+          {/* Rail Dimensions */}
           <div className="rounded-xl border border-[rgba(242,238,230,0.09)] bg-[#151922] p-6 space-y-4">
+            <h2 className="font-display text-base font-semibold text-[#F2EEE6]">
+              Dimensions des rails
+            </h2>
             <div>
-              <h2 className="font-display text-base font-semibold text-[#F2EEE6]">
-                Aperçu du popup navigateur
-              </h2>
-              <p className="text-xs text-[#9CA3B2] mt-1">
-                Rendu fidèle du panneau qui s’ouvre depuis la barre d’outils Chrome ou Firefox.
-              </p>
+              <div className="flex justify-between text-xs mb-1.5">
+                <span className="text-[#9CA3B2]">Largeur du rail gauche (Logs &amp; Decision)</span>
+                <span className="font-mono-tabular text-[#C9A45C]">{config.logsWidth}px</span>
+              </div>
+              <input
+                type="range"
+                min={230}
+                max={340}
+                step={4}
+                value={config.logsWidth}
+                onChange={(e) => updateField('logsWidth', Number(e.target.value))}
+                className="w-full accent-[#C9A45C]"
+              />
             </div>
 
-            <div className="max-w-[312px] mx-auto rounded-lg border border-[rgba(242,238,230,0.15)] bg-[#0E1116] overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 bg-[#151922] border-b border-[rgba(242,238,230,0.09)]">
-                <span className="font-display font-bold text-sm text-[#F2EEE6]">Upkeep</span>
-                <label className="inline-flex items-center gap-2 text-xs text-[#9CA3B2] cursor-pointer">
-                  <span>{config.enabled ? 'Actif' : 'Pause'}</span>
-                  <input
-                    type="checkbox"
-                    checked={config.enabled}
-                    onChange={(e) => updateField('enabled', e.target.checked)}
-                    className="accent-[#C9A45C]"
-                  />
-                </label>
+            <div>
+              <div className="flex justify-between text-xs mb-1.5">
+                <span className="text-[#9CA3B2]">Largeur du rail droit (Double cimetière)</span>
+                <span className="font-mono-tabular text-[#C9A45C]">{config.graveyardWidth}px</span>
               </div>
-              <div className="p-4 space-y-2.5 text-xs">
-                <div className="flex justify-between text-[#D8D3C9]">
-                  <span>Logs à gauche</span>
-                  <span className="font-mono-tabular text-[#C9A45C]">
-                    {config.autoOpenLogsLeft ? `${config.logsWidth}px` : 'Désactivé'}
-                  </span>
-                </div>
-                <div className="flex justify-between text-[#D8D3C9]">
-                  <span>Cimetière adverse</span>
-                  <span className="font-mono-tabular text-[#C9A45C]">
-                    {config.alwaysShowOpponentGraveyard ? `${config.graveyardWidth}px` : 'Masqué'}
-                  </span>
-                </div>
-                <div className="pt-2 border-t border-[rgba(242,238,230,0.08)] flex justify-between text-[11px] text-[#9CA3B2]">
-                  <span>Version manifeste</span>
-                  <span className="font-mono-tabular">v{config.version}</span>
-                </div>
-              </div>
+              <input
+                type="range"
+                min={220}
+                max={340}
+                step={4}
+                value={config.graveyardWidth}
+                onChange={(e) => updateField('graveyardWidth', Number(e.target.value))}
+                className="w-full accent-[#C9A45C]"
+              />
             </div>
           </div>
         </div>
@@ -235,8 +247,8 @@ export function ConfigView({ config, onChange }: ConfigViewProps) {
             </h2>
             <p className="mt-1 text-xs text-[#9CA3B2] leading-relaxed">
               Si <span className="font-mono-tabular text-[#D8D3C9]">endstep.cc</span> modifie ses
-              classes HTML, mettez à jour ces sélecteurs ici ou utilisez le bouton « Cibler
-              cimetière » intégré au popup de l’extension.
+              attributs HTML, mettez à jour ces sélecteurs ici ou depuis la page d’options de
+              l’extension.
             </p>
           </div>
 

@@ -44,11 +44,13 @@ export function PackageView({ config }: PackageViewProps) {
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[rgba(242,238,230,0.09)] pb-5">
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#F2EEE6]">
-            Packaging Chrome, Firefox &amp; GitHub Actions
+            Packaging Chrome, Firefox &amp; CI / CD GitHub
           </h1>
           <p className="mt-1.5 text-sm text-[#9CA3B2] max-w-2xl">
-            Générez les archives binaires Manifest V3 conformes aux exigences du Chrome Web Store et
-            de Mozilla AMO, ou téléchargez le dépôt complet prêt pour{' '}
+            Archives Manifest V3 conformes Chrome Web Store et Mozilla AMO, builds CI-only (sans
+            dossiers <span className="font-mono-tabular text-[#D8D3C9]">artifacts/</span> ni{' '}
+            <span className="font-mono-tabular text-[#D8D3C9]">dist-extension/</span> committés) et
+            CD manuelle indépendante sur{' '}
             <span className="font-mono-tabular text-[#D8D3C9]">github.com/LPauzies/Upkeep</span>.
           </p>
         </div>
@@ -96,9 +98,7 @@ export function PackageView({ config }: PackageViewProps) {
             className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#C9A45C] hover:bg-[#DFBD78] text-[#0E1116] text-xs font-semibold transition-colors disabled:opacity-60 cursor-pointer"
           >
             <Download className="w-4 h-4" />
-            <span>
-              {busyTarget === 'chrome' ? 'Génération...' : 'Télécharger ZIP Chrome'}
-            </span>
+            <span>{busyTarget === 'chrome' ? 'Génération...' : 'Télécharger ZIP Chrome'}</span>
           </button>
         </div>
 
@@ -112,7 +112,7 @@ export function PackageView({ config }: PackageViewProps) {
               <span className="font-mono-tabular text-xs text-[#C9A45C]">MV3 · Gecko</span>
             </div>
             <p className="text-xs text-[#9CA3B2] leading-relaxed">
-              Archive prête pour soumission Mozilla AMO ou test temporaire via{' '}
+              Archive prête pour soumission Mozilla AMO (listed) ou test local via{' '}
               <span className="font-mono-tabular text-[#D8D3C9]">about:debugging</span>.
             </p>
             <ul className="space-y-2 pt-2 border-t border-[rgba(242,238,230,0.07)]">
@@ -135,9 +135,7 @@ export function PackageView({ config }: PackageViewProps) {
             className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#1C222E] hover:bg-[#252D3D] text-[#F2EEE6] border border-[#C9A45C]/45 text-xs font-semibold transition-colors disabled:opacity-60 cursor-pointer"
           >
             <Package className="w-4 h-4 text-[#C9A45C]" />
-            <span>
-              {busyTarget === 'firefox' ? 'Génération...' : 'Télécharger ZIP Firefox'}
-            </span>
+            <span>{busyTarget === 'firefox' ? 'Génération...' : 'Télécharger ZIP Firefox'}</span>
           </button>
         </div>
 
@@ -151,34 +149,34 @@ export function PackageView({ config }: PackageViewProps) {
               <span className="font-mono-tabular text-xs text-[#C9A45C]">CI / CD</span>
             </div>
             <p className="text-xs text-[#9CA3B2] leading-relaxed">
-              Arborescence complète prête à pousser sur GitHub avec script de build bi-cible et
-              workflows GitHub Actions.
+              Arborescence complète avec CI, CD indépendante manuelle/tag, script de build et
+              templates d’issues GitHub.
             </p>
             <ul className="space-y-2 pt-2 border-t border-[rgba(242,238,230,0.07)] text-xs">
               <li className="flex items-start gap-2">
                 <Check className="w-3.5 h-3.5 text-[#3FA372] shrink-0 mt-0.5" />
                 <div>
-                  <div className="text-[#E8E3D9]">Workflow CI sur push &amp; PR</div>
+                  <div className="text-[#E8E3D9]">CI sur main &amp; PR (ci.yml)</div>
                   <div className="text-[11px] text-[#7E8799]">
-                    Build Chrome/Firefox + Mozilla web-ext lint
+                    Build bi-cible + web-ext lint --warnings-as-errors
                   </div>
                 </div>
               </li>
               <li className="flex items-start gap-2">
                 <Check className="w-3.5 h-3.5 text-[#3FA372] shrink-0 mt-0.5" />
                 <div>
-                  <div className="text-[#E8E3D9]">Workflow Release sur tag v*</div>
+                  <div className="text-[#E8E3D9]">CD manuelle ou tag v* (release.yml)</div>
                   <div className="text-[11px] text-[#7E8799]">
-                    GitHub Release + publication Chrome &amp; AMO
+                    workflow_dispatch (patch/minor/major) → GitHub Release
                   </div>
                 </div>
               </li>
               <li className="flex items-start gap-2">
                 <Check className="w-3.5 h-3.5 text-[#3FA372] shrink-0 mt-0.5" />
                 <div>
-                  <div className="text-[#E8E3D9]">Script Node build-extension.mjs</div>
+                  <div className="text-[#E8E3D9]">Templates d’issues GitHub</div>
                   <div className="text-[11px] text-[#7E8799]">
-                    npm run build:all sans dépendance lourde
+                    Formulaires Bug Report &amp; Feature Request prêts à l’emploi
                   </div>
                 </div>
               </li>
@@ -199,14 +197,17 @@ export function PackageView({ config }: PackageViewProps) {
         </div>
       </div>
 
-      {/* GitHub Actions Secrets Table */}
+      {/* GitHub Actions Workflows & Secrets Table */}
       <div className="rounded-xl border border-[rgba(242,238,230,0.09)] bg-[#151922] p-6 space-y-4">
         <div>
           <h2 className="font-display text-base font-semibold text-[#F2EEE6]">
-            Secrets GitHub Actions pour le déploiement automatique sur les stores
+            Pipeline CI / CD &amp; Secrets GitHub Actions
           </h2>
           <p className="text-xs text-[#9CA3B2] mt-1">
-            Ajoutez ces secrets dans <span className="font-mono-tabular text-[#D8D3C9]">Settings → Secrets and variables → Actions</span> de votre dépôt <span className="font-mono-tabular text-[#D8D3C9]">LPauzies/Upkeep</span>. Tant qu’ils ne sont pas définis, le workflow publie la GitHub Release sans échouer.
+            La CD est totalement découplée des merges sur{' '}
+            <span className="font-mono-tabular text-[#D8D3C9]">main</span> : lancez une release à la
+            main depuis l’onglet <span className="font-mono-tabular text-[#D8D3C9]">Actions</span>{' '}
+            ou en poussant un tag <span className="font-mono-tabular text-[#D8D3C9]">v*</span>.
           </p>
         </div>
 
@@ -215,7 +216,7 @@ export function PackageView({ config }: PackageViewProps) {
             <thead>
               <tr className="border-b border-[rgba(242,238,230,0.1)] text-[#9CA3B2]">
                 <th className="py-2.5 pr-4 font-medium">Plateforme</th>
-                <th className="py-2.5 pr-4 font-medium">Secrets requis</th>
+                <th className="py-2.5 pr-4 font-medium">Secrets requis (optionnels)</th>
                 <th className="py-2.5 font-medium">Déclencheur</th>
               </tr>
             </thead>
@@ -229,7 +230,8 @@ export function PackageView({ config }: PackageViewProps) {
                   CHROME_REFRESH_TOKEN
                 </td>
                 <td className="py-3 text-[#9CA3B2] whitespace-nowrap">
-                  Tag <span className="font-mono-tabular text-[#D8D3C9]">v*</span> ou manuel
+                  Manuel (<span className="font-mono-tabular text-[#D8D3C9]">workflow_dispatch</span>
+                  ) ou tag <span className="font-mono-tabular text-[#D8D3C9]">v*</span>
                 </td>
               </tr>
               <tr>
@@ -240,7 +242,8 @@ export function PackageView({ config }: PackageViewProps) {
                   AMO_JWT_ISSUER · AMO_JWT_SECRET
                 </td>
                 <td className="py-3 text-[#9CA3B2] whitespace-nowrap">
-                  Tag <span className="font-mono-tabular text-[#D8D3C9]">v*</span> (web-ext sign)
+                  Manuel (<span className="font-mono-tabular text-[#D8D3C9]">workflow_dispatch</span>
+                  ) ou tag <span className="font-mono-tabular text-[#D8D3C9]">v*</span>
                 </td>
               </tr>
             </tbody>
@@ -267,13 +270,17 @@ export function PackageView({ config }: PackageViewProps) {
             onClick={handleCopyFile}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#1C222E] hover:bg-[#252D3D] text-xs font-medium text-[#F2EEE6] border border-[rgba(242,238,230,0.12)] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-[#3FA372]" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? (
+              <Check className="w-3.5 h-3.5 text-[#3FA372]" />
+            ) : (
+              <Copy className="w-3.5 h-3.5" />
+            )}
             <span>{copied ? 'Copié' : 'Copier'}</span>
           </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[420px]">
-          <div className="lg:col-span-3 border-b lg:border-b-0 lg:border-r border-[rgba(242,238,230,0.08)] bg-[#11151D] p-2 max-h-[460px] overflow-y-auto upkeep-scroll space-y-0.5">
+          <div className="lg:col-span-3 border-b lg:border-b-0 lg:border-r border-[rgba(242,238,230,0.08)] bg-[#11151D] p-2 max-h-[480px] overflow-y-auto upkeep-scroll space-y-0.5">
             {files.map((file) => (
               <button
                 key={file.path}
@@ -290,7 +297,7 @@ export function PackageView({ config }: PackageViewProps) {
             ))}
           </div>
 
-          <div className="lg:col-span-9 bg-[#0B0E13] max-h-[460px] overflow-auto upkeep-scroll p-5">
+          <div className="lg:col-span-9 bg-[#0B0E13] max-h-[480px] overflow-auto upkeep-scroll p-5">
             <pre className="font-mono-tabular text-xs leading-relaxed text-[#DFDBD2] whitespace-pre">
               {activeFile.content}
             </pre>

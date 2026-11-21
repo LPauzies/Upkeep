@@ -3,15 +3,16 @@ import type { UpkeepConfig } from './types';
 export const DEFAULT_UPKEEP_CONFIG: UpkeepConfig = {
   version: '1.0.0',
   enabled: true,
+  showMidlineTimeline: true,
   autoOpenLogsLeft: true,
   alwaysShowOpponentGraveyard: true,
+  hideActionToasts: true,
+  anchorStackTopLeft: true,
   highContrastHud: true,
-  showExtendedCounters: true,
   enableHoverZoom: true,
   logsWidth: 278,
   graveyardWidth: 268,
   hoverZoomScale: 1.45,
-  density: 'balanced',
   shortcuts: {
     toggleLogs: 'l',
     toggleGraveyard: 'g',
@@ -23,6 +24,7 @@ export const DEFAULT_UPKEEP_CONFIG: UpkeepConfig = {
     logsToggleButton:
       'button[aria-label*="open game log" i], button[aria-label*="game log" i]:not([aria-label*="close" i]), button[title*="game log" i]',
     opponentGraveyardZone: 'button[data-zone-anchor="opp-graveyard"]',
+    selfGraveyardZone: 'button[data-zone-anchor="my-graveyard"]',
     opponentGraveyardCards:
       '[role="dialog"] [data-testid="card-img"], [data-zone*="graveyard" i] [data-testid="card-img"]',
     opponentLife: '[data-testid="opp-life"] .life-total',
@@ -43,7 +45,7 @@ export const SELECTOR_LABELS: Record<keyof UpkeepConfig['selectors'], { label: s
   },
   logsPanel: {
     label: 'Panneau des logs',
-    hint: 'Journal des actions à ancrer sur le rail gauche',
+    hint: 'Journal ancré à taille fixe dans le rail gauche',
   },
   logsToggleButton: {
     label: 'Bouton ouverture des logs',
@@ -51,15 +53,19 @@ export const SELECTOR_LABELS: Record<keyof UpkeepConfig['selectors'], { label: s
   },
   opponentGraveyardZone: {
     label: 'Zone cimetière adverse',
-    hint: 'Zone observée en continu par le MutationObserver',
+    hint: 'Compteur et ouverture modale du cimetière adverse',
+  },
+  selfGraveyardZone: {
+    label: 'Zone de votre cimetière',
+    hint: 'Compteur et ouverture modale de votre cimetière',
   },
   opponentGraveyardCards: {
-    label: 'Cartes du cimetière adverse',
-    hint: 'Éléments de cartes extraits dans le rail droit',
+    label: 'Cartes dans les modales cimetière',
+    hint: 'Images extraites pour alimenter la grille 2 colonnes',
   },
   opponentLife: {
     label: 'Points de vie adversaire',
-    hint: 'Compteur PV adverse remonté dans le HUD tactique',
+    hint: 'Compteur PV adverse (delta et état critique ≤ 5)',
   },
   opponentLibrary: {
     label: 'Deck adversaire',
@@ -75,7 +81,7 @@ export const SELECTOR_LABELS: Record<keyof UpkeepConfig['selectors'], { label: s
   },
   selfLife: {
     label: 'Vos points de vie',
-    hint: 'Compteur PV joueur remonté en bas du plateau',
+    hint: 'Compteur PV joueur en bas du rail gauche',
   },
   selfLibrary: {
     label: 'Votre deck',

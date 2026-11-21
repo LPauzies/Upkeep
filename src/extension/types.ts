@@ -1,5 +1,3 @@
-export type DensityMode = 'compact' | 'balanced' | 'spacious';
-
 export type CardCategory = 'creature' | 'spell' | 'land' | 'artifact';
 
 export interface DomSelectorConfig {
@@ -7,6 +5,7 @@ export interface DomSelectorConfig {
   logsPanel: string;
   logsToggleButton: string;
   opponentGraveyardZone: string;
+  selfGraveyardZone: string;
   opponentGraveyardCards: string;
   opponentLife: string;
   opponentLibrary: string;
@@ -27,15 +26,16 @@ export interface UpkeepShortcuts {
 export interface UpkeepConfig {
   version: string;
   enabled: boolean;
+  showMidlineTimeline: boolean;
   autoOpenLogsLeft: boolean;
   alwaysShowOpponentGraveyard: boolean;
+  hideActionToasts: boolean;
+  anchorStackTopLeft: boolean;
   highContrastHud: boolean;
-  showExtendedCounters: boolean;
   enableHoverZoom: boolean;
   logsWidth: number;
   graveyardWidth: number;
   hoverZoomScale: number;
-  density: DensityMode;
   shortcuts: UpkeepShortcuts;
   selectors: DomSelectorConfig;
 }

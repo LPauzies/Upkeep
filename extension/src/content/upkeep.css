@@ -330,16 +330,57 @@ html[data-upkeep-active="true"] .wr-plate button[data-zone-anchor="my-graveyard"
 }
 
 /* ============================================================================
- * 3. DECISION SURFACE & AUTO-PASS (HIGH CONTRAST OBSIDIAN & GOLD)
+ * 3. DECISION SURFACE & AUTO-PASS (FIXED HEIGHT, ZERO LAYOUT JUMP)
  * ============================================================================ */
+
+html[data-upkeep-active="true"] aside.wr-rail-left [aria-label="Pending actions"] {
+  padding: 0 6px 6px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-end !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+html[data-upkeep-active="true"] aside.wr-rail-left [aria-label="Pending actions"] > div {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  margin-top: auto !important;
+  padding: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Lock BOTH Decision and Waiting boxes to the exact same fixed height so Game Log never jumps */
+html[data-upkeep-active="true"] aside.wr-rail-left [aria-label="Pending actions"] > div > :first-child:not([aria-label="Pass priority shortcuts"]),
+html[data-upkeep-active="true"] [data-zone="decision-surface"] {
+  height: var(--upkeep-ds-height, 248px) !important;
+  min-height: var(--upkeep-ds-height, 248px) !important;
+  max-height: var(--upkeep-ds-height, 248px) !important;
+  flex: 0 0 var(--upkeep-ds-height, 248px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  border-radius: 7px !important;
+}
+
+/* Waiting state card (matches Decision frame cleanly with muted slate border) */
+html[data-upkeep-active="true"] aside.wr-rail-left [aria-label="Pending actions"] > div > :first-child:not([data-zone="decision-surface"]):not([aria-label="Pass priority shortcuts"]) {
+  background: var(--upkeep-bg-surface) !important;
+  background-image: none !important;
+  border: 1px solid var(--upkeep-border) !important;
+  padding: 10px 11px !important;
+  justify-content: flex-start !important;
+  gap: 4px !important;
+}
 
 html[data-upkeep-active="true"] [data-zone="decision-surface"] {
   background: var(--upkeep-bg-surface) !important;
   background-image: none !important;
   border: 1px solid var(--upkeep-gold-soft) !important;
-  border-radius: 7px !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
-  overflow: hidden !important;
   padding: 0 !important;
 }
 
@@ -348,9 +389,13 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-banner {
   transform: none !important;
   margin: 0 !important;
   width: 100% !important;
-  min-height: 0 !important;
-  height: auto !important;
-  padding: 6px 10px !important;
+  aspect-ratio: auto !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  max-height: 28px !important;
+  flex: 0 0 28px !important;
+  padding: 0 10px !important;
+  box-sizing: border-box !important;
   background: var(--upkeep-bg-elevated) !important;
   background-image: none !important;
   border-bottom: 1px solid var(--upkeep-border) !important;
@@ -379,16 +424,38 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-banner-lab
   text-transform: uppercase !important;
   color: var(--upkeep-gold) !important;
   text-shadow: none !important;
-  line-height: 1.2 !important;
+  line-height: 1 !important;
 }
 
 html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-body {
   background: var(--upkeep-bg-surface) !important;
   background-image: none !important;
-  padding: 10px !important;
+  padding: 9px 10px !important;
   border: none !important;
   box-shadow: none !important;
   color: var(--upkeep-text-primary) !important;
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(201, 164, 92, 0.35) transparent !important;
+}
+
+html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-body::-webkit-scrollbar {
+  width: 5px;
+}
+
+html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-body::-webkit-scrollbar-thumb {
+  background: rgba(201, 164, 92, 0.32);
+  border-radius: 3px;
+}
+
+html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-body::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-title {
@@ -399,6 +466,7 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-title {
   font-weight: 700 !important;
   line-height: 1.3 !important;
   text-shadow: none !important;
+  flex-shrink: 0 !important;
 }
 
 html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-message {
@@ -410,6 +478,7 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-message {
   line-height: 1.35 !important;
   margin-top: 2px !important;
   text-shadow: none !important;
+  flex-shrink: 0 !important;
 }
 
 /* Replace Endstep's unreadable dark-red parchment text (e.g., "CLICK TO SELECT") with high-contrast bright amber-gold */
@@ -427,6 +496,10 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="status"]
 
 html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions {
   margin-top: 8px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+  flex-shrink: 0 !important;
 }
 
 html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions button {
@@ -437,7 +510,9 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions bu
   font-size: 11px !important;
   font-weight: 700 !important;
   letter-spacing: 0.04em !important;
-  padding: 7px 8px !important;
+  padding: 6px 8px !important;
+  min-height: 30px !important;
+  line-height: 1.2 !important;
   border-radius: 5px !important;
   box-shadow: none !important;
 }
@@ -460,16 +535,177 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] [data-testid="kca
   box-shadow: none !important;
 }
 
-html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button {
-  background: var(--upkeep-bg-surface) !important;
-  border-color: var(--upkeep-border) !important;
-  color: var(--upkeep-text-secondary) !important;
+/* Compact 3-button horizontal AUTO-PASS bar (reclaims ~80px for Game Log & Decision) */
+html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] {
+  flex: 0 0 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
-html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button:hover {
+html[data-upkeep-active="true"] [data-upkeep-autopass-header="true"] {
+  display: none !important;
+}
+
+html[data-upkeep-active="true"] [data-upkeep-autopass-grid="true"] {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 5px !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+html[data-upkeep-active="true"] [data-upkeep-autopass-grid="true"] > :not(button):not([data-upkeep-autopass-cell="true"]) {
+  grid-column: 1 / -1 !important;
+}
+
+html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  max-height: 30px !important;
+  padding: 0 5px !important;
+  margin: 0 !important;
+  background: var(--upkeep-bg-surface) !important;
+  border: 1px solid var(--upkeep-border) !important;
+  border-radius: 5px !important;
+  color: var(--upkeep-text-secondary) !important;
+  font-family: var(--upkeep-font-sans) !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease !important;
+}
+
+/* Hide full verbose text when Upkeep short label is applied, keeping only keycap + short label */
+html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button[data-upkeep-ap-short] {
+  font-size: 0 !important;
+  line-height: 1 !important;
+}
+
+html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button[data-upkeep-ap-short] > *:not([data-upkeep-ap-key="true"]):not([data-testid="kcap"]):not(kbd):not(svg) {
+  display: none !important;
+}
+
+html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button[data-upkeep-ap-short]::before {
+  content: attr(data-upkeep-ap-short);
+  font-family: var(--upkeep-font-sans) !important;
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em !important;
+  color: inherit !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button [data-upkeep-ap-key="true"],
+html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button [data-testid="kcap"],
+html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button kbd {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  min-width: 16px !important;
+  height: 16px !important;
+  padding: 0 3px !important;
+  margin: 0 !important;
+  font-family: var(--upkeep-font-mono) !important;
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  background: #111620 !important;
+  border: 1px solid rgba(244, 246, 250, 0.18) !important;
+  border-radius: 3px !important;
+  color: var(--upkeep-gold) !important;
+  box-shadow: none !important;
+}
+
+html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button:hover,
+html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button:focus-visible {
   background: var(--upkeep-bg-hover) !important;
-  border-color: var(--upkeep-border-strong) !important;
+  border-color: var(--upkeep-gold-soft) !important;
   color: var(--upkeep-text-primary) !important;
+  outline: none !important;
+}
+
+html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button[aria-pressed="true"],
+html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button[data-active="true"],
+html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button[data-state="on"] {
+  background: rgba(201, 164, 92, 0.16) !important;
+  border-color: var(--upkeep-gold) !important;
+  color: var(--upkeep-gold) !important;
+}
+
+/* Floating Tooltip for compact AUTO-PASS buttons (never clipped by overflow:hidden) */
+#upkeep-tooltip {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  max-width: 240px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  background: rgba(15, 20, 29, 0.97);
+  border: 1px solid var(--upkeep-gold-soft);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65);
+  font-family: var(--upkeep-font-sans);
+  color: var(--upkeep-text-primary);
+  opacity: 0;
+  transform: translateY(3px);
+  transition: opacity 90ms ease, transform 90ms ease;
+}
+
+#upkeep-tooltip[data-visible="true"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.upkeep-tooltip-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--upkeep-gold);
+  line-height: 1.2;
+}
+
+.upkeep-tooltip-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: #111620;
+  border: 1px solid rgba(244, 246, 250, 0.22);
+  font-family: var(--upkeep-font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.upkeep-tooltip-desc {
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 400;
+  color: #d4dce9;
+  line-height: 1.3;
 }
 
 /* ============================================================================
@@ -869,19 +1105,26 @@ html[data-upkeep-timeline="false"] #upkeep-graveyards-dock[data-mode="docked"] {
 
 .upkeep-gy-section[data-owner="self"] .upkeep-gy-card-qty {
   color: #8cbef5;
+  border-color: rgba(124, 174, 230, 0.5);
 }
 
-.upkeep-gy-section[data-owner="self"] .upkeep-gy-row:hover {
-  border-color: rgba(124, 174, 230, 0.42);
+.upkeep-gy-section[data-owner="self"] .upkeep-gy-row:hover,
+.upkeep-gy-section[data-owner="self"] .upkeep-gy-row:focus-visible {
+  border-color: #8cbef5;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(140, 190, 245, 0.35);
 }
 
 .upkeep-gy-list {
   flex: 1 1 auto;
   overflow-y: auto;
-  padding: 5px 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  overflow-x: hidden;
+  padding: 6px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(244, 246, 250, 0.16) transparent;
 }
 
 .upkeep-gy-list::-webkit-scrollbar {
@@ -889,82 +1132,90 @@ html[data-upkeep-timeline="false"] #upkeep-graveyards-dock[data-mode="docked"] {
 }
 
 .upkeep-gy-list::-webkit-scrollbar-thumb {
-  background: rgba(244, 246, 250, 0.14);
+  background: rgba(244, 246, 250, 0.16);
   border-radius: 3px;
+}
+
+.upkeep-gy-list::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .upkeep-gy-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 6px;
-  border-radius: 5px;
-  background: rgba(30, 38, 54, 0.65);
-  border: 1px solid var(--upkeep-border);
-  cursor: pointer;
-  text-align: left;
+  position: relative;
+  display: block;
   width: 100%;
+  aspect-ratio: 63 / 88;
+  padding: 0;
+  margin: 0;
+  border-radius: 6px;
+  background: var(--upkeep-bg-void);
+  border: 1px solid rgba(244, 246, 250, 0.14);
+  cursor: pointer;
+  overflow: hidden;
   box-sizing: border-box;
-  transition: background-color 120ms ease, border-color 120ms ease;
+  transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
 }
 
-.upkeep-gy-row:hover {
-  background: var(--upkeep-bg-hover);
-  border-color: var(--upkeep-gold-soft);
+.upkeep-gy-row:hover,
+.upkeep-gy-row:focus-visible {
+  transform: translateY(-1px);
+  border-color: var(--upkeep-gold);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(201, 164, 92, 0.35);
+  outline: none;
 }
 
 .upkeep-gy-thumb {
-  width: 26px;
-  height: 36px;
-  border-radius: 3px;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  flex-shrink: 0;
+  display: block;
   background: var(--upkeep-bg-void);
-  border: 1px solid rgba(244, 246, 250, 0.12);
 }
 
-.upkeep-gy-card-info {
-  min-width: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
+.upkeep-gy-row[data-img-error="true"] .upkeep-gy-thumb {
+  display: none;
 }
 
-.upkeep-gy-card-name-row {
-  display: flex;
+.upkeep-gy-card-fallback {
+  display: none;
+  position: absolute;
+  inset: 0;
+  padding: 8px 6px;
   align-items: center;
-  justify-content: space-between;
-  gap: 6px;
+  justify-content: center;
+  text-align: center;
+  font-family: var(--upkeep-font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--upkeep-text-primary);
+  background: rgba(30, 38, 54, 0.85);
 }
 
-.upkeep-gy-card-name {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--upkeep-text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.upkeep-gy-row[data-img-error="true"] .upkeep-gy-card-fallback {
+  display: flex;
 }
 
 .upkeep-gy-card-qty {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(11, 14, 20, 0.88);
+  border: 1px solid var(--upkeep-gold-soft);
   font-family: var(--upkeep-font-sans);
   font-variant-numeric: tabular-nums;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
+  line-height: 1.25;
   color: var(--upkeep-gold);
-  flex-shrink: 0;
-}
-
-.upkeep-gy-card-sub {
-  font-size: 10px;
-  color: var(--upkeep-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.65);
+  pointer-events: none;
 }
 
 .upkeep-gy-empty {
+  grid-column: 1 / -1;
   padding: 14px 10px;
   text-align: center;
   color: var(--upkeep-text-muted);

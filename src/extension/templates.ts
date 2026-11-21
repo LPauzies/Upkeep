@@ -8,6 +8,14 @@ import rawPopupJs from '../../extension/src/popup/popup.js?raw';
 import rawOptionsHtml from '../../extension/src/options/options.html?raw';
 import rawOptionsCss from '../../extension/src/options/options.css?raw';
 import rawOptionsJs from '../../extension/src/options/options.js?raw';
+import rawChromeManifest from '../../extension/manifest.chrome.json?raw';
+import rawFirefoxManifest from '../../extension/manifest.firefox.json?raw';
+import rawBuildScript from '../../scripts/build-extension.mjs?raw';
+import rawCiWorkflow from '../../.github/workflows/ci.yml?raw';
+import rawReleaseWorkflow from '../../.github/workflows/release.yml?raw';
+import rawBugTemplate from '../../.github/ISSUE_TEMPLATE/bug_report.yml?raw';
+import rawFeatureTemplate from '../../.github/ISSUE_TEMPLATE/feature_request.yml?raw';
+import rawIssueConfig from '../../.github/ISSUE_TEMPLATE/config.yml?raw';
 
 export interface GeneratedRepoFile {
   path: string;
@@ -18,73 +26,15 @@ export interface GeneratedRepoFile {
 }
 
 export function generateChromeManifest(config: UpkeepConfig): string {
-  const manifest = {
-    manifest_version: 3,
-    name: 'Upkeep',
-    short_name: 'Upkeep',
-    version: config.version,
-    description:
-      'Client-side UI overhaul for endstep.cc/game/*: dual live graveyards (opponent & yours), horizontal midline phase bar, docked game log, and crisp Helvetica typography without touching Magic cards.',
-    homepage_url: 'https://github.com/LPauzies/Upkeep',
-    permissions: ['storage'],
-    host_permissions: ['https://endstep.cc/*'],
-    icons: {
-      '16': 'icons/icon-16.png',
-      '32': 'icons/icon-32.png',
-      '48': 'icons/icon-48.png',
-      '128': 'icons/icon-128.png',
-    },
-    action: {
-      default_title: 'Upkeep — Endstep UI Settings',
-      default_popup: 'src/popup/popup.html',
-      default_icon: {
-        '16': 'icons/icon-16.png',
-        '32': 'icons/icon-32.png',
-        '48': 'icons/icon-48.png',
-        '128': 'icons/icon-128.png',
-      },
-    },
-    options_ui: {
-      page: 'src/options/options.html',
-      open_in_tab: true,
-    },
-    content_scripts: [
-      {
-        matches: ['https://endstep.cc/*'],
-        js: ['src/content/ws-spy.js'],
-        run_at: 'document_start',
-        world: 'MAIN',
-      },
-      {
-        matches: ['https://endstep.cc/*'],
-        css: ['src/content/upkeep.css'],
-        js: ['src/content/upkeep.js'],
-        run_at: 'document_idle',
-      },
-    ],
-  };
+  const manifest = JSON.parse(rawChromeManifest);
+  manifest.version = config.version;
   return JSON.stringify(manifest, null, 2) + '\n';
 }
 
 export function generateFirefoxManifest(config: UpkeepConfig): string {
-  const base = JSON.parse(generateChromeManifest(config));
-  const firefoxManifest = {
-    ...base,
-    action: {
-      ...base.action,
-      default_area: 'navbar',
-    },
-    browser_specific_settings: {
-      gecko: {
-        id: 'upkeep-endstep@lpauzies.dev',
-        strict_min_version: '142.0',
-        data_collection_permissions: {
-          required: ['none'],
-        },
-      },
-    },
-  };
-  return JSON.stringify(firefoxManifest, null, 2) + '\n';
+  const manifest = JSON.parse(rawFirefoxManifest);
+  manifest.version = config.version;
+  return JSON.stringify(manifest, null, 2) + '\n';
 }
 
 export function generateWsSpyJs(): string {
@@ -102,20 +52,17 @@ export function generateContentJs(config: UpkeepConfig): string {
   const injectedConfig = JSON.stringify(
     {
       enabled: config.enabled,
-      showMidlineTimeline: true,
+      showMidlineTimeline: config.showMidlineTimeline,
       autoOpenLogsLeft: config.autoOpenLogsLeft,
       alwaysShowOpponentGraveyard: config.alwaysShowOpponentGraveyard,
-      hideActionToasts: true,
-      anchorStackTopLeft: true,
+      hideActionToasts: config.hideActionToasts,
+      anchorStackTopLeft: config.anchorStackTopLeft,
       highContrastHud: config.highContrastHud,
       enableHoverZoom: config.enableHoverZoom,
       logsWidth: config.logsWidth,
       graveyardWidth: config.graveyardWidth,
       shortcuts: config.shortcuts,
-      selectors: {
-        ...config.selectors,
-        selfGraveyardZone: 'button[data-zone-anchor="my-graveyard"]',
-      },
+      selectors: config.selectors,
     },
     null,
     2
@@ -125,7 +72,6 @@ export function generateContentJs(config: UpkeepConfig): string {
     `const DEFAULT_CONFIG = ${injectedConfig};`
   );
 }
-
 
 export function generatePopupHtml(): string {
   return rawPopupHtml;
@@ -155,82 +101,27 @@ export function generateOptionsJs(config: UpkeepConfig): string {
 }
 
 export function generateBuildScript(): string {
-  return `#!/usr/bin/env node
-/**
- * Upkeep — Dual-Target Extension Build & Packager (Chrome MV3 + Firefox MV3)
- * Usage:
- *   node scripts/build-extension.mjs --target=all
- *   node scripts/build-extension.mjs --target=chrome
- *   node scripts/build-extension.mjs --target=firefox
- */
-import { execSync } from 'node:child_process';
-import fs from 'node:fs';
-import path from 'node:path';
-
-const rootDir = process.cwd();
-const argTarget = process.argv.find((a) => a.startsWith('--target='));
-const requested = argTarget ? argTarget.split('=')[1] : 'all';
-const targets = requested === 'all' ? ['chrome', 'firefox'] : [requested];
-
-const pkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
-const version = pkg.version || '1.0.0';
-
-function copyRecursive(src, dest) {
-  if (!fs.existsSync(src)) return;
-  const stat = fs.statSync(src);
-  if (stat.isDirectory()) {
-    fs.mkdirSync(dest, { recursive: true });
-    for (const entry of fs.readdirSync(src)) {
-      copyRecursive(path.join(src, entry), path.join(dest, entry));
-    }
-  } else {
-    fs.mkdirSync(path.dirname(dest), { recursive: true });
-    fs.copyFileSync(src, dest);
-  }
+  return rawBuildScript;
 }
 
-function validateManifest(manifest, target) {
-  if (manifest.manifest_version !== 3) {
-    throw new Error(\`[\${target}] manifest_version must be 3\`);
-  }
-  if (target === 'firefox') {
-    const gecko = manifest.browser_specific_settings?.gecko;
-    if (!gecko?.id) {
-      throw new Error('[firefox] Missing browser_specific_settings.gecko.id');
-    }
-    if (!gecko?.data_collection_permissions?.required) {
-      throw new Error('[firefox] Missing required data_collection_permissions for AMO');
-    }
-  }
-  if (target === 'chrome' && manifest.browser_specific_settings) {
-    throw new Error('[chrome] Remove browser_specific_settings to keep Chrome Web Store manifest clean');
-  }
+export function generateCiWorkflowYaml(): string {
+  return rawCiWorkflow;
 }
 
-fs.mkdirSync(path.join(rootDir, 'artifacts'), { recursive: true });
-
-for (const target of targets) {
-  const outDir = path.join(rootDir, 'dist', target);
-  fs.rmSync(outDir, { recursive: true, force: true });
-  fs.mkdirSync(outDir, { recursive: true });
-
-  const manifestFile = path.join(rootDir, \`manifest.\${target}.json\`);
-  const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
-  manifest.version = version;
-  validateManifest(manifest, target);
-
-  fs.writeFileSync(path.join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\\n');
-  copyRecursive(path.join(rootDir, 'src'), path.join(outDir, 'src'));
-  copyRecursive(path.join(rootDir, 'icons'), path.join(outDir, 'icons'));
-
-  const zipName = \`upkeep-\${target}-v\${version}.zip\`;
-  const zipPath = path.join(rootDir, 'artifacts', zipName);
-  fs.rmSync(zipPath, { force: true });
-
-  execSync(\`cd "\${outDir}" && zip -rq "\${zipPath}" .\`);
-  console.log(\`✔ Built \${target} MV3 -> artifacts/\${zipName}\`);
+export function generateReleaseWorkflowYaml(): string {
+  return rawReleaseWorkflow;
 }
-`;
+
+export function generateBugTemplateYaml(): string {
+  return rawBugTemplate;
+}
+
+export function generateFeatureTemplateYaml(): string {
+  return rawFeatureTemplate;
+}
+
+export function generateIssueConfigYaml(): string {
+  return rawIssueConfig;
 }
 
 export function generateRepoPackageJson(config: UpkeepConfig): string {
@@ -251,7 +142,8 @@ export function generateRepoPackageJson(config: UpkeepConfig): string {
           'build:chrome': 'node scripts/build-extension.mjs --target=chrome',
           'build:firefox': 'node scripts/build-extension.mjs --target=firefox',
           'build:all': 'node scripts/build-extension.mjs --target=all',
-          'lint:firefox': 'npx --yes web-ext lint --source-dir dist/firefox --self-hosted',
+          'lint:firefox':
+            'npx --yes web-ext lint --source-dir dist-extension/firefox --warnings-as-errors',
           verify: 'npm run build:all && npm run lint:firefox',
         },
         devDependencies: {
@@ -264,196 +156,24 @@ export function generateRepoPackageJson(config: UpkeepConfig): string {
   );
 }
 
-export function generateCiWorkflowYaml(): string {
-  return `name: CI — Build & Validate Upkeep
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-jobs:
-  validate-and-build:
-    name: Build Chrome & Firefox MV3 + web-ext lint
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Build & validate Chrome and Firefox manifests
-        run: npm run build:all
-
-      - name: Lint Firefox MV3 package with Mozilla web-ext (self-hosted)
-        run: npx --yes web-ext lint --source-dir dist/firefox --self-hosted --warnings-as-errors
-
-      - name: Upload preview extension artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: upkeep-preview-bundles
-          path: artifacts/*.zip
-          retention-days: 14
-`;
-}
-
-export function generateReleaseWorkflowYaml(): string {
-  return `name: CD — Release & Publish (Manual / Tag Only)
-
-on:
-  push:
-    tags:
-      - 'v*'
-  workflow_dispatch:
-    inputs:
-      bump:
-        description: 'Incrément SemVer automatique depuis le dernier tag (ignoré si Version explicite renseignée)'
-        type: choice
-        default: 'patch'
-        options:
-          - patch
-          - minor
-          - major
-      version:
-        description: 'Version explicite optionnelle (ex: 1.2.0 — laisser vide pour utiliser le bump ci-dessus)'
-        required: false
-        default: ''
-      publish_stores:
-        description: 'Signer sur Mozilla AMO (unlisted .xpi) et publier sur Chrome Web Store si les secrets sont configurés'
-        type: boolean
-        default: true
-
-permissions:
-  contents: write
-
-jobs:
-  build-release:
-    name: Build, Sign Firefox XPI & Publish GitHub Release
-    runs-on: ubuntu-latest
-    outputs:
-      version: \${{ steps.meta.outputs.version }}
-      tag: \${{ steps.meta.outputs.tag }}
-
-    steps:
-      - name: Checkout repository (with tags)
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Compute SemVer version (Chrome & Firefox MV3 compatible)
-        id: meta
-        run: |
-          if [[ "\${GITHUB_REF}" == refs/tags/v* ]]; then
-            RAW="\${GITHUB_REF#refs/tags/v}"
-          elif [[ -n "\${{ inputs.version }}" ]]; then
-            RAW="\${{ inputs.version }}"
-            RAW="\${RAW#v}"
-          else
-            LATEST_TAG=$(git tag --list 'v*' --sort=-v:refname | head -n 1)
-            if [[ -z "$LATEST_TAG" ]]; then
-              RAW="1.0.0"
-            else
-              BASE="\${LATEST_TAG#v}"
-              IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE"
-              MAJOR=\${MAJOR:-1}
-              MINOR=\${MINOR:-0}
-              PATCH=\${PATCH:-0}
-              case "\${{ inputs.bump }}" in
-                major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
-                minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
-                *) PATCH=$((PATCH + 1)) ;;
-              esac
-              RAW="\${MAJOR}.\${MINOR}.\${PATCH}"
-            fi
-          fi
-          echo "version=\${RAW}" >> "$GITHUB_OUTPUT"
-          echo "tag=v\${RAW}" >> "$GITHUB_OUTPUT"
-
-      - name: Build Chrome & Firefox MV3 packages + updates.json
-        run: node scripts/build-extension.mjs --target=all --version=\${{ steps.meta.outputs.version }}
-
-      - name: Validate Firefox bundle with web-ext lint (self-hosted)
-        run: npx --yes web-ext lint --source-dir dist-extension/firefox --self-hosted --warnings-as-errors
-
-      - name: Check Mozilla AMO signing secrets
-        id: check_amo
-        env:
-          AMO_JWT_ISSUER: \${{ secrets.AMO_JWT_ISSUER }}
-          AMO_JWT_SECRET: \${{ secrets.AMO_JWT_SECRET }}
-        run: |
-          if [ -n "$AMO_JWT_ISSUER" ] && [ -n "$AMO_JWT_SECRET" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Sign Firefox add-on via Mozilla AMO (self-hosted unlisted .xpi)
-        if: steps.check_amo.outputs.ready == 'true' && (github.event_name == 'push' || inputs.publish_stores == true)
-        env:
-          WEB_EXT_API_KEY: \${{ secrets.AMO_JWT_ISSUER }}
-          WEB_EXT_API_SECRET: \${{ secrets.AMO_JWT_SECRET }}
-          VERSION: \${{ steps.meta.outputs.version }}
-        run: |
-          mkdir -p artifacts/amo-signed
-          npx --yes web-ext sign \\
-            --source-dir dist-extension/firefox \\
-            --artifacts-dir artifacts/amo-signed \\
-            --channel=unlisted
-          SIGNED_XPI=$(find artifacts/amo-signed -maxdepth 1 -name '*.xpi' | head -n 1)
-          TARGET_XPI="artifacts/upkeep-firefox-v\${VERSION}.xpi"
-          cp "$SIGNED_XPI" "$TARGET_XPI"
-          SHA256=$(sha256sum "$TARGET_XPI" | awk '{print $1}')
-          node -e '
-            const fs = require("node:fs");
-            const p = "artifacts/updates.json";
-            const data = JSON.parse(fs.readFileSync(p, "utf8"));
-            data.addons["upkeep-endstep@lpauzies.dev"].updates[0].update_hash = "sha256:" + process.env.SHA256;
-            fs.writeFileSync(p, JSON.stringify(data, null, 2) + "\\n");
-          ' SHA256="$SHA256"
-
-      - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: \${{ steps.meta.outputs.tag }}
-          name: Upkeep \${{ steps.meta.outputs.tag }}
-          generate_release_notes: true
-          make_latest: true
-          fail_on_unmatched_files: false
-          files: |
-            artifacts/upkeep-firefox-v\${{ steps.meta.outputs.version }}.xpi
-            artifacts/updates.json
-            artifacts/upkeep-firefox-v\${{ steps.meta.outputs.version }}.zip
-            artifacts/upkeep-chrome-v\${{ steps.meta.outputs.version }}.zip
-`;
-}
-
 export function generateRepoReadme(config: UpkeepConfig): string {
-  return `# Upkeep — Refonte UI Endstep (Chrome & Firefox)
+  return `# Upkeep — Client UI Extension for endstep.cc (Chrome & Firefox)
 
-Extension navigateur **Manifest V3** pour [endstep.cc](https://endstep.cc/) conçue pour les parties Magic: The Gathering :
+Extension navigateur **Manifest V3** pour [endstep.cc/game/*](https://endstep.cc/) conçue pour les parties Magic: The Gathering :
 
-- **Cimetière adverse en continu** ancré sur la colonne droite (\`${config.graveyardWidth}px\`) avec filtres par type de carte, décompte des types distincts et zoom haute lisibilité au survol.
-- **Compteurs vitaux haute lisibilité** : Points de vie en grand corps tabulaire (avec delta récent et état critique), cartes restantes dans le Deck et cartes en Main.
-- **Journal de partie ouvert à gauche** (\`${config.logsWidth}px\`) automatiquement dès l'ouverture d'une URL \`/game/*\`.
-- **Charte tapis de tournoi** : ardoise obsidienne mate (\`#0E1116\`), surfaces structurées (\`#151922\`) et accents or mat (\`#C9A45C\`).
-- **Résilience DOM** : sélecteur visuel interactif et page d'options permettant de réassocier n'importe quelle zone en cas de mise à jour d'Endstep.
+- **Double cimetière en continu (grille 2 cartes/ligne)** : cimetière adverse (or mat) et votre cimetière (bleu acier) repliables dans le rail droit, synchronisés en temps réel (WebSocket/Fetch + Game Log + sync silencieux) avec filtres par type, badges \`×N\` et zoom haute lisibilité au survol.
+- **Barre de phases native sur la ligne médiane** : la vraie barre de phases d'Endstep (stops clic gauche, yields clic droit, infobulles) est déplacée à l'horizontale entre les deux champs de bataille sans réduire la taille des cartes.
+- **Game Log & Decision à taille fixe** : zéro redimensionnement et zéro saut vertical entre \`WAITING\`, \`PASS PRIORITY\` et les décisions multi-boutons ; en-tête \`DECISION\` compacté à 28 px avec défilement interne si besoin.
+- **Barre Auto-Pass 1 ligne (3 boutons + tooltips)** : \`EOT [E]\`, \`MY TURN [B]\`, \`ACTION [R]\` alignés horizontalement avec infobulles flottantes instantanées (~100 px récupérés).
+- **The Stack ancrée en haut à gauche du plateau** & masquage des toasts redondants.
+- **Icône de barre d'outils avec switch ON/OFF** et réglages individuels persistants.
 
 ---
 
-## 1. Build & Packaging local
+## 1. Build & Validation locale
 
 \`\`\`bash
-# Générer les archives Chrome MV3 et Firefox MV3 dans ./dist/ et ./artifacts/
+# Générer les archives Chrome MV3 et Firefox MV3 (dossiers gitignored, build CI-only dans le dépôt)
 npm run build:all
 
 # Valider le package Firefox avec Mozilla web-ext
@@ -462,48 +182,11 @@ npm run lint:firefox
 
 ---
 
-## 2. Installation locale pour tester sur \`endstep.cc\`
+## 2. CI / CD GitHub Actions (LPauzies/Upkeep)
 
-### Chrome / Brave / Edge
-1. Lancez \`npm run build:chrome\` (ou décompressez \`upkeep-chrome-v${config.version}.zip\`).
-2. Ouvrez \`chrome://extensions\` et activez **Mode développeur**.
-3. Cliquez sur **Charger l'extension non empaquetée** et sélectionnez \`dist/chrome/\`.
-4. Ouvrez une partie sur \`https://endstep.cc/game/...\`.
-
-### Firefox (Desktop &amp; Android ≥ 142)
-1. Lancez \`npm run build:firefox\` (ou décompressez \`upkeep-firefox-v${config.version}.zip\`).
-2. Ouvrez \`about:debugging#/runtime/this-firefox\`.
-3. Cliquez sur **Charger un module complémentaire temporaire...** et sélectionnez \`dist/firefox/manifest.json\`.
-4. Ouvrez une partie sur \`https://endstep.cc/game/...\`.
-
----
-
-## 3. Déploiement sur le Chrome Web Store
-
-1. Connectez-vous au [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole).
-2. Importez \`artifacts/upkeep-chrome-v${config.version}.zip\`.
-3. Permissions déclarées : \`storage\` uniquement + hôte \`https://endstep.cc/*\` (aucune collecte de données).
-4. Une fois validée, récupérez \`CHROME_EXTENSION_ID\` pour automatiser les mises à jour via GitHub Actions.
-
----
-
-## 4. Déploiement sur Firefox Add-ons (Mozilla AMO)
-
-Le manifeste \`manifest.firefox.json\` inclut déjà les champs obligatoires AMO :
-- \`browser_specific_settings.gecko.id\`: \`upkeep-endstep@lpauzies.dev\`
-- \`strict_min_version\`: \`142.0\`
-- \`data_collection_permissions.required\`: \`["none"]\`
-
-1. Rendez-vous sur [Mozilla Add-on Developer Hub](https://addons.mozilla.org/developers/).
-2. Soumettez \`artifacts/upkeep-firefox-v${config.version}.zip\` (distribution publique *listed* ou auto-signée *unlisted*).
-3. Pour la publication automatique CI, générez une clé API sur \`addons.mozilla.org/developers/addon/api/key/\`.
-
----
-
-## 5. GitHub Actions CI & Release automatique
-
-- \`.github/workflows/ci.yml\` : validation des manifestes, build Chrome/Firefox et \`web-ext lint --warnings-as-errors\` sur chaque push/PR.
-- \`.github/workflows/release.yml\` : sur tag \`v*\` (ex: \`git tag v${config.version} && git push origin v${config.version}\`), crée la GitHub Release avec les \`.zip\` et publie automatiquement sur les stores si les secrets sont définis :
+- **CI (\`.github/workflows/ci.yml\`)** : exécutée sur \`main\` et chaque PR — build Chrome + Firefox et \`web-ext lint --warnings-as-errors\`.
+- **CD indépendante (\`.github/workflows/release.yml\`)** : déclenchée uniquement **à la main** (\`Actions → Run workflow\` avec bump \`patch\`/\`minor\`/\`major\` ou version explicite) ou sur push d'un tag \`v*\`. Génère les \`.zip\`, signe le \`.xpi\` si les secrets AMO sont configurés, puis publie la GitHub Release.
+- **Templates d'issues (\`.github/ISSUE_TEMPLATE/\`)** : formulaires structurés pour signaler un bug ou proposer une fonctionnalité sur [github.com/LPauzies/Upkeep/issues](https://github.com/LPauzies/Upkeep/issues).
 
 | Store | Secrets GitHub Actions requis |
 | --- | --- |
@@ -515,77 +198,79 @@ Le manifeste \`manifest.firefox.json\` inclut déjà les champs obligatoires AMO
 export function getAllGeneratedFiles(config: UpkeepConfig): GeneratedRepoFile[] {
   return [
     {
-      path: 'manifest.chrome.json',
+      path: 'extension/manifest.chrome.json',
       content: generateChromeManifest(config),
       language: 'json',
       category: 'chrome',
-      description: 'Manifeste MV3 propre pour le Chrome Web Store (sans clé Gecko).',
+      description: 'Manifeste MV3 propre pour Chrome Web Store (permissions minimales).',
     },
     {
-      path: 'manifest.firefox.json',
+      path: 'extension/manifest.firefox.json',
       content: generateFirefoxManifest(config),
       language: 'json',
       category: 'firefox',
-      description: 'Manifeste MV3 Mozilla AMO avec gecko.id et data_collection_permissions.',
+      description:
+        'Manifeste MV3 Mozilla AMO (upkeep-endstep@lpauzies.dev, navbar, data_collection_permissions).',
     },
     {
-      path: 'src/content/ws-spy.js',
+      path: 'extension/src/content/ws-spy.js',
       content: generateWsSpyJs(),
       language: 'js',
       category: 'extension',
-      description: 'Observateur passif WebSocket/Fetch (MAIN world) pour lire le cimetière en temps réel.',
+      description: 'Observateur passif WebSocket/Fetch (MAIN world) pour les deux cimetières live.',
     },
     {
-      path: 'src/content/upkeep.js',
+      path: 'extension/src/content/upkeep.js',
       content: generateContentJs(config),
       language: 'js',
       category: 'extension',
-      description: 'Contrôleur DOM : logs ancrés dans le rail gauche, cimetière continu 3 couches et plaques PV.',
+      description:
+        'Contrôleur DOM : grille 2 cartes cimetières, log/décision fixes, Auto-Pass 3 boutons + tooltips, midline phase bar.',
     },
     {
-      path: 'src/content/upkeep.css',
+      path: 'extension/src/content/upkeep.css',
       content: generateContentCss(config),
       language: 'css',
       category: 'extension',
-      description: 'Surcharge Ardoise & Or mat sans réduction du champ de bataille ni modification des cartes.',
+      description: 'Surcharge Ardoise Obsidienne & Or mat sans jamais modifier les cartes Magic.',
     },
     {
-      path: 'src/popup/popup.html',
+      path: 'extension/src/popup/popup.html',
       content: generatePopupHtml(),
       language: 'html',
       category: 'extension',
-      description: 'Interface popup de la barre d’outils Chrome/Firefox.',
+      description: 'Popup barre d’outils avec interrupteur principal ON/OFF et options par module.',
     },
     {
-      path: 'src/popup/popup.css',
+      path: 'extension/src/popup/popup.css',
       content: generatePopupCss(),
       language: 'css',
       category: 'extension',
-      description: 'Styles du popup Upkeep.',
+      description: 'Styles Obsidian Slate & Gold du popup navigateur.',
     },
     {
-      path: 'src/popup/popup.js',
+      path: 'extension/src/popup/popup.js',
       content: generatePopupJs(config),
       language: 'js',
       category: 'extension',
-      description: 'Synchronisation storage.sync et lancement du sélecteur visuel.',
+      description: 'Synchronisation fiable storage.local + storage.sync avec la page Endstep.',
     },
     {
-      path: 'src/options/options.html',
+      path: 'extension/src/options/options.html',
       content: generateOptionsHtml(),
       language: 'html',
       category: 'extension',
       description: 'Page d’options pour adapter les sélecteurs DOM Endstep.',
     },
     {
-      path: 'src/options/options.css',
+      path: 'extension/src/options/options.css',
       content: generateOptionsCss(),
       language: 'css',
       category: 'extension',
       description: 'Styles de la page d’options.',
     },
     {
-      path: 'src/options/options.js',
+      path: 'extension/src/options/options.js',
       content: generateOptionsJs(config),
       language: 'js',
       category: 'extension',
@@ -596,35 +281,42 @@ export function getAllGeneratedFiles(config: UpkeepConfig): GeneratedRepoFile[] 
       content: generateCiWorkflowYaml(),
       language: 'yaml',
       category: 'ci',
-      description: 'CI GitHub Actions : build Chrome/Firefox + web-ext lint sur push/PR.',
+      description: 'CI GitHub Actions : build Chrome/Firefox + web-ext lint sur main et PR.',
     },
     {
       path: '.github/workflows/release.yml',
       content: generateReleaseWorkflowYaml(),
       language: 'yaml',
       category: 'ci',
-      description: 'CD GitHub Actions : Release GitHub + publication Chrome Web Store & Firefox AMO.',
+      description: 'CD indépendante : lancement manuel (SemVer bump) ou tag v* → GitHub Release.',
+    },
+    {
+      path: '.github/ISSUE_TEMPLATE/bug_report.yml',
+      content: generateBugTemplateYaml(),
+      language: 'yaml',
+      category: 'repo',
+      description: 'Formulaire structuré pour déclarer un bug sur LPauzies/Upkeep.',
+    },
+    {
+      path: '.github/ISSUE_TEMPLATE/feature_request.yml',
+      content: generateFeatureTemplateYaml(),
+      language: 'yaml',
+      category: 'repo',
+      description: 'Formulaire structuré pour proposer une amélioration UI/UX.',
     },
     {
       path: 'scripts/build-extension.mjs',
       content: generateBuildScript(),
       language: 'js',
       category: 'repo',
-      description: 'Script Node.js de compilation et de validation des archives MV3.',
-    },
-    {
-      path: 'package.json',
-      content: generateRepoPackageJson(config),
-      language: 'json',
-      category: 'repo',
-      description: 'Manifeste NPM du dépôt LPauzies/Upkeep.',
+      description: 'Script Node.js de build & validation bi-cible Chrome/Firefox MV3.',
     },
     {
       path: 'README.md',
       content: generateRepoReadme(config),
       language: 'md',
       category: 'repo',
-      description: 'Documentation d’installation, build et secrets GitHub Actions.',
+      description: 'Documentation d’installation, CI/CD et secrets GitHub Actions.',
     },
   ];
 }

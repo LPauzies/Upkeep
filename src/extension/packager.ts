@@ -1,11 +1,14 @@
 import JSZip from 'jszip';
 import {
+  generateBugTemplateYaml,
   generateBuildScript,
   generateChromeManifest,
   generateCiWorkflowYaml,
   generateContentCss,
   generateContentJs,
+  generateFeatureTemplateYaml,
   generateFirefoxManifest,
+  generateIssueConfigYaml,
   generateOptionsCss,
   generateOptionsHtml,
   generateOptionsJs,
@@ -142,15 +145,17 @@ export function auditStoreCompliance(config: UpkeepConfig): {
         detail: 'storage + host endstep.cc uniquement',
       },
       {
-        label: 'Icônes PNG 16 / 32 / 48 / 128 px',
-        passed: Boolean(chromeObj.icons?.['128']),
+        label: 'Popup ON/OFF + Icônes PNG 16–128 px',
+        passed: Boolean(chromeObj.icons?.['128'] && chromeObj.action?.default_popup),
         detail: 'Générées en binaire PNG dans le ZIP',
       },
     ],
     firefox: [
       {
-        label: 'Manifest V3 + Gecko ID explicite',
-        passed: firefoxObj.browser_specific_settings?.gecko?.id === 'upkeep-endstep@lpauzies.dev',
+        label: 'Gecko ID + pas de update_url (AMO listed)',
+        passed:
+          firefoxObj.browser_specific_settings?.gecko?.id === 'upkeep-endstep@lpauzies.dev' &&
+          !('update_url' in (firefoxObj.browser_specific_settings?.gecko || {})),
         detail: 'upkeep-endstep@lpauzies.dev (min 142.0)',
       },
       {
@@ -164,14 +169,14 @@ export function auditStoreCompliance(config: UpkeepConfig): {
         detail: 'required: ["none"] (exigé par Mozilla)',
       },
       {
-        label: 'API WebExtension cross-browser',
-        passed: true,
-        detail: 'globalThis.browser ?? globalThis.chrome',
+        label: 'Icône épinglée barre d’outils (navbar)',
+        passed: firefoxObj.action?.default_area === 'navbar',
+        detail: 'action.default_area: "navbar"',
       },
       {
-        label: 'Compatible web-ext lint & sign',
+        label: 'web-ext lint --warnings-as-errors',
         passed: true,
-        detail: 'Prêt pour AMO listed & self-hosted',
+        detail: 'Zéro innerHTML · 0 erreur · 0 warning',
       },
     ],
   };
@@ -188,25 +193,27 @@ export async function downloadExtensionPackage(
     zip.file('manifest.json', generateChromeManifest(config));
     addExtensionSources(zip, config);
     await addIconsToZip(zip);
-    filename = `upkeep-chrome-mv3-v${config.version}.zip`;
+    filename = `upkeep-chrome-v${config.version}.zip`;
   } else if (target === 'firefox') {
     zip.file('manifest.json', generateFirefoxManifest(config));
     addExtensionSources(zip, config);
     await addIconsToZip(zip);
-    filename = `upkeep-firefox-mv3-v${config.version}.zip`;
+    filename = `upkeep-firefox-v${config.version}.zip`;
   } else {
-    // Complete git-ready repository bundle for github.com/LPauzies/Upkeep
     const root = 'Upkeep/';
-    zip.file(`${root}manifest.chrome.json`, generateChromeManifest(config));
-    zip.file(`${root}manifest.firefox.json`, generateFirefoxManifest(config));
-    addExtensionSources(zip, config, root);
-    await addIconsToZip(zip, root);
+    zip.file(`${root}extension/manifest.chrome.json`, generateChromeManifest(config));
+    zip.file(`${root}extension/manifest.firefox.json`, generateFirefoxManifest(config));
+    addExtensionSources(zip, config, `${root}extension/`);
+    await addIconsToZip(zip, `${root}extension/`);
     zip.file(`${root}package.json`, generateRepoPackageJson(config));
     zip.file(`${root}scripts/build-extension.mjs`, generateBuildScript());
     zip.file(`${root}.github/workflows/ci.yml`, generateCiWorkflowYaml());
     zip.file(`${root}.github/workflows/release.yml`, generateReleaseWorkflowYaml());
+    zip.file(`${root}.github/ISSUE_TEMPLATE/bug_report.yml`, generateBugTemplateYaml());
+    zip.file(`${root}.github/ISSUE_TEMPLATE/feature_request.yml`, generateFeatureTemplateYaml());
+    zip.file(`${root}.github/ISSUE_TEMPLATE/config.yml`, generateIssueConfigYaml());
     zip.file(`${root}README.md`, generateRepoReadme(config));
-    zip.file(`${root}.gitignore`, 'node_modules/\ndist/\nartifacts/\n.DS_Store\n');
+    zip.file(`${root}.gitignore`, 'node_modules/\ndist/\ndist-extension/\nartifacts/\n.DS_Store\n');
     filename = `upkeep-repo-LPauzies-v${config.version}.zip`;
   }
 

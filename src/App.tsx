@@ -8,7 +8,7 @@ import type { UpkeepConfig } from './extension/types';
 
 type ActiveTab = 'simulator' | 'config' | 'package';
 
-const LOCAL_STORAGE_KEY = 'upkeep_studio_config_v1';
+const LOCAL_STORAGE_KEY = 'upkeep_studio_config_v2';
 
 function loadInitialConfig(): UpkeepConfig {
   try {

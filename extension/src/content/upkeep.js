@@ -75,6 +75,7 @@
   let domObserver = null;
   let resizeObserver = null;
   let syncRaf = 0;
+  let cachedAutoPassHeight = 32;
 
   function isGameRoute() {
     return /^\/game\/[^/]+/.test(window.location.pathname);
@@ -853,42 +854,30 @@
         const row = document.createElement('button');
         row.type = 'button';
         row.className = 'upkeep-gy-row';
+        row.setAttribute('aria-label', card.qty > 1 ? `${card.name} (×${card.qty})` : card.name);
 
         const thumb = document.createElement('img');
         thumb.className = 'upkeep-gy-thumb';
         thumb.src = card.imageUrl || toCardImageUrl(card.name);
         thumb.alt = card.name;
         thumb.loading = 'lazy';
+        thumb.addEventListener('error', () => {
+          row.dataset.imgError = 'true';
+        });
 
-        const info = document.createElement('div');
-        info.className = 'upkeep-gy-card-info';
+        const fallback = document.createElement('span');
+        fallback.className = 'upkeep-gy-card-fallback';
+        fallback.textContent = card.name;
 
-        const nameRow = document.createElement('div');
-        nameRow.className = 'upkeep-gy-card-name-row';
-
-        const nameEl = document.createElement('span');
-        nameEl.className = 'upkeep-gy-card-name';
-        nameEl.textContent = card.name;
-        nameRow.appendChild(nameEl);
+        row.appendChild(thumb);
+        row.appendChild(fallback);
 
         if (card.qty > 1) {
           const qtyEl = document.createElement('span');
           qtyEl.className = 'upkeep-gy-card-qty';
           qtyEl.textContent = `×${card.qty}`;
-          nameRow.appendChild(qtyEl);
+          row.appendChild(qtyEl);
         }
-
-        info.appendChild(nameRow);
-
-        if (card.typeLine || card.manaCost) {
-          const sub = document.createElement('span');
-          sub.className = 'upkeep-gy-card-sub';
-          sub.textContent = [card.manaCost, card.typeLine].filter(Boolean).join(' · ');
-          info.appendChild(sub);
-        }
-
-        row.appendChild(thumb);
-        row.appendChild(info);
 
         row.addEventListener('mouseenter', () => showCardZoom(thumb.src, card.name));
         row.addEventListener('mouseleave', hideCardZoom);
@@ -988,11 +977,214 @@
     }
   }
 
+  // ==========================================================================
+  // COMPACT 3-BUTTON AUTO-PASS BAR & FLOATING TOOLTIP
+  // ==========================================================================
+  function ensureUpkeepTooltip() {
+    let tip = document.getElementById('upkeep-tooltip');
+    if (!tip) {
+      tip = document.createElement('div');
+      tip.id = 'upkeep-tooltip';
+      tip.setAttribute('role', 'tooltip');
+      tip.dataset.visible = 'false';
+      document.body.appendChild(tip);
+    }
+    return tip;
+  }
+
+  function showUpkeepTooltip(anchorEl, title, keyText, desc) {
+    if (!anchorEl) return;
+    const tip = ensureUpkeepTooltip();
+    tip.textContent = '';
+
+    const head = document.createElement('div');
+    head.className = 'upkeep-tooltip-head';
+    const titleSpan = document.createElement('span');
+    titleSpan.textContent = title;
+    head.appendChild(titleSpan);
+
+    if (keyText) {
+      const kbd = document.createElement('span');
+      kbd.className = 'upkeep-tooltip-kbd';
+      kbd.textContent = keyText;
+      head.appendChild(kbd);
+    }
+    tip.appendChild(head);
+
+    if (desc) {
+      const descEl = document.createElement('div');
+      descEl.className = 'upkeep-tooltip-desc';
+      descEl.textContent = desc;
+      tip.appendChild(descEl);
+    }
+
+    tip.dataset.visible = 'true';
+    const rect = anchorEl.getBoundingClientRect();
+    const tipRect = tip.getBoundingClientRect();
+    const left = Math.max(
+      8,
+      Math.min(window.innerWidth - tipRect.width - 8, Math.round(rect.left + rect.width / 2 - tipRect.width / 2))
+    );
+    const top = Math.max(8, Math.round(rect.top - tipRect.height - 8));
+    tip.style.left = `${left}px`;
+    tip.style.top = `${top}px`;
+  }
+
+  function hideUpkeepTooltip() {
+    const tip = document.getElementById('upkeep-tooltip');
+    if (tip) tip.dataset.visible = 'false';
+  }
+
+  function classifyAutoPassButton(rawLabel, keyText) {
+    const lower = String(rawLabel || '').toLowerCase();
+    if (/end\s*of\s*turn/.test(lower) || keyText === 'E') {
+      return {
+        short: 'EOT',
+        title: 'End of Turn',
+        desc: 'Auto-pass priority until the end of this turn.',
+      };
+    }
+    if (/before\s*my\s*turn/.test(lower) || keyText === 'B') {
+      return {
+        short: 'MY TURN',
+        title: 'Before My Turn',
+        desc: 'Auto-pass priority until your next turn begins.',
+      };
+    }
+    if (/action|end\s*step/.test(lower) || keyText === 'R') {
+      return {
+        short: 'ACTION',
+        title: 'Action / End Step',
+        desc: 'Auto-pass until an opponent acts or end step.',
+      };
+    }
+    const clean = String(rawLabel || '').trim();
+    const fallbackShort = (clean.split(/\s+/)[0] || keyText || 'PASS').slice(0, 7).toUpperCase();
+    return {
+      short: fallbackShort,
+      title: clean || 'Auto-Pass',
+      desc: 'Auto-pass priority shortcut.',
+    };
+  }
+
+  function enhanceAutoPassBar() {
+    const autoPassEl = document.querySelector('aside.wr-rail-left [aria-label="Pass priority shortcuts"]');
+    if (!autoPassEl) return;
+
+    const buttons = Array.from(autoPassEl.querySelectorAll('button'));
+    if (buttons.length === 0) return;
+
+    // Identify the exact container holding the 3 buttons (works whether direct children or wrapped)
+    let gridEl = autoPassEl;
+    if (buttons.length >= 2 && buttons[0].parentElement === buttons[1].parentElement) {
+      gridEl = buttons[0].parentElement;
+    } else if (
+      buttons.length >= 2 &&
+      buttons[0].parentElement?.parentElement === buttons[1].parentElement?.parentElement
+    ) {
+      gridEl = buttons[0].parentElement.parentElement;
+      buttons.forEach((btn) => {
+        if (btn.parentElement) btn.parentElement.dataset.upkeepAutopassCell = 'true';
+      });
+    }
+    gridEl.dataset.upkeepAutopassGrid = 'true';
+
+    // Hide redundant "AUTO-PASS / skip ahead" header line (whether inside container or immediate sibling)
+    const headerCandidates = [
+      ...Array.from(autoPassEl.children).filter((child) => child.tagName !== 'BUTTON' && !child.querySelector('button')),
+      autoPassEl.previousElementSibling,
+    ];
+    headerCandidates.forEach((el) => {
+      if (!el || el.hasAttribute('data-zone')) return;
+      const txt = (el.textContent || '').replace(/\s+/g, ' ').trim();
+      if (/auto-?pass/i.test(txt) && txt.length <= 40) {
+        el.dataset.upkeepAutopassHeader = 'true';
+      }
+    });
+
+    buttons.forEach((btn) => {
+      const keyEl =
+        btn.querySelector('[data-testid="kcap"], kbd') ||
+        Array.from(btn.querySelectorAll('span')).find((s) => /^[A-Z0-9]$/.test((s.textContent || '').trim()));
+      if (keyEl) keyEl.dataset.upkeepApKey = 'true';
+
+      const keyText = (keyEl?.textContent || '').trim().toUpperCase();
+      const rawText = (btn.textContent || '').replace(/\s+/g, ' ').trim();
+      const labelWithoutKey = keyText && rawText.endsWith(keyText) ? rawText.slice(0, -keyText.length).trim() : rawText;
+      const meta = classifyAutoPassButton(labelWithoutKey, keyText);
+
+      if (btn.dataset.upkeepApShort !== meta.short) {
+        btn.dataset.upkeepApShort = meta.short;
+      }
+      btn.dataset.upkeepApTitle = meta.title;
+      btn.dataset.upkeepApKeyText = keyText;
+      btn.dataset.upkeepApDesc = meta.desc;
+
+      if (btn.dataset.upkeepApBound !== 'true') {
+        btn.dataset.upkeepApBound = 'true';
+        const onShow = () =>
+          showUpkeepTooltip(
+            btn,
+            btn.dataset.upkeepApTitle || 'Auto-Pass',
+            btn.dataset.upkeepApKeyText || '',
+            btn.dataset.upkeepApDesc || ''
+          );
+        btn.addEventListener('mouseenter', onShow);
+        btn.addEventListener('focus', onShow);
+        btn.addEventListener('mouseleave', hideUpkeepTooltip);
+        btn.addEventListener('blur', hideUpkeepTooltip);
+      }
+    });
+  }
+
   function syncLogDockGeometry() {
     const root = document.documentElement;
     if (!config.enabled || !isGameRoute()) {
       root.dataset.upkeepLogsDocked = 'false';
       return;
+    }
+
+    const leftRail = document.querySelector('aside.wr-rail-left');
+    const oppPlate = leftRail?.querySelector('[data-player-anchor="opp"]');
+    const pendingGroup = leftRail?.querySelector('[aria-label="Pending actions"]');
+    const selfPlate = leftRail?.querySelector('[data-player-anchor="me"]');
+    const autoPassEl = pendingGroup?.querySelector('[aria-label="Pass priority shortcuts"]');
+
+    if (!leftRail || !oppPlate) {
+      root.dataset.upkeepLogsDocked = 'false';
+      return;
+    }
+
+    const railRect = leftRail.getBoundingClientRect();
+    const oppRect = oppPlate.getBoundingClientRect();
+    const pendingRect = pendingGroup?.getBoundingClientRect();
+    const selfRect = selfPlate?.getBoundingClientRect();
+    const autoPassRect = autoPassEl?.getBoundingClientRect();
+
+    if (autoPassRect && autoPassRect.height >= 24) {
+      cachedAutoPassHeight = Math.round(autoPassRect.height);
+    }
+
+    const topY = Math.round(oppRect.bottom + 6);
+    const pendingBottomY =
+      pendingRect && pendingRect.height > 0
+        ? Math.round(pendingRect.bottom)
+        : Math.round(selfRect ? selfRect.top : railRect.bottom);
+
+    // Reserve exact fixed height for: 6px pending bottom padding + Auto-Pass + 6px gap + Decision + 8px gap below Log
+    const autoPassReserved = autoPassEl ? cachedAutoPassHeight : 0;
+    const stackOverhead = autoPassEl ? 20 : 14;
+    const usableForLogAndDecision = pendingBottomY - topY - autoPassReserved - stackOverhead;
+
+    // Generous fixed height for Decision/Waiting (fits multi-button decisions without ever jumping)
+    const maxDecisionForLog = Math.max(150, usableForLogAndDecision - 140);
+    const fixedDecisionHeight = Math.min(
+      maxDecisionForLog,
+      Math.max(200, Math.min(276, Math.round(usableForLogAndDecision * 0.43)))
+    );
+
+    if (fixedDecisionHeight >= 150) {
+      root.style.setProperty('--upkeep-ds-height', `${fixedDecisionHeight}px`);
     }
 
     const logPanel = querySafe(config.selectors.logsPanel);
@@ -1015,27 +1207,7 @@
       return;
     }
 
-    const leftRail = document.querySelector('aside.wr-rail-left');
-    const oppPlate = leftRail?.querySelector('[data-player-anchor="opp"]');
-    const pendingGroup = leftRail?.querySelector('[aria-label="Pending actions"]');
-    const bottomStack = pendingGroup?.firstElementChild;
-    const selfPlate = leftRail?.querySelector('[data-player-anchor="me"]');
-
-    if (!leftRail || !oppPlate) {
-      root.dataset.upkeepLogsDocked = 'false';
-      return;
-    }
-
-    const railRect = leftRail.getBoundingClientRect();
-    const oppRect = oppPlate.getBoundingClientRect();
-    const bottomAnchorRect =
-      bottomStack && bottomStack.getBoundingClientRect().height > 0
-        ? bottomStack.getBoundingClientRect()
-        : selfPlate?.getBoundingClientRect();
-
-    const topY = Math.round(oppRect.bottom + 6);
-    const bottomY = Math.round((bottomAnchorRect ? bottomAnchorRect.top : railRect.bottom) - 8);
-    const availHeight = bottomY - topY;
+    const availHeight = usableForLogAndDecision - fixedDecisionHeight;
 
     if (availHeight < 120 || railRect.width < 180) {
       root.dataset.upkeepLogsDocked = 'false';
@@ -1234,8 +1406,14 @@
     document.documentElement.dataset.upkeepTimeline = 'false';
     document.documentElement.dataset.upkeepStackAnchor = 'false';
     delete document.documentElement.dataset.upkeepPeekingGy;
+    document.documentElement.style.removeProperty('--upkeep-ds-height');
+    document.documentElement.style.removeProperty('--upkeep-log-left');
+    document.documentElement.style.removeProperty('--upkeep-log-top');
+    document.documentElement.style.removeProperty('--upkeep-log-width');
+    document.documentElement.style.removeProperty('--upkeep-log-height');
     document.getElementById('upkeep-graveyards-dock')?.remove();
     document.getElementById('upkeep-card-zoom')?.remove();
+    document.getElementById('upkeep-tooltip')?.remove();
     document.querySelectorAll('.upkeep-life-delta').forEach((n) => n.remove());
     document.querySelectorAll('[data-upkeep-hidden-toast]').forEach((n) => {
       delete n.dataset.upkeepHiddenToast;
@@ -1248,6 +1426,21 @@
     });
     document.querySelectorAll('[data-upkeep-has-cards]').forEach((n) => {
       delete n.dataset.upkeepHasCards;
+    });
+    document.querySelectorAll('[data-upkeep-autopass-grid]').forEach((n) => {
+      delete n.dataset.upkeepAutopassGrid;
+    });
+    document.querySelectorAll('[data-upkeep-autopass-header]').forEach((n) => {
+      delete n.dataset.upkeepAutopassHeader;
+    });
+    document.querySelectorAll('[data-upkeep-autopass-cell]').forEach((n) => {
+      delete n.dataset.upkeepAutopassCell;
+    });
+    document.querySelectorAll('[data-upkeep-ap-short]').forEach((n) => {
+      delete n.dataset.upkeepApShort;
+    });
+    document.querySelectorAll('[data-upkeep-ap-key]').forEach((n) => {
+      delete n.dataset.upkeepApKey;
     });
   }
 
@@ -1275,6 +1468,7 @@
     updatePlateLifeFeedback('me-life', false);
     syncTargetablePlayers();
     passiveScanOpenDialogs();
+    enhanceAutoPassBar();
     syncLogDockGeometry();
     syncStackPanel();
     hideRightRailNotifications();
@@ -1295,7 +1489,8 @@
     const targets = [
       document.querySelector('aside.wr-rail-left'),
       document.querySelector('[data-player-anchor="opp"]'),
-      document.querySelector('[aria-label="Pending actions"] > div'),
+      document.querySelector('[data-player-anchor="me"]'),
+      document.querySelector('[aria-label="Pass priority shortcuts"]'),
       document.querySelector('.wr-main-col'),
       document.querySelector('.wr-main-col > .wr-resizable-panel'),
       document.querySelector('.wr-main-col > [style*="--gradient-midline"]'),
@@ -1312,7 +1507,7 @@
       for (const m of mutations) {
         if (
           m.target instanceof Element &&
-          m.target.closest('#upkeep-graveyards-dock, #upkeep-card-zoom, #upkeep-phase-timeline')
+          m.target.closest('#upkeep-graveyards-dock, #upkeep-card-zoom, #upkeep-phase-timeline, #upkeep-tooltip')
         ) {
           continue;
         }
