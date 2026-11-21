@@ -76,7 +76,7 @@ export function generateFirefoxManifest(config: UpkeepConfig): string {
     },
     browser_specific_settings: {
       gecko: {
-        id: 'upkeep@lpauzies.dev',
+        id: 'upkeep-endstep@lpauzies.dev',
         strict_min_version: '142.0',
         data_collection_permissions: {
           required: ['none'],
@@ -417,7 +417,7 @@ jobs:
             const fs = require("node:fs");
             const p = "artifacts/updates.json";
             const data = JSON.parse(fs.readFileSync(p, "utf8"));
-            data.addons["upkeep@lpauzies.dev"].updates[0].update_hash = "sha256:" + process.env.SHA256;
+            data.addons["upkeep-endstep@lpauzies.dev"].updates[0].update_hash = "sha256:" + process.env.SHA256;
             fs.writeFileSync(p, JSON.stringify(data, null, 2) + "\\n");
           ' SHA256="$SHA256"
 
@@ -490,7 +490,7 @@ npm run lint:firefox
 ## 4. Déploiement sur Firefox Add-ons (Mozilla AMO)
 
 Le manifeste \`manifest.firefox.json\` inclut déjà les champs obligatoires AMO :
-- \`browser_specific_settings.gecko.id\`: \`upkeep@lpauzies.dev\`
+- \`browser_specific_settings.gecko.id\`: \`upkeep-endstep@lpauzies.dev\`
 - \`strict_min_version\`: \`142.0\`
 - \`data_collection_permissions.required\`: \`["none"]\`
 

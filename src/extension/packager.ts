@@ -150,8 +150,8 @@ export function auditStoreCompliance(config: UpkeepConfig): {
     firefox: [
       {
         label: 'Manifest V3 + Gecko ID explicite',
-        passed: firefoxObj.browser_specific_settings?.gecko?.id === 'upkeep@lpauzies.dev',
-        detail: 'upkeep@lpauzies.dev (min 142.0)',
+        passed: firefoxObj.browser_specific_settings?.gecko?.id === 'upkeep-endstep@lpauzies.dev',
+        detail: 'upkeep-endstep@lpauzies.dev (min 142.0)',
       },
       {
         label: 'Déclaration AMO data_collection_permissions',

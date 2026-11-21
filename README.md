@@ -76,7 +76,7 @@ Configurez les 4 secrets suivants dans `Settings → Secrets and variables → A
 ## 4. Déploiement sur Firefox Add-ons (Mozilla AMO)
 
 Le manifeste Firefox (`manifest.firefox.json`) est pré-configuré pour les règles Mozilla MV3 :
-- `browser_specific_settings.gecko.id`: `"upkeep@lpauzies.dev"`
+- `browser_specific_settings.gecko.id`: `"upkeep-endstep@lpauzies.dev"`
 - `strict_min_version`: `"142.0"`
 - `data_collection_permissions.required`: `["none"]` (obligatoire pour la validation AMO)
 

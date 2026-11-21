@@ -136,7 +136,7 @@ jobs:
             const fs = require("node:fs");
             const p = "artifacts/updates.json";
             const data = JSON.parse(fs.readFileSync(p, "utf8"));
-            const entry = data.addons["upkeep@lpauzies.dev"].updates[0];
+            const entry = data.addons["upkeep-endstep@lpauzies.dev"].updates[0];
             entry.update_hash = "sha256:" + process.env.SHA256;
             fs.writeFileSync(p, JSON.stringify(data, null, 2) + "\n");
           ' SHA256="$SHA256"
