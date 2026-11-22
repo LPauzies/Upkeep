@@ -66,6 +66,7 @@ PRIVACY & PERMISSIONS
 ## Latest Release Notes (Copy-Paste for AMO / Store Updates)
 
 ```text
+- Fixed Sideboarding & Commander Swap modals for Games 2 & 3 being covered by their dark scrim overlay (Confirm / Keep current are now fully clickable).
 - Added full theme color customization (9 editable hex colors) and 4 colorblind presets (Standard, Deuteranopia/Protanopia, Tritanopia, High Contrast) in both popup and options.
 - Added full support for spectator mode (/spectate/*).
 - Fixed Game Log left-rail anchoring and prevented layout shifts during complex modal spell decisions.

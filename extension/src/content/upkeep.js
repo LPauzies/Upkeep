@@ -437,6 +437,14 @@
     }
   }
 
+  function isBlockingModalOpen() {
+    return Boolean(
+      document.querySelector(
+        '[data-testid="sideboard-view"], [data-testid="sideboard-loading"], .es-sb, .es-dlg-scrim, [role="dialog"][aria-modal="true"]'
+      )
+    );
+  }
+
   function closeDialogElement(dialog) {
     if (dialog) {
       const closeBtn = dialog.querySelector(
@@ -446,6 +454,9 @@
         closeBtn.click();
         return;
       }
+    } else if (isBlockingModalOpen()) {
+      // Never dispatch synthetic Escape when a non-graveyard modal (e.g. Sideboarding) is open
+      return;
     }
     const escDown = new KeyboardEvent('keydown', {
       key: 'Escape',
@@ -483,7 +494,7 @@
     const hasOpenModalDecision = Boolean(
       document.querySelector('[role="dialog"][data-zone="decision-surface"], [data-zone="decision-surface"][data-upkeep-complex-decision="true"]')
     );
-    if (!force && (preExistingDialogs.size > 0 || hasOpenModalDecision)) {
+    if (!force && (preExistingDialogs.size > 0 || hasOpenModalDecision || isBlockingModalOpen())) {
       return false;
     }
 
@@ -1978,6 +1989,8 @@
         config.enabled = !config.enabled;
         saveConfigToStorage(config);
         scheduleSync();
+      } else if (isBlockingModalOpen()) {
+        return;
       } else if (key === (config.shortcuts?.toggleGraveyard || 'g').toLowerCase()) {
         gyVisible = !gyVisible;
         mountGraveyardsDock();

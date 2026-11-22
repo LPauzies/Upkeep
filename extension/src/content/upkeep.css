@@ -470,10 +470,11 @@ html[data-upkeep-active="true"] aside.wr-rail-left [data-zone="decision-surface"
   flex: 0 1 auto !important;
   overflow-y: auto !important;
   position: relative !important;
-  z-index: 45 !important;
+  z-index: 38 !important;
 }
 
-/* Centered / floating modal decision surfaces (e.g. Modal Spells, Scry, Surveil) NEVER get crushed to 248px */
+/* Centered / floating modal decision surfaces (e.g. Modal Spells, Scry, Surveil) NEVER get crushed to 248px.
+ * Never override z-index here so Endstep's native --es-z-dlg-scrim / --es-z-dlg stacking (39/40 or 191/192) stays intact. */
 html[data-upkeep-active="true"] [role="dialog"][data-zone="decision-surface"],
 html[data-upkeep-active="true"] :not(aside) > [data-zone="decision-surface"] {
   height: auto !important;
@@ -482,7 +483,6 @@ html[data-upkeep-active="true"] :not(aside) > [data-zone="decision-surface"] {
   flex: 0 1 auto !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
-  z-index: 65 !important;
 }
 
 /* Waiting state card (mirrors Decision anatomy: 28px header + calm centered status body) */
@@ -1002,10 +1002,9 @@ html[data-upkeep-active="true"][data-upkeep-stack-anchor="true"] [data-upkeep-pa
  * 5. GAME LOG DOCKED IN LEFT RAIL EMPTY SPACE (ZERO BATTLEFIELD SHRINKAGE)
  * ============================================================================ */
 
-/* Ensure interactive modal dialogs always sit cleanly above docked logs (z-35) & midline bar (z-32) */
-html[data-upkeep-active="true"] [role="dialog"] {
-  z-index: 65 !important;
-}
+/* All Upkeep chrome (midline bar z-32, docked log z-35, floating GY z-36, expanded left-rail decision z-38)
+ * stays strictly below Endstep's native dialog scrim (--es-z-dlg-scrim: 39 in-game, 191 in kitAboveGame/Sideboarding),
+ * so we NEVER override [role="dialog"] z-index and Endstep's dialogs always sit cleanly above their own scrim. */
 
 html[data-upkeep-active="true"] [data-gamelog-panel] {
   background: var(--upkeep-bg-surface) !important;
@@ -1146,7 +1145,7 @@ html[data-upkeep-timeline="false"] #upkeep-graveyards-dock[data-mode="docked"] {
   width: var(--upkeep-gy-width, 268px);
   height: 74vh;
   max-height: calc(100vh - 20px);
-  z-index: 44;
+  z-index: 36;
   padding: 6px;
   border-radius: 0;
   background: rgba(11, 14, 20, 0.94);
@@ -1867,7 +1866,7 @@ html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-
  * 9. SILENT NATIVE GRAVEYARD PEEK (ZERO MODAL FLICKER)
  * ============================================================================ */
 
-html[data-upkeep-peeking-gy="true"] [role="dialog"]:not([data-zone="decision-surface"]),
+html[data-upkeep-peeking-gy="true"] [role="dialog"]:not([data-zone="decision-surface"]):not(.es-sb):not([data-testid="sideboard-view"]):not([data-testid="sideboard-loading"]),
 html[data-upkeep-peeking-gy="true"] [data-radix-portal],
 html[data-upkeep-peeking-gy="true"] [data-state="open"][aria-hidden="true"] {
   opacity: 0 !important;
