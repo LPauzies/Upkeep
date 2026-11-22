@@ -16,6 +16,7 @@ import rawReleaseWorkflow from '../../.github/workflows/release.yml?raw';
 import rawBugTemplate from '../../.github/ISSUE_TEMPLATE/bug_report.yml?raw';
 import rawFeatureTemplate from '../../.github/ISSUE_TEMPLATE/feature_request.yml?raw';
 import rawIssueConfig from '../../.github/ISSUE_TEMPLATE/config.yml?raw';
+import rawStoreDescription from '../../STORE_DESCRIPTION.md?raw';
 
 export interface GeneratedRepoFile {
   path: string;
@@ -124,6 +125,10 @@ export function generateFeatureTemplateYaml(): string {
 
 export function generateIssueConfigYaml(): string {
   return rawIssueConfig;
+}
+
+export function generateStoreDescriptionMd(): string {
+  return rawStoreDescription;
 }
 
 export function generateRepoPackageJson(config: UpkeepConfig): string {
@@ -320,6 +325,13 @@ export function getAllGeneratedFiles(config: UpkeepConfig): GeneratedRepoFile[] 
       language: 'md',
       category: 'repo',
       description: 'Documentation d’installation, CI/CD et secrets GitHub Actions.',
+    },
+    {
+      path: 'STORE_DESCRIPTION.md',
+      content: generateStoreDescriptionMd(),
+      language: 'md',
+      category: 'repo',
+      description: 'Description anglaise prête à copier-coller pour Chrome Web Store et Firefox AMO.',
     },
   ];
 }
