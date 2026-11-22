@@ -238,14 +238,15 @@ export function PackageView({ config }: PackageViewProps) {
                 <td className="py-3 pr-4 font-medium text-[#F2EEE6] whitespace-nowrap">
                   Firefox Add-ons (AMO)
                 </td>
-                <td className="py-3 pr-4 text-[#9CA3B2]">
-                  Aucun secret requis — upload manuel du{' '}
-                  <span className="font-mono-tabular text-[#D8D3C9]">upkeep-firefox-v*.zip</span>{' '}
-                  depuis la GitHub Release
+                <td className="py-3 pr-4 font-mono-tabular text-[#C9A45C]">
+                  MOZILLA_JWT_ISSUER · MOZILLA_JWT_SECRET
+                  <div className="font-sans text-[11px] text-[#7E8799] mt-0.5">
+                    Soumission auto via <span className="font-mono-tabular text-[#D8D3C9]">web-ext sign --channel=listed --approval-timeout=0</span>
+                  </div>
                 </td>
                 <td className="py-3 text-[#9CA3B2] whitespace-nowrap">
-                  Validation <span className="font-mono-tabular text-[#D8D3C9]">web-ext lint</span>{' '}
-                  auto en CI/CD
+                  Manuel (<span className="font-mono-tabular text-[#D8D3C9]">workflow_dispatch</span>
+                  ) ou tag <span className="font-mono-tabular text-[#D8D3C9]">v*</span>
                 </td>
               </tr>
             </tbody>

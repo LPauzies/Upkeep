@@ -61,6 +61,8 @@ export function generateContentJs(config: UpkeepConfig): string {
       enableHoverZoom: config.enableHoverZoom,
       logsWidth: config.logsWidth,
       graveyardWidth: config.graveyardWidth,
+      colorblindMode: config.colorblindMode,
+      colors: config.colors,
       shortcuts: config.shortcuts,
       selectors: config.selectors,
     },
@@ -185,13 +187,13 @@ npm run lint:firefox
 ## 2. CI / CD GitHub Actions (LPauzies/Upkeep)
 
 - **CI (\`.github/workflows/ci.yml\`)** : exécutée sur \`main\` et chaque PR — build Chrome + Firefox et \`web-ext lint --warnings-as-errors\`.
-- **CD indépendante (\`.github/workflows/release.yml\`)** : déclenchée uniquement **à la main** (\`Actions → Run workflow\` avec bump \`patch\`/\`minor\`/\`major\` ou version explicite) ou sur push d'un tag \`v*\`. Génère et valide les \`.zip\` Chrome et Firefox puis publie la GitHub Release (publication Chrome Web Store optionnelle si les secrets sont définis ; mise à jour Firefox AMO à la main depuis le \`.zip\` de la release).
+- **CD indépendante (\`.github/workflows/release.yml\`)** : déclenchée uniquement **à la main** (\`Actions → Run workflow\` avec bump \`patch\`/\`minor\`/\`major\` ou version explicite) ou sur push d'un tag \`v*\`. Génère et valide les \`.zip\` Chrome et Firefox, publie la GitHub Release, puis déploie automatiquement sur le Chrome Web Store et Firefox Add-ons (AMO listed) si leurs secrets respectifs sont définis.
 - **Templates d'issues (\`.github/ISSUE_TEMPLATE/\`)** : formulaires structurés pour signaler un bug ou proposer une fonctionnalité sur [github.com/LPauzies/Upkeep/issues](https://github.com/LPauzies/Upkeep/issues).
 
 | Store | Déploiement |
 | --- | --- |
 | **Chrome Web Store** | Optionnel en CD (API v2) via \`CHROME_EXTENSION_ID\`, \`CHROME_PUBLISHER_ID\`, \`CHROME_CLIENT_ID\`, \`CHROME_CLIENT_SECRET\`, \`CHROME_REFRESH_TOKEN\` |
-| **Firefox Add-ons (AMO)** | Upload manuel du \`upkeep-firefox-v*.zip\` généré dans la GitHub Release |
+| **Firefox Add-ons (AMO)** | Optionnel en CD (\`web-ext sign --channel=listed --approval-timeout=0\`) via \`MOZILLA_JWT_ISSUER\`, \`MOZILLA_JWT_SECRET\` |
 `;
 }
 
@@ -288,7 +290,8 @@ export function getAllGeneratedFiles(config: UpkeepConfig): GeneratedRepoFile[] 
       content: generateReleaseWorkflowYaml(),
       language: 'yaml',
       category: 'ci',
-      description: 'CD indépendante : lancement manuel (SemVer bump) ou tag v* → GitHub Release.',
+      description:
+        'CD indépendante : lancement manuel (SemVer bump) ou tag v* → GitHub Release, Chrome Web Store & Firefox AMO.',
     },
     {
       path: '.github/ISSUE_TEMPLATE/bug_report.yml',

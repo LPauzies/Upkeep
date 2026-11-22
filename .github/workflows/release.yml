@@ -22,6 +22,10 @@ on:
         description: 'Publier sur le Chrome Web Store si les secrets sont configurés'
         type: boolean
         default: true
+      publish_firefox_amo:
+        description: 'Soumettre sur Firefox Add-ons (AMO listed) si les secrets sont configurés'
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -171,3 +175,63 @@ jobs:
           client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
           refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
           publish: true
+
+  publish-firefox-amo:
+    name: Publish to Firefox Add-ons (AMO)
+    needs: build-release
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' || inputs.publish_firefox_amo == true }}
+    steps:
+      - name: Download Firefox ZIP artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: upkeep-release-zips
+          path: release-bundle
+
+      - name: Check Mozilla AMO secrets & unpack Firefox bundle
+        id: check_mozilla
+        env:
+          MOZILLA_JWT_ISSUER: ${{ secrets.MOZILLA_JWT_ISSUER }}
+          MOZILLA_JWT_SECRET: ${{ secrets.MOZILLA_JWT_SECRET }}
+        run: |
+          MISSING=()
+          [ -z "$MOZILLA_JWT_ISSUER" ] && MISSING+=("MOZILLA_JWT_ISSUER")
+          [ -z "$MOZILLA_JWT_SECRET" ] && MISSING+=("MOZILLA_JWT_SECRET")
+
+          if [ "${#MISSING[@]}" -gt 0 ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "Mozilla AMO secrets manquants (${MISSING[*]}) — étape ignorée."
+            exit 0
+          fi
+
+          FIREFOX_ZIP=$(find release-bundle -type f -name "upkeep-firefox-v${{ needs.build-release.outputs.version }}.zip" | head -n 1)
+          if [ -z "$FIREFOX_ZIP" ]; then
+            echo "Erreur: archive upkeep-firefox-v${{ needs.build-release.outputs.version }}.zip introuvable dans release-bundle/"
+            find release-bundle -maxdepth 3 -ls
+            exit 1
+          fi
+
+          rm -rf firefox-unpacked
+          mkdir -p firefox-unpacked
+          unzip -q "$FIREFOX_ZIP" -d firefox-unpacked
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node.js 22
+        if: steps.check_mozilla.outputs.ready == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Submit listed version to Mozilla AMO (web-ext sign)
+        if: steps.check_mozilla.outputs.ready == 'true'
+        env:
+          MOZILLA_JWT_ISSUER: ${{ secrets.MOZILLA_JWT_ISSUER }}
+          MOZILLA_JWT_SECRET: ${{ secrets.MOZILLA_JWT_SECRET }}
+        run: |
+          npx --yes web-ext@latest sign \
+            --channel=listed \
+            --approval-timeout=0 \
+            --source-dir firefox-unpacked \
+            --artifacts-dir amo-signed \
+            --api-key "$MOZILLA_JWT_ISSUER" \
+            --api-secret "$MOZILLA_JWT_SECRET"

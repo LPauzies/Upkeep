@@ -81,10 +81,17 @@ Le manifeste Firefox (`manifest.firefox.json`) est pré-configuré pour les règ
 - `strict_min_version`: `"142.0"`
 - `data_collection_permissions.required`: `["none"]` (obligatoire pour la validation AMO)
 
-### Publication et mises à jour manuelles
-1. Connectez-vous sur le [Mozilla Add-on Developer Hub](https://addons.mozilla.org/developers/).
-2. Téléchargez `upkeep-firefox-vX.Y.Z.zip` depuis la dernière GitHub Release (déjà validé par `web-ext lint --warnings-as-errors` en CI/CD).
-3. Importez l'archive dans votre fiche AMO pour soumettre la nouvelle version.
+### Publication automatique via GitHub Actions (`web-ext sign --channel=listed`)
+1. Créez la fiche une première fois sur le [Mozilla Add-on Developer Hub](https://addons.mozilla.org/developers/) avec `upkeep-firefox-vX.Y.Z.zip`.
+2. Générez une paire de clés API JWT sur [addons.mozilla.org/developers/addon/api/key/](https://addons.mozilla.org/developers/addon/api/key/).
+3. Configurez les 2 secrets suivants dans `Settings → Secrets and variables → Actions` de `LPauzies/Upkeep` :
+   - `MOZILLA_JWT_ISSUER` : champ **JWT issuer** fourni par AMO
+   - `MOZILLA_JWT_SECRET` : champ **JWT secret** associé
+4. Lors de chaque release, le job `publish-firefox-amo` décompresse `upkeep-firefox-vX.Y.Z.zip` et soumet automatiquement la nouvelle version publique (`--channel=listed --approval-timeout=0`).
+
+### Publication et mises à jour manuelles (alternative)
+1. Téléchargez `upkeep-firefox-vX.Y.Z.zip` depuis la dernière GitHub Release (déjà validé par `web-ext lint --warnings-as-errors` en CI/CD).
+2. Importez l'archive dans votre fiche AMO pour soumettre la nouvelle version.
 
 ---
 
@@ -97,7 +104,8 @@ Le manifeste Firefox (`manifest.firefox.json`) est pré-configuré pour les règ
 - **`.github/workflows/release.yml`** (déclenchement manuel `workflow_dispatch` ou tag `v*`) :
   - Génère `upkeep-chrome-vX.Y.Z.zip` et `upkeep-firefox-vX.Y.Z.zip`
   - Crée automatiquement une **GitHub Release** avec notes générées et archives attachées
-  - Déploie automatiquement sur le **Chrome Web Store** (API v2 via `mnao305/chrome-extension-upload@v7.0.0`) dès que les 5 secrets Chrome sont renseignés
+  - Déploie automatiquement sur le **Chrome Web Store** (API v2 via `mnao305/chrome-extension-upload@v7.0.0`) dès que les 5 secrets `CHROME_*` sont renseignés
+  - Soumet automatiquement sur **Firefox Add-ons (AMO listed)** (`web-ext@latest sign --channel=listed --approval-timeout=0`) dès que les 2 secrets `MOZILLA_*` sont renseignés
 
 ```bash
 # Exemple de release par tag (ou via GitHub → Actions → Run workflow)
