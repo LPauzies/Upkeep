@@ -40,14 +40,14 @@ jobs:
 
     steps:
       - name: Checkout repository (with tags)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v4
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Compute SemVer version (Chrome & Firefox MV3 compatible)
         id: meta
@@ -101,7 +101,7 @@ jobs:
         run: npx --yes web-ext lint --source-dir dist-extension/firefox --warnings-as-errors
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: upkeep-release-zips
           path: |
@@ -109,7 +109,7 @@ jobs:
             artifacts/upkeep-firefox-*.zip
 
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
           target_commitish: ${{ github.sha }}
@@ -127,7 +127,7 @@ jobs:
     if: ${{ github.event_name == 'push' || inputs.publish_chrome_store == true }}
     steps:
       - name: Download Chrome ZIP artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: upkeep-release-zips
           path: release-bundle
@@ -183,7 +183,7 @@ jobs:
     if: ${{ github.event_name == 'push' || inputs.publish_firefox_amo == true }}
     steps:
       - name: Download Firefox ZIP artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: upkeep-release-zips
           path: release-bundle
@@ -216,11 +216,11 @@ jobs:
           unzip -q "$FIREFOX_ZIP" -d firefox-unpacked
           echo "ready=true" >> "$GITHUB_OUTPUT"
 
-      - name: Setup Node.js 22
+      - name: Setup Node.js 24
         if: steps.check_mozilla.outputs.ready == 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Submit listed version to Mozilla AMO (web-ext sign)
         if: steps.check_mozilla.outputs.ready == 'true'
