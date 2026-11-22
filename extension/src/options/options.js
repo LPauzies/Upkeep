@@ -8,7 +8,7 @@
       bfOppMyTurn: '#0d1119',
       bfSelfOppTurn: '#0d1119',
       bfOppOppTurn: '#182132',
-      phaseCurrent: '#c9a45c',
+      phaseCurrent: '#e5484d',
       phaseStopMine: '#d6ab56',
       phaseStopOpp: '#6ea8f0',
       lifeNormal: '#f4f6fa',
@@ -69,7 +69,7 @@
     {
       title: 'Phase Timeline',
       fields: [
-        { key: 'phaseCurrent', label: 'Active Phase Step', hint: 'High-contrast fill for the current step (auto ink contrast)' },
+        { key: 'phaseCurrent', label: 'Active Phase Pointer', hint: 'Top & bottom arrows and accent border for the current step' },
         { key: 'phaseStopMine', label: 'Your Turn Stop Marker', hint: 'Top/left blade marker when you set a stop on your turn' },
         { key: 'phaseStopOpp', label: 'Opponent Turn Stop Marker', hint: 'Bottom/right blade marker when you set a stop on their turn' },
       ],

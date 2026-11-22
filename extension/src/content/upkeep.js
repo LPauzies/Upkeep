@@ -8,7 +8,7 @@
       bfOppMyTurn: '#0d1119',
       bfSelfOppTurn: '#0d1119',
       bfOppOppTurn: '#182132',
-      phaseCurrent: '#c9a45c',
+      phaseCurrent: '#e5484d',
       phaseStopMine: '#d6ab56',
       phaseStopOpp: '#6ea8f0',
       lifeNormal: '#f4f6fa',
@@ -1400,27 +1400,45 @@
   function enhanceWaitingCard() {
     const pendingGroup = document.querySelector('aside.wr-rail-left [aria-label="Pending actions"]');
     if (!pendingGroup) return;
-    if (pendingGroup.querySelector('[data-zone="decision-surface"]')) return;
 
-    const stack = pendingGroup.firstElementChild || pendingGroup;
-    const candidates = Array.from(stack.children).filter(
-      (el) =>
-        el.getAttribute('aria-label') !== 'Pass priority shortcuts' &&
-        !el.hasAttribute('data-zone') &&
-        !el.querySelector('[aria-label="Pass priority shortcuts"]')
+    // Clean up stale waiting tags if Endstep reused the node for an active decision
+    const activeDecision = pendingGroup.querySelector(
+      '[data-zone="decision-surface"][role="dialog"], [data-zone="decision-surface"].wr-ds-active'
     );
+    if (activeDecision) {
+      delete activeDecision.dataset.upkeepWaiting;
+      delete activeDecision.dataset.upkeepWaitingSelf;
+      return;
+    }
 
-    const waitingCard = candidates.find((el) => /\bwaiting\b/i.test((el.textContent || '').trim()));
+    let waitingCard = pendingGroup.querySelector('[data-zone="decision-surface"][role="status"]');
+    if (!waitingCard) {
+      const stack = pendingGroup.firstElementChild || pendingGroup;
+      const candidates = Array.from(stack.children).filter(
+        (el) =>
+          el.getAttribute('aria-label') !== 'Pass priority shortcuts' &&
+          !el.querySelector('[aria-label="Pass priority shortcuts"]') &&
+          !el.querySelector('.wr-ds-body')
+      );
+      waitingCard = candidates.find((el) => /\bwaiting\b/i.test((el.textContent || '').trim())) || null;
+    }
     if (!waitingCard) return;
 
     waitingCard.dataset.upkeepWaiting = 'true';
     const children = Array.from(waitingCard.children);
     const headEl =
-      children.find((el) => /^waiting$/i.test((el.textContent || '').replace(/\s+/g, ' ').trim())) ||
+      children.find((el) => /^waiting(\s+on\s+you)?$/i.test((el.textContent || '').replace(/\s+/g, ' ').trim())) ||
       children[0];
     const msgEl =
-      children.find((el) => el !== headEl && /deciding|waiting|opponent/i.test(el.textContent || '')) ||
+      children.find((el) => el !== headEl && /deciding|waiting|opponent|proposal/i.test(el.textContent || '')) ||
       children[1];
+
+    const headText = (headEl?.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    if (headText.includes('you')) {
+      waitingCard.dataset.upkeepWaitingSelf = 'true';
+    } else if (waitingCard.dataset.upkeepWaitingSelf) {
+      delete waitingCard.dataset.upkeepWaitingSelf;
+    }
 
     if (headEl) headEl.dataset.upkeepWaitingHead = 'true';
     if (msgEl) msgEl.dataset.upkeepWaitingMsg = 'true';
@@ -1885,6 +1903,9 @@
     });
     document.querySelectorAll('[data-upkeep-waiting]').forEach((n) => {
       delete n.dataset.upkeepWaiting;
+    });
+    document.querySelectorAll('[data-upkeep-waiting-self]').forEach((n) => {
+      delete n.dataset.upkeepWaitingSelf;
     });
     document.querySelectorAll('[data-upkeep-waiting-head]').forEach((n) => {
       delete n.dataset.upkeepWaitingHead;

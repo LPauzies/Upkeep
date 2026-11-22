@@ -934,19 +934,23 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                 {decisionMode === 'waiting' ? (
                   <>
                     <div className="h-[28px] shrink-0 px-2.5 bg-[#1B2230] border-b border-[rgba(242,238,230,0.08)] flex items-center justify-between">
-                      <span className="text-[10px] font-bold tracking-[0.12em] text-[#A9B3C5]">
+                      <span className="text-[10px] font-bold tracking-[0.14em] text-[#BCC5D4]">
                         WAITING
                       </span>
-                    </div>
-                    <div className="flex-1 min-h-0 px-4 py-4 flex flex-col items-center justify-center text-center gap-2">
                       <span
                         aria-hidden="true"
-                        className="w-6 h-6 rounded-full border-2 border-[#C9A45C]/20 border-t-[#C9A45C] animate-spin"
+                        className="w-[5px] h-[5px] bg-[#C9A45C] shadow-[0_0_6px_rgba(201,164,92,0.55)] animate-pulse"
                       />
-                      <div className="text-[13px] font-semibold text-[#F4F6FA] leading-snug">
+                    </div>
+                    <div className="flex-1 min-h-0 px-4 py-5 flex flex-col items-center justify-center text-center gap-2.5">
+                      <span
+                        aria-hidden="true"
+                        className="w-7 h-7 rounded-full border-2 border-[#C9A45C]/15 border-t-[#C9A45C] border-r-[#C9A45C]/55 animate-spin"
+                      />
+                      <div className="text-[13.5px] font-semibold text-[#F4F6FA] leading-snug">
                         CACB is deciding.
                       </div>
-                      <div className="text-[11px] text-[#7E889C] leading-tight">
+                      <div className="text-[11px] font-medium text-[#8490A3] tracking-[0.02em] leading-tight">
                         Opponent has priority
                       </div>
                     </div>
@@ -1353,7 +1357,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
             {/* HORIZONTAL NATIVE MIDLINE PHASE BAR (when Upkeep + showMidlineTimeline ON) */}
             {extensionActive && config.showMidlineTimeline && (
               <div
-                className="h-[38px] shrink-0 px-2 flex items-center gap-1 bg-[#111621]/95 border-y border-[rgba(242,238,230,0.1)]"
+                className="h-[46px] shrink-0 px-2.5 flex items-center gap-1 bg-[#121722] border-y border-[#C9A45C]/30 overflow-visible"
                 aria-label="Barre de phases native sur la ligne médiane"
               >
                 {PHASES.map((phase) => {
@@ -1370,31 +1374,51 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                           : setOppPhaseStops((prev) => ({ ...prev, [phase.id]: !prev[phase.id] }))
                       }
                       title="Cliquer pour activer/retirer un stop de phase (selon le tour actif)"
-                      className="relative flex-1 min-w-0 h-[26px] px-1 rounded-none font-mono-tabular text-[9px] font-bold tracking-tight transition-colors truncate cursor-pointer border flex items-center justify-center"
+                      className={`relative min-w-0 h-[30px] px-1 rounded-none font-mono-tabular transition-colors cursor-pointer border flex items-center justify-center ${
+                        isCurrent
+                          ? 'flex-[1.4] overflow-visible z-10 text-[10.5px] font-extrabold tracking-[0.05em]'
+                          : 'flex-1 overflow-hidden text-[10px] font-semibold tracking-[0.03em]'
+                      }`}
                       style={
                         isCurrent
                           ? {
-                              backgroundColor: palette.phaseCurrent,
-                              borderColor: palette.phaseCurrent,
-                              color: phaseCurrentInk,
-                              boxShadow: `0 0 0 1px ${palette.phaseCurrent}55`,
+                              backgroundColor: '#1B2232',
+                              borderColor: `${palette.phaseCurrent}d9`,
+                              borderWidth: '1.5px',
+                              color: '#FFFFFF',
+                              boxShadow: `inset 0 0 12px ${palette.phaseCurrent}29, 0 0 10px ${palette.phaseCurrent}3d`,
                             }
                           : {
                               backgroundColor:
-                                hasMineStop || hasOppStop ? '#1A2130' : 'transparent',
+                                hasMineStop || hasOppStop ? '#1A2130' : 'rgba(255,255,255,0.03)',
                               borderColor:
                                 hasMineStop || hasOppStop
                                   ? 'rgba(244,246,250,0.16)'
-                                  : 'rgba(244,246,250,0.06)',
-                              color: hasMineStop || hasOppStop ? '#E5E9F0' : '#7C879B',
+                                  : 'rgba(244,246,250,0.08)',
+                              color: hasMineStop || hasOppStop ? '#E5E9F0' : '#8A95A9',
                             }
                       }
                     >
+                      {/* Top downward red pointer arrow (▼) on current step */}
+                      {isCurrent && (
+                        <span
+                          aria-hidden="true"
+                          className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-[8px] z-20"
+                          style={{
+                            width: 0,
+                            height: 0,
+                            borderLeft: '6px solid transparent',
+                            borderRight: '6px solid transparent',
+                            borderTop: `7px solid ${palette.phaseCurrent}`,
+                            filter: `drop-shadow(0 0 3px ${palette.phaseCurrent}b3)`,
+                          }}
+                        />
+                      )}
                       {/* Top Stop Bar: Your Turn Stop */}
                       {hasMineStop && (
                         <span
                           aria-hidden="true"
-                          className="absolute top-0 left-0 right-0"
+                          className="absolute top-0 left-0 w-1/2"
                           style={{
                             height: isColorblindEnhanced ? '4px' : '3px',
                             backgroundColor: palette.phaseStopMine,
@@ -1402,16 +1426,31 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                           }}
                         />
                       )}
-                      <span className="truncate">{phase.label}</span>
+                      <span className="truncate uppercase leading-none">{phase.label}</span>
                       {/* Bottom Stop Bar: Opponent Turn Stop */}
                       {hasOppStop && (
                         <span
                           aria-hidden="true"
-                          className="absolute bottom-0 left-0 right-0"
+                          className="absolute bottom-0 right-0 w-1/2"
                           style={{
                             height: isColorblindEnhanced ? '4px' : '3px',
                             backgroundColor: palette.phaseStopOpp,
                             borderTop: isColorblindEnhanced ? '1px solid #0b0e14' : undefined,
+                          }}
+                        />
+                      )}
+                      {/* Bottom upward red pointer arrow (▲) on current step */}
+                      {isCurrent && (
+                        <span
+                          aria-hidden="true"
+                          className="pointer-events-none absolute left-1/2 -translate-x-1/2 -bottom-[8px] z-20"
+                          style={{
+                            width: 0,
+                            height: 0,
+                            borderLeft: '6px solid transparent',
+                            borderRight: '6px solid transparent',
+                            borderBottom: `7px solid ${palette.phaseCurrent}`,
+                            filter: `drop-shadow(0 0 3px ${palette.phaseCurrent}b3)`,
                           }}
                         />
                       )}

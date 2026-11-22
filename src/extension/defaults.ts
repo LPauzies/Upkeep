@@ -6,7 +6,7 @@ export const COLOR_PRESETS: Record<ColorblindMode, UpkeepColors> = {
     bfOppMyTurn: '#0d1119',
     bfSelfOppTurn: '#0d1119',
     bfOppOppTurn: '#182132',
-    phaseCurrent: '#c9a45c',
+    phaseCurrent: '#e5484d',
     phaseStopMine: '#d6ab56',
     phaseStopOpp: '#6ea8f0',
     lifeNormal: '#f4f6fa',
@@ -93,8 +93,8 @@ export const COLOR_GROUPS: {
       {
         key: 'phaseCurrent',
         short: 'Active Step',
-        label: 'Phase en cours',
-        hint: 'Remplissage haute visibilité avec contraste texte auto',
+        label: 'Flèches de phase en cours',
+        hint: 'Flèches haute/basse et bordure d’accentuation sur l’étape active',
       },
       {
         key: 'phaseStopMine',
