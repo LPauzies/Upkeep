@@ -3,20 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Upkeep — Endstep DOM Selectors</title>
+    <title>Upkeep — Colors &amp; DOM Settings</title>
     <link rel="stylesheet" href="options.css" />
   </head>
   <body>
     <div class="shell">
       <header class="topbar">
         <div>
-          <h1>Upkeep — Endstep DOM Selectors</h1>
-          <p>Only adjust these selectors if endstep.cc changes its HTML structure.</p>
+          <h1>Upkeep — Colors &amp; DOM Settings</h1>
+          <p>Customize battlefield zones, phase steps, life color, accessibility presets, and Endstep DOM selectors.</p>
         </div>
         <button type="button" id="btn-save" class="btn-primary">Save</button>
       </header>
-      <div id="status" class="status"></div>
-      <div id="selectors-grid" class="grid"></div>
+      <div id="status" class="status" role="status" aria-live="polite"></div>
+
+      <section class="panel" aria-labelledby="heading-colors">
+        <div class="panel-head">
+          <div>
+            <h2 id="heading-colors">Theme Colors &amp; Colorblind Mode</h2>
+            <p>All changes sync instantly to active Endstep tabs. Pick a swatch or enter any <code>#RRGGBB</code> hex value.</p>
+          </div>
+          <button type="button" id="btn-reset-colors" class="btn-ghost">Reset Colors</button>
+        </div>
+
+        <div class="preset-bar" id="preset-bar" role="radiogroup" aria-label="Colorblind preset"></div>
+        <div id="colors-groups" class="color-groups"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="heading-selectors">
+        <div class="panel-head">
+          <div>
+            <h2 id="heading-selectors">Endstep DOM Selectors</h2>
+            <p>Only adjust these selectors if endstep.cc changes its HTML structure.</p>
+          </div>
+          <button type="button" id="btn-reset-selectors" class="btn-ghost">Reset Selectors</button>
+        </div>
+        <div id="selectors-grid" class="grid"></div>
+      </section>
     </div>
     <script src="options.js"></script>
   </body>

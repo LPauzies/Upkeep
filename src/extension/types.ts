@@ -23,6 +23,20 @@ export interface UpkeepShortcuts {
   toggleTheme: string;
 }
 
+export type ColorblindMode = 'none' | 'deuteranopia' | 'tritanopia' | 'high-contrast';
+
+export interface UpkeepColors {
+  bfSelfMyTurn: string;
+  bfOppMyTurn: string;
+  bfSelfOppTurn: string;
+  bfOppOppTurn: string;
+  phaseCurrent: string;
+  phaseStopMine: string;
+  phaseStopOpp: string;
+  lifeNormal: string;
+  targetBar: string;
+}
+
 export interface UpkeepConfig {
   version: string;
   enabled: boolean;
@@ -36,6 +50,8 @@ export interface UpkeepConfig {
   logsWidth: number;
   graveyardWidth: number;
   hoverZoomScale: number;
+  colorblindMode: ColorblindMode;
+  colors: UpkeepColors;
   shortcuts: UpkeepShortcuts;
   selectors: DomSelectorConfig;
 }

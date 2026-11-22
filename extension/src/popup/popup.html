@@ -60,13 +60,29 @@
         <span>Card hover zoom in Graveyards</span>
         <input type="checkbox" id="toggle-zoom" />
       </label>
+
+      <div class="divider"></div>
+      <div class="section-head">
+        <div class="section-label">Colors &amp; Colorblind</div>
+        <button type="button" id="btn-reset-colors" class="btn-inline">Reset</button>
+      </div>
+      <label class="select-row" for="select-colorblind">
+        <span>Colorblind preset</span>
+        <select id="select-colorblind" class="select-input">
+          <option value="none">Standard</option>
+          <option value="deuteranopia">Deuteranopia / Protanopia</option>
+          <option value="tritanopia">Tritanopia</option>
+          <option value="high-contrast">High Contrast</option>
+        </select>
+      </label>
+      <div id="popup-colors-grid" class="colors-grid"></div>
     </main>
 
     <footer class="footer">
       <div class="shortcuts-hint">
         Shortcuts: <kbd>U</kbd> On/Off · <kbd>G</kbd> Graveyards · <kbd>L</kbd> Logs
       </div>
-      <button type="button" id="btn-options" class="btn-secondary">DOM Selectors</button>
+      <button type="button" id="btn-options" class="btn-secondary">Colors &amp; DOM Settings</button>
     </footer>
     <script src="popup.js"></script>
   </body>

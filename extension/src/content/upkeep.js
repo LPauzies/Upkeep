@@ -2,6 +2,53 @@
   const extApi = globalThis.browser ?? globalThis.chrome;
   const STORAGE_KEY = 'upkeep_config_v2';
 
+  const COLOR_PRESETS = {
+    none: {
+      bfSelfMyTurn: '#182030',
+      bfOppMyTurn: '#0d1119',
+      bfSelfOppTurn: '#0d1119',
+      bfOppOppTurn: '#182132',
+      phaseCurrent: '#c9a45c',
+      phaseStopMine: '#d6ab56',
+      phaseStopOpp: '#6ea8f0',
+      lifeNormal: '#f4f6fa',
+      targetBar: '#f5d076',
+    },
+    deuteranopia: {
+      bfSelfMyTurn: '#221d11',
+      bfOppMyTurn: '#0b0e14',
+      bfSelfOppTurn: '#0b0e14',
+      bfOppOppTurn: '#102030',
+      phaseCurrent: '#cc79a7',
+      phaseStopMine: '#e69f00',
+      phaseStopOpp: '#56b4e9',
+      lifeNormal: '#ffffff',
+      targetBar: '#f0e442',
+    },
+    tritanopia: {
+      bfSelfMyTurn: '#241419',
+      bfOppMyTurn: '#0b0e14',
+      bfSelfOppTurn: '#0b0e14',
+      bfOppOppTurn: '#0f2326',
+      phaseCurrent: '#ff99c8',
+      phaseStopMine: '#ff5c5c',
+      phaseStopOpp: '#00c2b2',
+      lifeNormal: '#ffffff',
+      targetBar: '#ffd6e7',
+    },
+    'high-contrast': {
+      bfSelfMyTurn: '#1e2636',
+      bfOppMyTurn: '#080a0f',
+      bfSelfOppTurn: '#080a0f',
+      bfOppOppTurn: '#1a2538',
+      phaseCurrent: '#ffd166',
+      phaseStopMine: '#ffd166',
+      phaseStopOpp: '#7ce8ff',
+      lifeNormal: '#ffffff',
+      targetBar: '#ffffff',
+    },
+  };
+
   const DEFAULT_CONFIG = {
     enabled: true,
     showMidlineTimeline: true,
@@ -11,6 +58,8 @@
     anchorStackTopLeft: true,
     highContrastHud: true,
     enableHoverZoom: true,
+    colorblindMode: 'none',
+    colors: { ...COLOR_PRESETS.none },
     logsWidth: 278,
     graveyardWidth: 268,
     shortcuts: { toggleLogs: 'l', toggleGraveyard: 'g', toggleTheme: 'u' },
@@ -76,9 +125,17 @@
   let resizeObserver = null;
   let syncRaf = 0;
   let cachedAutoPassHeight = 32;
+  let lastValidLogGeom = null;
+  let tooltipAnchorEl = null;
+  let tooltipShowTimer = null;
+  let tooltipGlobalListenersBound = false;
+
+  function isSpectateRoute() {
+    return /^\/spectate\/[^/]+/.test(window.location.pathname);
+  }
 
   function isGameRoute() {
-    return /^\/game\/[^/]+/.test(window.location.pathname);
+    return /^\/(?:game|spectate)\/[^/]+/.test(window.location.pathname);
   }
 
   function toCardImageUrl(name) {
@@ -94,25 +151,51 @@
     }
   }
 
+  function getRailPlates(leftRail) {
+    const rail = leftRail || document.querySelector('aside.wr-rail-left');
+    if (!rail) return { topPlate: null, bottomPlate: null };
+    const plates = Array.from(rail.querySelectorAll('.wr-plate'));
+    const topPlate =
+      rail.querySelector('[data-player-anchor="opp"]') ||
+      plates[0] ||
+      null;
+    const bottomPlate =
+      rail.querySelector('[data-player-anchor="me"]') ||
+      (plates.length > 1 ? plates[plates.length - 1] : null);
+    return { topPlate, bottomPlate };
+  }
+
   function getOpponentName() {
+    const { topPlate } = getRailPlates();
     const el =
       document.querySelector('[data-player-anchor="opp"] .wr-player-nameplate') ||
-      document.querySelector('[data-player-anchor="opp"] [title]');
+      document.querySelector('[data-player-anchor="opp"] [title]') ||
+      topPlate?.querySelector('.wr-player-nameplate') ||
+      topPlate?.querySelector('[title]');
     return (el?.textContent || '').trim();
   }
 
   function getSelfName() {
+    const { bottomPlate } = getRailPlates();
     const el =
       document.querySelector('[data-player-anchor="me"] .wr-player-nameplate') ||
-      document.querySelector('[data-player-anchor="me"] [title]');
+      document.querySelector('[data-player-anchor="me"] [title]') ||
+      bottomPlate?.querySelector('.wr-player-nameplate') ||
+      bottomPlate?.querySelector('[title]');
     return (el?.textContent || '').trim();
   }
 
   function getGraveyardButton(owner) {
     if (owner === 'opp') {
-      return querySafe(config.selectors.opponentGraveyardZone || 'button[data-zone-anchor="opp-graveyard"]');
+      const direct = querySafe(config.selectors.opponentGraveyardZone || 'button[data-zone-anchor="opp-graveyard"]');
+      if (direct) return direct;
+      const { topPlate } = getRailPlates();
+      return topPlate?.querySelector('button[data-zone-anchor*="graveyard" i], button[aria-label*="graveyard" i]') || null;
     }
-    return querySafe(config.selectors.selfGraveyardZone || 'button[data-zone-anchor="my-graveyard"]');
+    const direct = querySafe(config.selectors.selfGraveyardZone || 'button[data-zone-anchor="my-graveyard"]');
+    if (direct) return direct;
+    const { bottomPlate } = getRailPlates();
+    return bottomPlate?.querySelector('button[data-zone-anchor*="graveyard" i], button[aria-label*="graveyard" i]') || null;
   }
 
   function getAuthoritativeGyCount(owner) {
@@ -156,11 +239,41 @@
   // ==========================================================================
   // PERSISTENT STORAGE HELPER (local primary + sync mirror for Firefox/Chrome)
   // ==========================================================================
+  function sanitizeHex(value, fallback) {
+    const raw = String(value || '').trim();
+    if (/^#[0-9a-f]{6}$/i.test(raw)) return raw.toLowerCase();
+    if (/^#[0-9a-f]{3}$/i.test(raw)) {
+      const [, a, b, c] = raw;
+      return `#${a}${a}${b}${b}${c}${c}`.toLowerCase();
+    }
+    return fallback;
+  }
+
+  function computeContrastInk(hex) {
+    const clean = sanitizeHex(hex, '#c9a45c').slice(1);
+    const r = parseInt(clean.slice(0, 2), 16);
+    const g = parseInt(clean.slice(2, 4), 16);
+    const b = parseInt(clean.slice(4, 6), 16);
+    const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+    return luminance > 155 ? '#0b0e14' : '#ffffff';
+  }
+
   function mergeConfig(saved) {
     if (!saved || typeof saved !== 'object') return structuredClone(DEFAULT_CONFIG);
+    const cbMode = Object.prototype.hasOwnProperty.call(COLOR_PRESETS, saved.colorblindMode)
+      ? saved.colorblindMode
+      : 'none';
+    const basePalette = COLOR_PRESETS[cbMode] || COLOR_PRESETS.none;
+    const savedColors = saved.colors && typeof saved.colors === 'object' ? saved.colors : {};
+    const mergedColors = {};
+    Object.keys(COLOR_PRESETS.none).forEach((key) => {
+      mergedColors[key] = sanitizeHex(savedColors[key], basePalette[key]);
+    });
     return {
       ...DEFAULT_CONFIG,
       ...saved,
+      colorblindMode: cbMode,
+      colors: mergedColors,
       shortcuts: { ...DEFAULT_CONFIG.shortcuts, ...(saved.shortcuts || {}) },
       selectors: { ...DEFAULT_CONFIG.selectors, ...(saved.selectors || {}) },
     };
@@ -367,7 +480,10 @@
     }
 
     const preExistingDialogs = new Set(findOpenZoneDialogs());
-    if (!force && preExistingDialogs.size > 0) {
+    const hasOpenModalDecision = Boolean(
+      document.querySelector('[role="dialog"][data-zone="decision-surface"], [data-zone="decision-surface"][data-upkeep-complex-decision="true"]')
+    );
+    if (!force && (preExistingDialogs.size > 0 || hasOpenModalDecision)) {
       return false;
     }
 
@@ -789,11 +905,25 @@
   function renderGraveyardSection(dock, owner) {
     const bucket = gyState[owner];
     const section = dock.querySelector(`#upkeep-gy-section-${owner}`);
+    const titleEl = section?.querySelector('.upkeep-gy-title');
     const countEl = dock.querySelector(`#upkeep-gy-count-${owner}`);
     const metaEl = dock.querySelector(`#upkeep-gy-meta-${owner}`);
     const listEl = dock.querySelector(`#upkeep-gy-list-${owner}`);
     const chevronEl = dock.querySelector(`#upkeep-gy-chevron-${owner}`);
     if (!section || !countEl || !metaEl || !listEl) return false;
+
+    if (titleEl) {
+      if (isSpectateRoute()) {
+        const playerName = owner === 'opp' ? getOpponentName() : getSelfName();
+        titleEl.textContent = playerName
+          ? `${playerName} Graveyard`
+          : owner === 'opp'
+          ? 'Top Player Graveyard'
+          : 'Bottom Player Graveyard';
+      } else {
+        titleEl.textContent = owner === 'opp' ? 'Opponent Graveyard' : 'Your Graveyard';
+      }
+    }
 
     section.dataset.collapsed = bucket.collapsed ? 'true' : 'false';
     if (chevronEl) chevronEl.textContent = bucket.collapsed ? '▸' : '▾';
@@ -978,9 +1108,43 @@
   }
 
   // ==========================================================================
-  // COMPACT 3-BUTTON AUTO-PASS BAR & FLOATING TOOLTIP
+  // COMPACT 3-BUTTON AUTO-PASS BAR & FLOATING TOOLTIP (STRICT AUTO-DISMISS)
   // ==========================================================================
+  function bindTooltipGlobalDismiss() {
+    if (tooltipGlobalListenersBound) return;
+    tooltipGlobalListenersBound = true;
+
+    const dismiss = () => hideUpkeepTooltip();
+    document.addEventListener('pointerdown', dismiss, true);
+    document.addEventListener('keydown', dismiss, true);
+    window.addEventListener('blur', dismiss, { passive: true });
+    window.addEventListener('scroll', dismiss, { passive: true, capture: true });
+    document.addEventListener(
+      'pointermove',
+      (e) => {
+        if (!tooltipAnchorEl) return;
+        if (!tooltipAnchorEl.isConnected) {
+          hideUpkeepTooltip();
+          return;
+        }
+        const rect = tooltipAnchorEl.getBoundingClientRect();
+        if (
+          rect.width === 0 ||
+          rect.height === 0 ||
+          e.clientX < rect.left - 2 ||
+          e.clientX > rect.right + 2 ||
+          e.clientY < rect.top - 2 ||
+          e.clientY > rect.bottom + 2
+        ) {
+          hideUpkeepTooltip();
+        }
+      },
+      { passive: true }
+    );
+  }
+
   function ensureUpkeepTooltip() {
+    bindTooltipGlobalDismiss();
     let tip = document.getElementById('upkeep-tooltip');
     if (!tip) {
       tip = document.createElement('div');
@@ -993,7 +1157,17 @@
   }
 
   function showUpkeepTooltip(anchorEl, title, keyText, desc) {
-    if (!anchorEl) return;
+    if (!anchorEl || !anchorEl.isConnected) {
+      hideUpkeepTooltip();
+      return;
+    }
+    const rect = anchorEl.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) {
+      hideUpkeepTooltip();
+      return;
+    }
+
+    tooltipAnchorEl = anchorEl;
     const tip = ensureUpkeepTooltip();
     tip.textContent = '';
 
@@ -1019,7 +1193,6 @@
     }
 
     tip.dataset.visible = 'true';
-    const rect = anchorEl.getBoundingClientRect();
     const tipRect = tip.getBoundingClientRect();
     const left = Math.max(
       8,
@@ -1031,12 +1204,44 @@
   }
 
   function hideUpkeepTooltip() {
+    if (tooltipShowTimer) {
+      window.clearTimeout(tooltipShowTimer);
+      tooltipShowTimer = null;
+    }
+    tooltipAnchorEl = null;
     const tip = document.getElementById('upkeep-tooltip');
     if (tip) tip.dataset.visible = 'false';
   }
 
+  function verifyActiveTooltip() {
+    if (!tooltipAnchorEl) return;
+    if (!tooltipAnchorEl.isConnected) {
+      hideUpkeepTooltip();
+      return;
+    }
+    const rect = tooltipAnchorEl.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) {
+      hideUpkeepTooltip();
+      return;
+    }
+    let stillActive = false;
+    try {
+      stillActive = tooltipAnchorEl.matches(':hover') || tooltipAnchorEl.matches(':focus-visible');
+    } catch (_) {
+      stillActive = document.activeElement === tooltipAnchorEl;
+    }
+    if (!stillActive) hideUpkeepTooltip();
+  }
+
   function classifyAutoPassButton(rawLabel, keyText) {
     const lower = String(rawLabel || '').toLowerCase();
+    // Never misclassify cancel / Esc buttons when an Auto-Pass banner ("AUTO-PASSING TO ...") is active
+    if (
+      keyText === 'ESC' ||
+      /\b(cancel|stop|clear|esc|auto-passing)\b/i.test(lower)
+    ) {
+      return null;
+    }
     if (/end\s*of\s*turn/.test(lower) || keyText === 'E') {
       return {
         short: 'EOT',
@@ -1058,60 +1263,46 @@
         desc: 'Auto-pass until an opponent acts or end step.',
       };
     }
-    const clean = String(rawLabel || '').trim();
-    const fallbackShort = (clean.split(/\s+/)[0] || keyText || 'PASS').slice(0, 7).toUpperCase();
-    return {
-      short: fallbackShort,
-      title: clean || 'Auto-Pass',
-      desc: 'Auto-pass priority shortcut.',
-    };
+    return null;
   }
 
   function enhanceAutoPassBar() {
+    verifyActiveTooltip();
+
     const autoPassEl = document.querySelector('aside.wr-rail-left [aria-label="Pass priority shortcuts"]');
-    if (!autoPassEl) return;
+    if (!autoPassEl) {
+      hideUpkeepTooltip();
+      return;
+    }
+
+    // If an active "AUTO-PASSING TO ..." banner is shown, dismiss any stale tooltip and leave its cancel button untouched
+    if (/auto-?passing\s+to\b/i.test(autoPassEl.textContent || '')) {
+      hideUpkeepTooltip();
+    }
 
     const buttons = Array.from(autoPassEl.querySelectorAll('button'));
-    if (buttons.length === 0) return;
-
-    // Identify the exact container holding the 3 buttons (works whether direct children or wrapped)
-    let gridEl = autoPassEl;
-    if (buttons.length >= 2 && buttons[0].parentElement === buttons[1].parentElement) {
-      gridEl = buttons[0].parentElement;
-    } else if (
-      buttons.length >= 2 &&
-      buttons[0].parentElement?.parentElement === buttons[1].parentElement?.parentElement
-    ) {
-      gridEl = buttons[0].parentElement.parentElement;
-      buttons.forEach((btn) => {
-        if (btn.parentElement) btn.parentElement.dataset.upkeepAutopassCell = 'true';
-      });
+    if (buttons.length === 0) {
+      hideUpkeepTooltip();
+      return;
     }
-    gridEl.dataset.upkeepAutopassGrid = 'true';
 
-    // Hide redundant "AUTO-PASS / skip ahead" header line (whether inside container or immediate sibling)
-    const headerCandidates = [
-      ...Array.from(autoPassEl.children).filter((child) => child.tagName !== 'BUTTON' && !child.querySelector('button')),
-      autoPassEl.previousElementSibling,
-    ];
-    headerCandidates.forEach((el) => {
-      if (!el || el.hasAttribute('data-zone')) return;
-      const txt = (el.textContent || '').replace(/\s+/g, ' ').trim();
-      if (/auto-?pass/i.test(txt) && txt.length <= 40) {
-        el.dataset.upkeepAutopassHeader = 'true';
-      }
-    });
-
+    const triggerButtons = [];
     buttons.forEach((btn) => {
       const keyEl =
         btn.querySelector('[data-testid="kcap"], kbd') ||
         Array.from(btn.querySelectorAll('span')).find((s) => /^[A-Z0-9]$/.test((s.textContent || '').trim()));
-      if (keyEl) keyEl.dataset.upkeepApKey = 'true';
-
       const keyText = (keyEl?.textContent || '').trim().toUpperCase();
       const rawText = (btn.textContent || '').replace(/\s+/g, ' ').trim();
       const labelWithoutKey = keyText && rawText.endsWith(keyText) ? rawText.slice(0, -keyText.length).trim() : rawText;
       const meta = classifyAutoPassButton(labelWithoutKey, keyText);
+
+      if (!meta) {
+        delete btn.dataset.upkeepApShort;
+        return;
+      }
+
+      if (keyEl) keyEl.dataset.upkeepApKey = 'true';
+      triggerButtons.push(btn);
 
       if (btn.dataset.upkeepApShort !== meta.short) {
         btn.dataset.upkeepApShort = meta.short;
@@ -1122,17 +1313,75 @@
 
       if (btn.dataset.upkeepApBound !== 'true') {
         btn.dataset.upkeepApBound = 'true';
-        const onShow = () =>
+        const scheduleShow = () => {
+          if (tooltipShowTimer) window.clearTimeout(tooltipShowTimer);
+          tooltipShowTimer = window.setTimeout(() => {
+            tooltipShowTimer = null;
+            if (!btn.isConnected) return;
+            try {
+              if (!btn.matches(':hover') && !btn.matches(':focus-visible')) return;
+            } catch (_) {}
+            showUpkeepTooltip(
+              btn,
+              btn.dataset.upkeepApTitle || 'Auto-Pass',
+              btn.dataset.upkeepApKeyText || '',
+              btn.dataset.upkeepApDesc || ''
+            );
+          }, 220);
+        };
+        const onFocus = () => {
+          try {
+            if (!btn.matches(':focus-visible')) return;
+          } catch (_) {
+            return;
+          }
           showUpkeepTooltip(
             btn,
             btn.dataset.upkeepApTitle || 'Auto-Pass',
             btn.dataset.upkeepApKeyText || '',
             btn.dataset.upkeepApDesc || ''
           );
-        btn.addEventListener('mouseenter', onShow);
-        btn.addEventListener('focus', onShow);
+        };
+        btn.addEventListener('mouseenter', scheduleShow);
+        btn.addEventListener('focus', onFocus);
         btn.addEventListener('mouseleave', hideUpkeepTooltip);
         btn.addEventListener('blur', hideUpkeepTooltip);
+        btn.addEventListener('pointerdown', hideUpkeepTooltip);
+        btn.addEventListener('click', hideUpkeepTooltip);
+      }
+    });
+
+    // Only apply the 3-column grid when the 3 trigger buttons are present (not when AUTO-PASSING banner replaces them)
+    if (triggerButtons.length >= 2) {
+      let gridEl = autoPassEl;
+      if (triggerButtons[0].parentElement === triggerButtons[1].parentElement) {
+        gridEl = triggerButtons[0].parentElement;
+      } else if (
+        triggerButtons[0].parentElement?.parentElement === triggerButtons[1].parentElement?.parentElement
+      ) {
+        gridEl = triggerButtons[0].parentElement.parentElement;
+        triggerButtons.forEach((btn) => {
+          if (btn.parentElement) btn.parentElement.dataset.upkeepAutopassCell = 'true';
+        });
+      }
+      gridEl.dataset.upkeepAutopassGrid = 'true';
+    } else {
+      autoPassEl.querySelectorAll('[data-upkeep-autopass-grid]').forEach((el) => {
+        delete el.dataset.upkeepAutopassGrid;
+      });
+      delete autoPassEl.dataset.upkeepAutopassGrid;
+    }
+
+    // Hide redundant "AUTO-PASS / skip ahead" header line (never hide active "AUTO-PASSING TO ..." banner!)
+    const headerCandidates = [
+      ...Array.from(autoPassEl.children).filter((child) => child.tagName !== 'BUTTON' && !child.querySelector('button')),
+      autoPassEl.previousElementSibling,
+    ];
+    headerCandidates.forEach((el) => {
+      if (!el || el.hasAttribute('data-zone')) return;
+      const txt = (el.textContent || '').replace(/\s+/g, ' ').trim();
+      if (/^auto-?pass(\s*skip\s*ahead)?$/i.test(txt) && txt.length <= 32) {
+        el.dataset.upkeepAutopassHeader = 'true';
       }
     });
   }
@@ -1170,51 +1419,14 @@
     const root = document.documentElement;
     if (!config.enabled || !isGameRoute()) {
       root.dataset.upkeepLogsDocked = 'false';
+      lastValidLogGeom = null;
       return;
     }
 
     const leftRail = document.querySelector('aside.wr-rail-left');
-    const oppPlate = leftRail?.querySelector('[data-player-anchor="opp"]');
+    const { topPlate: oppPlate, bottomPlate: selfPlate } = getRailPlates(leftRail);
     const pendingGroup = leftRail?.querySelector('[aria-label="Pending actions"]');
-    const selfPlate = leftRail?.querySelector('[data-player-anchor="me"]');
     const autoPassEl = pendingGroup?.querySelector('[aria-label="Pass priority shortcuts"]');
-
-    if (!leftRail || !oppPlate) {
-      root.dataset.upkeepLogsDocked = 'false';
-      return;
-    }
-
-    const railRect = leftRail.getBoundingClientRect();
-    const oppRect = oppPlate.getBoundingClientRect();
-    const pendingRect = pendingGroup?.getBoundingClientRect();
-    const selfRect = selfPlate?.getBoundingClientRect();
-    const autoPassRect = autoPassEl?.getBoundingClientRect();
-
-    if (autoPassRect && autoPassRect.height >= 24) {
-      cachedAutoPassHeight = Math.round(autoPassRect.height);
-    }
-
-    const topY = Math.round(oppRect.bottom + 6);
-    const pendingBottomY =
-      pendingRect && pendingRect.height > 0
-        ? Math.round(pendingRect.bottom)
-        : Math.round(selfRect ? selfRect.top : railRect.bottom);
-
-    // Reserve exact fixed height for: 6px pending bottom padding + Auto-Pass + 6px gap + Decision + 8px gap below Log
-    const autoPassReserved = autoPassEl ? cachedAutoPassHeight : 0;
-    const stackOverhead = autoPassEl ? 20 : 14;
-    const usableForLogAndDecision = pendingBottomY - topY - autoPassReserved - stackOverhead;
-
-    // Generous fixed height for Decision/Waiting (fits multi-button decisions without ever jumping)
-    const maxDecisionForLog = Math.max(150, usableForLogAndDecision - 140);
-    const fixedDecisionHeight = Math.min(
-      maxDecisionForLog,
-      Math.max(200, Math.min(276, Math.round(usableForLogAndDecision * 0.43)))
-    );
-
-    if (fixedDecisionHeight >= 150) {
-      root.style.setProperty('--upkeep-ds-height', `${fixedDecisionHeight}px`);
-    }
 
     const logPanel = querySafe(config.selectors.logsPanel);
     if (!logPanel) {
@@ -1236,17 +1448,72 @@
       return;
     }
 
-    const availHeight = usableForLogAndDecision - fixedDecisionHeight;
+    // If leftRail/topPlate momentarily unmount during a React re-render, keep last valid docked geometry
+    // so the Game Log NEVER teleports back and forth between left and right!
+    if (!leftRail || !oppPlate) {
+      if (lastValidLogGeom) {
+        root.dataset.upkeepLogsDocked = 'true';
+      } else {
+        root.dataset.upkeepLogsDocked = 'false';
+      }
+      return;
+    }
 
-    if (availHeight < 120 || railRect.width < 180) {
+    const railRect = leftRail.getBoundingClientRect();
+    const oppRect = oppPlate.getBoundingClientRect();
+    const pendingRect = pendingGroup?.getBoundingClientRect();
+    const selfRect = selfPlate?.getBoundingClientRect();
+    const autoPassRect = autoPassEl?.getBoundingClientRect();
+
+    // Ignore transient zero-rect frames during layout recalculations
+    if (railRect.width === 0 || oppRect.height === 0) {
+      if (lastValidLogGeom) {
+        root.dataset.upkeepLogsDocked = 'true';
+      }
+      return;
+    }
+
+    // Only undock if left rail is genuinely collapsed to mobile/narrow width
+    if (railRect.width < 120) {
       root.dataset.upkeepLogsDocked = 'false';
       return;
     }
 
+    // Clamp auto-pass height tightly (28..64px) so a transient unstyled frame never collapses the log height
+    if (autoPassRect && autoPassRect.height >= 24 && autoPassRect.height <= 90) {
+      cachedAutoPassHeight = Math.min(64, Math.max(28, Math.round(autoPassRect.height)));
+    }
+
+    const topY = Math.round(oppRect.bottom + 6);
+    const hasPendingControls = Boolean(pendingGroup && pendingRect && pendingRect.height > 20);
+    const pendingBottomY = hasPendingControls
+      ? Math.round(pendingRect.bottom)
+      : Math.round(selfRect && selfRect.height > 0 ? selfRect.top - 6 : railRect.bottom - 8);
+
+    const autoPassReserved = hasPendingControls && autoPassEl ? cachedAutoPassHeight : 0;
+    const stackOverhead = hasPendingControls ? (autoPassEl ? 20 : 14) : 6;
+    const usableForLogAndDecision = Math.max(120, pendingBottomY - topY - autoPassReserved - stackOverhead);
+
+    let fixedDecisionHeight = 0;
+    if (hasPendingControls) {
+      // Guarantee at least 96px for the docked Game Log even on compact viewports (zero left/right flipping!)
+      const maxDecisionForLog = Math.max(136, usableForLogAndDecision - 96);
+      fixedDecisionHeight = Math.min(
+        maxDecisionForLog,
+        Math.max(180, Math.min(268, Math.round(usableForLogAndDecision * 0.42)))
+      );
+      root.style.setProperty('--upkeep-ds-height', `${fixedDecisionHeight}px`);
+    }
+
+    const availHeight = Math.max(88, usableForLogAndDecision - fixedDecisionHeight);
+    const logLeft = Math.round(railRect.left + 6);
+    const logWidth = Math.max(140, Math.round(railRect.width - 12));
+
+    lastValidLogGeom = { left: logLeft, top: topY, width: logWidth, height: availHeight };
     root.dataset.upkeepLogsDocked = 'true';
-    root.style.setProperty('--upkeep-log-left', `${Math.round(railRect.left + 6)}px`);
+    root.style.setProperty('--upkeep-log-left', `${logLeft}px`);
     root.style.setProperty('--upkeep-log-top', `${topY}px`);
-    root.style.setProperty('--upkeep-log-width', `${Math.round(railRect.width - 12)}px`);
+    root.style.setProperty('--upkeep-log-width', `${logWidth}px`);
     root.style.setProperty('--upkeep-log-height', `${availHeight}px`);
   }
 
@@ -1352,6 +1619,84 @@
   }
 
   // ==========================================================================
+  // ACTIVE TURN DETECTION (DRIVES 4-COLOR BATTLEFIELD THEME) & TARGET BAR FIX
+  // ==========================================================================
+  function syncActiveTurn() {
+    const root = document.documentElement;
+    const phaseBar = document.querySelector('aside.wr-rail-right .wr-phase-bar--vertical');
+    const currentStep = document.querySelector('.wr-pb-rail .wr-pb--current');
+    const turnChip = document.querySelector('aside.wr-rail-right .wr-turn-chip');
+    const turnOwner = document.querySelector('aside.wr-rail-right .wr-turn-owner');
+
+    let turn =
+      currentStep?.getAttribute('data-turn') ||
+      phaseBar?.getAttribute('data-turn') ||
+      turnChip?.getAttribute('data-live') ||
+      '';
+
+    if (turn !== 'mine' && turn !== 'opp') {
+      const txt = (turnOwner?.textContent || '').trim().toLowerCase();
+      if (txt.includes('your') || txt.includes('mine')) turn = 'mine';
+      else if (txt.includes('opp') || txt.includes('their')) turn = 'opp';
+    }
+
+    if (turn === 'mine' || turn === 'opp') {
+      root.dataset.upkeepTurn = turn;
+    } else if (!root.dataset.upkeepTurn) {
+      root.dataset.upkeepTurn = 'mine';
+    }
+  }
+
+  function enhanceDecisionTargetBar() {
+    const surfaces = document.querySelectorAll('[data-zone="decision-surface"]');
+    if (surfaces.length === 0) return;
+
+    surfaces.forEach((surface) => {
+      // Detect complex / modal spell decisions (e.g. Kozilek's Command "Choose two", Choose X, Entwine, Spree)
+      // so the left-rail decision box can expand & scroll instead of ever clipping mode options
+      const actionButtons = surface.querySelectorAll('button');
+      const interactiveControls = surface.querySelectorAll('input, [role="checkbox"], [role="radio"], [role="option"]');
+      const titleAndMsg = (
+        (surface.querySelector('.wr-ds-title')?.textContent || '') +
+        ' ' +
+        (surface.querySelector('.wr-ds-message')?.textContent || '')
+      ).trim();
+      const isComplexModal =
+        actionButtons.length >= 4 ||
+        interactiveControls.length > 0 ||
+        /\b(choose\s+(?:one|two|three|up\s+to|modes?|x|\d+)|select\s+modes?|kozilek|entwine|spree|escalate|command)\b/i.test(
+          titleAndMsg
+        );
+
+      if (isComplexModal) {
+        surface.dataset.upkeepComplexDecision = 'true';
+      } else if (surface.dataset.upkeepComplexDecision) {
+        delete surface.dataset.upkeepComplexDecision;
+      }
+
+      const candidates = surface.querySelectorAll('div, span, p');
+      candidates.forEach((el) => {
+        if (
+          el.closest('button') ||
+          el.closest('label') ||
+          el.closest('[role="checkbox"]') ||
+          el.closest('[role="option"]') ||
+          el.closest('.wr-ds-banner')
+        ) {
+          return;
+        }
+        if (el.classList.contains('wr-ds-title') || el.classList.contains('wr-ds-message')) return;
+        if (el.querySelector('button, input, [role="checkbox"], [role="option"]')) return;
+        const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+        if (!text || text.length > 64) return;
+        if (/\bneed\s+\d+\s+more\b/i.test(text) || /^\d+\s*\/\s*\d+/.test(text) || /\b\d+\s*\/\s*\d+\b/.test(text)) {
+          el.dataset.upkeepTargetBar = 'true';
+        }
+      });
+    });
+  }
+
+  // ==========================================================================
   // PLAYER TARGETING HIGHLIGHT (LOTLETH GIANT / SPELLS / TRIGGERS)
   // ==========================================================================
   function syncTargetablePlayers() {
@@ -1415,31 +1760,81 @@
   // ==========================================================================
   // LIFECYCLE, OBSERVERS & SHORTCUTS
   // ==========================================================================
+  function applyThemeColors() {
+    const root = document.documentElement;
+    const cbMode = config.colorblindMode || 'none';
+    const base = COLOR_PRESETS[cbMode] || COLOR_PRESETS.none;
+    const c = config.colors || base;
+
+    const bfSelfMyTurn = sanitizeHex(c.bfSelfMyTurn, base.bfSelfMyTurn);
+    const bfOppMyTurn = sanitizeHex(c.bfOppMyTurn, base.bfOppMyTurn);
+    const bfSelfOppTurn = sanitizeHex(c.bfSelfOppTurn, base.bfSelfOppTurn);
+    const bfOppOppTurn = sanitizeHex(c.bfOppOppTurn, base.bfOppOppTurn);
+    const phaseCurrent = sanitizeHex(c.phaseCurrent, base.phaseCurrent);
+    const phaseStopMine = sanitizeHex(c.phaseStopMine, base.phaseStopMine);
+    const phaseStopOpp = sanitizeHex(c.phaseStopOpp, base.phaseStopOpp);
+    const lifeNormal = sanitizeHex(c.lifeNormal, base.lifeNormal);
+    const targetBar = sanitizeHex(c.targetBar, base.targetBar);
+
+    root.dataset.upkeepColorblind = cbMode;
+    root.style.setProperty('--upkeep-bf-self-my-turn', bfSelfMyTurn);
+    root.style.setProperty('--upkeep-bf-opp-my-turn', bfOppMyTurn);
+    root.style.setProperty('--upkeep-bf-self-opp-turn', bfSelfOppTurn);
+    root.style.setProperty('--upkeep-bf-opp-opp-turn', bfOppOppTurn);
+    root.style.setProperty('--upkeep-phase-current', phaseCurrent);
+    root.style.setProperty('--upkeep-phase-current-ink', computeContrastInk(phaseCurrent));
+    root.style.setProperty('--upkeep-phase-stop-mine', phaseStopMine);
+    root.style.setProperty('--upkeep-phase-stop-opp', phaseStopOpp);
+    root.style.setProperty('--upkeep-life-normal', lifeNormal);
+    root.style.setProperty('--upkeep-target-bar', targetBar);
+  }
+
   function applyRootAttributes() {
     const root = document.documentElement;
     const active = config.enabled && isGameRoute();
     root.dataset.upkeepActive = active ? 'true' : 'false';
+    root.dataset.upkeepSpectate = active && isSpectateRoute() ? 'true' : 'false';
     root.dataset.upkeepHud = active && config.highContrastHud ? 'true' : 'false';
     root.dataset.upkeepStackAnchor = active && config.anchorStackTopLeft ? 'true' : 'false';
     root.style.setProperty('--upkeep-gy-width', `${config.graveyardWidth || 268}px`);
 
-    if (!active) {
+    if (active) {
+      applyThemeColors();
+    } else {
       cleanupOverlays();
     }
   }
 
   function cleanupOverlays() {
-    document.documentElement.dataset.upkeepLogsDocked = 'false';
-    document.documentElement.dataset.upkeepGyDocked = 'false';
-    document.documentElement.dataset.upkeepHideToasts = 'false';
-    document.documentElement.dataset.upkeepTimeline = 'false';
-    document.documentElement.dataset.upkeepStackAnchor = 'false';
-    delete document.documentElement.dataset.upkeepPeekingGy;
-    document.documentElement.style.removeProperty('--upkeep-ds-height');
-    document.documentElement.style.removeProperty('--upkeep-log-left');
-    document.documentElement.style.removeProperty('--upkeep-log-top');
-    document.documentElement.style.removeProperty('--upkeep-log-width');
-    document.documentElement.style.removeProperty('--upkeep-log-height');
+    const root = document.documentElement;
+    hideUpkeepTooltip();
+    lastValidLogGeom = null;
+    root.dataset.upkeepLogsDocked = 'false';
+    root.dataset.upkeepGyDocked = 'false';
+    root.dataset.upkeepHideToasts = 'false';
+    root.dataset.upkeepTimeline = 'false';
+    root.dataset.upkeepStackAnchor = 'false';
+    delete root.dataset.upkeepSpectate;
+    delete root.dataset.upkeepPeekingGy;
+    delete root.dataset.upkeepTurn;
+    delete root.dataset.upkeepColorblind;
+    [
+      '--upkeep-ds-height',
+      '--upkeep-log-left',
+      '--upkeep-log-top',
+      '--upkeep-log-width',
+      '--upkeep-log-height',
+      '--upkeep-bf-self-my-turn',
+      '--upkeep-bf-opp-my-turn',
+      '--upkeep-bf-self-opp-turn',
+      '--upkeep-bf-opp-opp-turn',
+      '--upkeep-phase-current',
+      '--upkeep-phase-current-ink',
+      '--upkeep-phase-stop-mine',
+      '--upkeep-phase-stop-opp',
+      '--upkeep-life-normal',
+      '--upkeep-target-bar',
+    ].forEach((prop) => root.style.removeProperty(prop));
     document.getElementById('upkeep-graveyards-dock')?.remove();
     document.getElementById('upkeep-card-zoom')?.remove();
     document.getElementById('upkeep-tooltip')?.remove();
@@ -1449,6 +1844,12 @@
     });
     document.querySelectorAll('[data-upkeep-targetable]').forEach((n) => {
       delete n.dataset.upkeepTargetable;
+    });
+    document.querySelectorAll('[data-upkeep-target-bar]').forEach((n) => {
+      delete n.dataset.upkeepTargetBar;
+    });
+    document.querySelectorAll('[data-upkeep-complex-decision]').forEach((n) => {
+      delete n.dataset.upkeepComplexDecision;
     });
     document.querySelectorAll('[data-upkeep-panel]').forEach((n) => {
       delete n.dataset.upkeepPanel;
@@ -1489,6 +1890,8 @@
     userClosedLog = false;
     userUndockedLog = false;
     logAutoOpenAttempts = 0;
+    lastValidLogGeom = null;
+    hideUpkeepTooltip();
     prevOppLife = null;
     prevSelfLife = null;
     gyState.opp = createGyBucket();
@@ -1502,12 +1905,14 @@
     applyRootAttributes();
     if (!config.enabled || !isGameRoute()) return;
 
+    syncActiveTurn();
     updatePlateLifeFeedback('opp-life', true);
     updatePlateLifeFeedback('me-life', false);
     syncTargetablePlayers();
     passiveScanOpenDialogs();
     enhanceAutoPassBar();
     enhanceWaitingCard();
+    enhanceDecisionTargetBar();
     syncLogDockGeometry();
     syncStackPanel();
     hideRightRailNotifications();
@@ -1525,10 +1930,12 @@
     if (typeof ResizeObserver === 'undefined') return;
     resizeObserver = new ResizeObserver(() => scheduleSync());
 
+    const leftRail = document.querySelector('aside.wr-rail-left');
+    const { topPlate, bottomPlate } = getRailPlates(leftRail);
     const targets = [
-      document.querySelector('aside.wr-rail-left'),
-      document.querySelector('[data-player-anchor="opp"]'),
-      document.querySelector('[data-player-anchor="me"]'),
+      leftRail,
+      topPlate,
+      bottomPlate,
       document.querySelector('[aria-label="Pass priority shortcuts"]'),
       document.querySelector('.wr-main-col'),
       document.querySelector('.wr-main-col > .wr-resizable-panel'),

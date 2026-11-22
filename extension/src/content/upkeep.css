@@ -26,6 +26,44 @@
   --upkeep-border-strong: rgba(244, 246, 250, 0.18);
   --upkeep-font-sans: 'Helvetica Neue', Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif;
   --upkeep-font-mono: 'Helvetica Neue', Helvetica, Arial, ui-sans-serif, sans-serif;
+  /* Customizable theme color tokens (overridden live by upkeep.js) */
+  --upkeep-bf-self-my-turn: #182030;
+  --upkeep-bf-opp-my-turn: #0d1119;
+  --upkeep-bf-self-opp-turn: #0d1119;
+  --upkeep-bf-opp-opp-turn: #182132;
+  --upkeep-phase-current: #c9a45c;
+  --upkeep-phase-current-ink: #0b0e14;
+  --upkeep-phase-stop-mine: #d6ab56;
+  --upkeep-phase-stop-opp: #6ea8f0;
+  --upkeep-life-normal: #f4f6fa;
+  --upkeep-target-bar: #f5d076;
+}
+
+/* Colorblind-safe semantic overrides (critical life, deltas, high-contrast borders) */
+html[data-upkeep-active="true"][data-upkeep-colorblind="deuteranopia"] {
+  --upkeep-crimson: #ff8c00;
+  --upkeep-emerald: #56b4e9;
+  --upkeep-gold: #e69f00;
+  --upkeep-gold-soft: rgba(230, 159, 0, 0.45);
+  --upkeep-gold-glow: rgba(230, 159, 0, 0.18);
+}
+
+html[data-upkeep-active="true"][data-upkeep-colorblind="tritanopia"] {
+  --upkeep-crimson: #ff5c5c;
+  --upkeep-emerald: #00c2b2;
+  --upkeep-gold: #ff7a7a;
+  --upkeep-gold-soft: rgba(255, 122, 122, 0.45);
+  --upkeep-gold-glow: rgba(255, 122, 122, 0.18);
+}
+
+html[data-upkeep-active="true"][data-upkeep-colorblind="high-contrast"] {
+  --upkeep-crimson: #ff6b6b;
+  --upkeep-emerald: #7ce8ff;
+  --upkeep-gold: #ffd166;
+  --upkeep-gold-soft: rgba(255, 209, 102, 0.65);
+  --upkeep-gold-glow: rgba(255, 209, 102, 0.24);
+  --upkeep-border: rgba(255, 255, 255, 0.26);
+  --upkeep-border-strong: rgba(255, 255, 255, 0.5);
 }
 
 /* ============================================================================
@@ -33,11 +71,20 @@
  *    (Strictly excludes Magic card art/overlays inside .wr-bf-tile & .wr-hand-card)
  * ============================================================================ */
 
-html[data-upkeep-active="true"] [data-testid="game-root"] {
+html[data-upkeep-active="true"] [data-testid="game-root"],
+html[data-upkeep-active="true"] .wr-game-grid {
   background-color: var(--upkeep-bg-void) !important;
   font-family: var(--upkeep-font-sans) !important;
-  --gradient-half-opponent: linear-gradient(180deg, #111621 0%, #0d1119 100%) !important;
-  --gradient-half-self: linear-gradient(180deg, #0d1119 0%, #131925 100%) !important;
+  --gradient-half-opponent: linear-gradient(
+    180deg,
+    var(--upkeep-bf-opp-my-turn) 0%,
+    color-mix(in srgb, var(--upkeep-bf-opp-my-turn) 78%, #07090e) 100%
+  ) !important;
+  --gradient-half-self: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--upkeep-bf-self-my-turn) 78%, #07090e) 0%,
+    var(--upkeep-bf-self-my-turn) 100%
+  ) !important;
   --gradient-midline: linear-gradient(
     90deg,
     transparent 0%,
@@ -45,6 +92,35 @@ html[data-upkeep-active="true"] [data-testid="game-root"] {
     rgba(201, 164, 92, 0.52) 50%,
     rgba(201, 164, 92, 0.28) 82%,
     transparent 100%
+  ) !important;
+}
+
+/* Turn-aware 4-color battlefield backgrounds (Your Turn vs Opponent's Turn) */
+html[data-upkeep-active="true"][data-upkeep-turn="mine"] [data-testid="game-root"],
+html[data-upkeep-active="true"][data-upkeep-turn="mine"] .wr-game-grid {
+  --gradient-half-opponent: linear-gradient(
+    180deg,
+    var(--upkeep-bf-opp-my-turn) 0%,
+    color-mix(in srgb, var(--upkeep-bf-opp-my-turn) 78%, #07090e) 100%
+  ) !important;
+  --gradient-half-self: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--upkeep-bf-self-my-turn) 82%, #07090e) 0%,
+    var(--upkeep-bf-self-my-turn) 100%
+  ) !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-turn="opp"] [data-testid="game-root"],
+html[data-upkeep-active="true"][data-upkeep-turn="opp"] .wr-game-grid {
+  --gradient-half-opponent: linear-gradient(
+    180deg,
+    var(--upkeep-bf-opp-opp-turn) 0%,
+    color-mix(in srgb, var(--upkeep-bf-opp-opp-turn) 82%, #07090e) 100%
+  ) !important;
+  --gradient-half-self: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--upkeep-bf-self-opp-turn) 78%, #07090e) 0%,
+    var(--upkeep-bf-self-opp-turn) 100%
   ) !important;
 }
 
@@ -197,7 +273,7 @@ html[data-upkeep-active="true"][data-upkeep-hud="true"] [data-testid="me-life"] 
   font-weight: 700 !important;
   line-height: 1 !important;
   letter-spacing: -0.02em !important;
-  color: var(--upkeep-text-primary) !important;
+  color: var(--upkeep-life-normal, var(--upkeep-text-primary)) !important;
 }
 
 html[data-upkeep-active="true"][data-upkeep-hud="true"] [data-testid="opp-life"][data-upkeep-critical="true"] .life-total,
@@ -217,12 +293,12 @@ html[data-upkeep-active="true"][data-upkeep-hud="true"] [data-testid="me-life"][
 
 .upkeep-life-delta--neg {
   color: var(--upkeep-crimson);
-  background: rgba(224, 108, 117, 0.16);
+  background: color-mix(in srgb, var(--upkeep-crimson) 18%, transparent);
 }
 
 .upkeep-life-delta--pos {
   color: var(--upkeep-emerald);
-  background: rgba(76, 183, 130, 0.16);
+  background: color-mix(in srgb, var(--upkeep-emerald) 18%, transparent);
 }
 
 /* Row 1: DECK & HAND | Row 2: GRAVEYARD & EXILE */
@@ -368,21 +444,45 @@ html[data-upkeep-active="true"] aside.wr-rail-left [aria-label="Pending actions"
   box-sizing: border-box !important;
 }
 
-/* Lock BOTH Decision and Waiting boxes to the exact same fixed height so Game Log never jumps */
+/* Lock ONLY left-rail docked Decision & Waiting boxes to fixed height (NEVER clamp modal dialogs like Kozilek's Command!) */
 html[data-upkeep-active="true"] aside.wr-rail-left [aria-label="Pending actions"] > div > :first-child:not([aria-label="Pass priority shortcuts"]),
-html[data-upkeep-active="true"] [data-upkeep-waiting="true"],
-html[data-upkeep-active="true"] [data-zone="decision-surface"] {
+html[data-upkeep-active="true"] aside.wr-rail-left [data-upkeep-waiting="true"],
+html[data-upkeep-active="true"] aside.wr-rail-left [data-zone="decision-surface"]:not([role="dialog"]) {
   height: var(--upkeep-ds-height, 248px) !important;
   min-height: var(--upkeep-ds-height, 248px) !important;
   max-height: var(--upkeep-ds-height, 248px) !important;
   flex: 0 0 var(--upkeep-ds-height, 248px) !important;
   display: flex !important;
   flex-direction: column !important;
-  overflow: hidden !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
   box-sizing: border-box !important;
   border-radius: 0 !important;
   padding: 0 !important;
   gap: 0 !important;
+}
+
+/* Complex multi-mode decisions (e.g. Kozilek's Command) inside left rail can expand & scroll freely */
+html[data-upkeep-active="true"] aside.wr-rail-left [data-zone="decision-surface"][data-upkeep-complex-decision="true"] {
+  height: auto !important;
+  min-height: var(--upkeep-ds-height, 248px) !important;
+  max-height: calc(100vh - 210px) !important;
+  flex: 0 1 auto !important;
+  overflow-y: auto !important;
+  position: relative !important;
+  z-index: 45 !important;
+}
+
+/* Centered / floating modal decision surfaces (e.g. Modal Spells, Scry, Surveil) NEVER get crushed to 248px */
+html[data-upkeep-active="true"] [role="dialog"][data-zone="decision-surface"],
+html[data-upkeep-active="true"] :not(aside) > [data-zone="decision-surface"] {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: 88vh !important;
+  flex: 0 1 auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  z-index: 65 !important;
 }
 
 /* Waiting state card (mirrors Decision anatomy: 28px header + calm centered status body) */
@@ -585,17 +685,35 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-message {
   flex-shrink: 0 !important;
 }
 
-/* Replace Endstep's unreadable dark-red parchment text (e.g., "CLICK TO SELECT") with high-contrast bright amber-gold */
-html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-body > *:not(.wr-ds-title):not(.wr-ds-message):not(.wr-ds-actions),
-html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-body > *:not(.wr-ds-title):not(.wr-ds-message):not(.wr-ds-actions) *,
-html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="hint"],
-html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="prompt"],
-html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="cue"],
-html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="status"] {
-  color: #f3c969 !important;
+/* High-legibility target counter, progress bar & prompts ("0/1 — NEED 1 MORE", "CLICK TO SELECT")
+ * Carefully excludes interactive mode pickers (buttons, checkboxes, radios, options, labels) so modal spells stay crisp */
+html[data-upkeep-active="true"] [data-zone="decision-surface"] [data-upkeep-target-bar="true"],
+html[data-upkeep-active="true"] [data-zone="decision-surface"] [data-upkeep-target-bar="true"] *:not(button):not(button *),
+html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="hint" i]:not(button):not([role="option"]):not([role="checkbox"]),
+html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="prompt" i]:not(button):not([role="option"]):not([role="checkbox"]),
+html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="cue" i]:not(button),
+html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="target" i]:not(button):not(label):not([role="option"]):not([role="checkbox"]),
+html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="need" i]:not(button),
+html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="count" i]:not(button):not(label):not([role="option"]) {
+  color: var(--upkeep-target-bar, #f5d076) !important;
   font-weight: 700 !important;
-  letter-spacing: 0.06em !important;
+  letter-spacing: 0.04em !important;
   text-shadow: none !important;
+  opacity: 1 !important;
+}
+
+html[data-upkeep-active="true"] [data-zone="decision-surface"] [role="progressbar"],
+html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="progress" i],
+html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="track" i] {
+  background-color: rgba(244, 246, 250, 0.22) !important;
+  border-radius: 0 !important;
+}
+
+html[data-upkeep-active="true"] [data-zone="decision-surface"] [role="progressbar"] > div,
+html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="progress" i] > div,
+html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="fill" i] {
+  background-color: var(--upkeep-target-bar, #f5d076) !important;
+  border-radius: 0 !important;
 }
 
 html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions {
@@ -613,12 +731,15 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions bu
   font-family: var(--upkeep-font-sans) !important;
   font-size: 11px !important;
   font-weight: 700 !important;
-  letter-spacing: 0.06em !important;
+  letter-spacing: 0.04em !important;
   padding: 6px 8px !important;
   min-height: 30px !important;
-  line-height: 1.2 !important;
+  height: auto !important;
+  line-height: 1.3 !important;
+  white-space: normal !important;
   border-radius: 0 !important;
   box-shadow: none !important;
+  pointer-events: auto !important;
 }
 
 html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions button:hover {
@@ -626,10 +747,24 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions bu
   border-color: var(--upkeep-gold) !important;
 }
 
+/* Selected mode / choice highlight (e.g. Kozilek's Command "Choose two") */
+html[data-upkeep-active="true"] [data-zone="decision-surface"] button[aria-pressed="true"],
+html[data-upkeep-active="true"] [data-zone="decision-surface"] button[aria-checked="true"],
+html[data-upkeep-active="true"] [data-zone="decision-surface"] button[data-selected="true"],
+html[data-upkeep-active="true"] [data-zone="decision-surface"] button[data-state="on"],
+html[data-upkeep-active="true"] [data-zone="decision-surface"] button[data-state="checked"],
+html[data-upkeep-active="true"] [data-zone="decision-surface"] [role="checkbox"][aria-checked="true"],
+html[data-upkeep-active="true"] [data-zone="decision-surface"] [role="option"][aria-selected="true"] {
+  background: rgba(201, 164, 92, 0.24) !important;
+  border-color: var(--upkeep-gold) !important;
+  color: #ffffff !important;
+  box-shadow: inset 3px 0 0 var(--upkeep-gold) !important;
+}
+
 html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions button .overflow-label {
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
 }
 
 html[data-upkeep-active="true"] [data-zone="decision-surface"] [data-testid="kcap"] {
@@ -667,7 +802,7 @@ html[data-upkeep-active="true"] [data-upkeep-autopass-grid="true"] > :not(button
   grid-column: 1 / -1 !important;
 }
 
-html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button {
+html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button[data-upkeep-ap-short] {
   position: relative !important;
   display: flex !important;
   align-items: center !important;
@@ -685,17 +820,13 @@ html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button {
   border-radius: 0 !important;
   color: var(--upkeep-text-secondary) !important;
   font-family: var(--upkeep-font-sans) !important;
+  font-size: 0 !important;
+  line-height: 1 !important;
   box-shadow: none !important;
   overflow: hidden !important;
   white-space: nowrap !important;
   box-sizing: border-box !important;
   transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease !important;
-}
-
-/* Hide full verbose text when Upkeep short label is applied, keeping only keycap + short label */
-html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button[data-upkeep-ap-short] {
-  font-size: 0 !important;
-  line-height: 1 !important;
 }
 
 html[data-upkeep-active="true"] [aria-label="Pass priority shortcuts"] button[data-upkeep-ap-short] > *:not([data-upkeep-ap-key="true"]):not([data-testid="kcap"]):not(kbd):not(svg) {
@@ -871,6 +1002,11 @@ html[data-upkeep-active="true"][data-upkeep-stack-anchor="true"] [data-upkeep-pa
  * 5. GAME LOG DOCKED IN LEFT RAIL EMPTY SPACE (ZERO BATTLEFIELD SHRINKAGE)
  * ============================================================================ */
 
+/* Ensure interactive modal dialogs always sit cleanly above docked logs (z-35) & midline bar (z-32) */
+html[data-upkeep-active="true"] [role="dialog"] {
+  z-index: 65 !important;
+}
+
 html[data-upkeep-active="true"] [data-gamelog-panel] {
   background: var(--upkeep-bg-surface) !important;
   border: 1px solid var(--upkeep-gold-soft) !important;
@@ -881,15 +1017,21 @@ html[data-upkeep-active="true"] [data-gamelog-panel] {
 
 html[data-upkeep-active="true"][data-upkeep-logs-docked="true"] [data-gamelog-panel] {
   position: fixed !important;
+  inset: auto !important;
   left: var(--upkeep-log-left, 6px) !important;
   top: var(--upkeep-log-top, 152px) !important;
+  right: auto !important;
+  bottom: auto !important;
   width: var(--upkeep-log-width, 266px) !important;
   height: var(--upkeep-log-height, 340px) !important;
   max-width: none !important;
   max-height: none !important;
+  margin: 0 !important;
+  transform: none !important;
   z-index: 35 !important;
   box-shadow: none !important;
   animation: none !important;
+  transition: none !important;
 }
 
 html[data-upkeep-active="true"][data-upkeep-logs-docked="true"] [data-gamelog-panel] [data-gamelog-resize] {
@@ -1597,18 +1739,14 @@ html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-
   border-color: rgba(244, 246, 250, 0.04) !important;
 }
 
-html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb--current[data-turn="mine"] {
-  flex: 1.25 1 0 !important;
-  background: rgba(201, 164, 92, 0.24) !important;
-  border-color: var(--upkeep-gold) !important;
-  box-shadow: 0 0 0 1px rgba(201, 164, 92, 0.28) !important;
-}
-
+/* Current active phase: unmistakable high-contrast fill + crisp border + auto-contrasted label */
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb--current,
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb--current[data-turn="mine"],
 html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb--current[data-turn="opp"] {
-  flex: 1.25 1 0 !important;
-  background: rgba(116, 168, 224, 0.24) !important;
-  border-color: #7caee6 !important;
-  box-shadow: 0 0 0 1px rgba(116, 168, 224, 0.28) !important;
+  flex: 1.32 1 0 !important;
+  background: var(--upkeep-phase-current, #c9a45c) !important;
+  border: 2px solid color-mix(in srgb, var(--upkeep-phase-current, #c9a45c) 72%, #ffffff) !important;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--upkeep-phase-current, #c9a45c) 45%, transparent) !important;
 }
 
 /* Hide decorative corner brackets & subtext inside horizontal step */
@@ -1617,7 +1755,7 @@ html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-
   display: none !important;
 }
 
-/* Real interactive stop blades: left half = Your Turn (gold), right half = Opp Turn (blue) */
+/* Real interactive stop blades: left half = Your Turn, right half = Opp Turn (customizable) */
 html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade {
   position: absolute !important;
   top: 0 !important;
@@ -1649,13 +1787,17 @@ html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-
 }
 
 html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--mine:hover {
-  background: rgba(201, 164, 92, 0.22) !important;
+  background: color-mix(in srgb, var(--upkeep-phase-stop-mine, #d6ab56) 24%, transparent) !important;
 }
 
 html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--mine.is-set,
 html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--mine[aria-pressed="true"] {
-  background: linear-gradient(180deg, rgba(201, 164, 92, 0.34) 0%, rgba(201, 164, 92, 0.12) 100%) !important;
-  box-shadow: inset 0 2.5px 0 var(--upkeep-gold) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--upkeep-phase-stop-mine, #d6ab56) 40%, transparent) 0%,
+    color-mix(in srgb, var(--upkeep-phase-stop-mine, #d6ab56) 14%, transparent) 100%
+  ) !important;
+  box-shadow: inset 0 3px 0 var(--upkeep-phase-stop-mine, #d6ab56) !important;
 }
 
 html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--opp {
@@ -1664,13 +1806,28 @@ html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-
 }
 
 html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--opp:hover {
-  background: rgba(124, 174, 230, 0.22) !important;
+  background: color-mix(in srgb, var(--upkeep-phase-stop-opp, #6ea8f0) 24%, transparent) !important;
 }
 
 html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--opp.is-set,
 html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--opp[aria-pressed="true"] {
-  background: linear-gradient(180deg, rgba(124, 174, 230, 0.12) 0%, rgba(124, 174, 230, 0.34) 100%) !important;
-  box-shadow: inset 0 -2.5px 0 #7caee6 !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--upkeep-phase-stop-opp, #6ea8f0) 14%, transparent) 0%,
+    color-mix(in srgb, var(--upkeep-phase-stop-opp, #6ea8f0) 40%, transparent) 100%
+  ) !important;
+  box-shadow: inset 0 -3px 0 var(--upkeep-phase-stop-opp, #6ea8f0) !important;
+}
+
+/* Colorblind non-color visual cues on stops (stronger top/bottom edge bars + crisp divider) */
+html[data-upkeep-active="true"][data-upkeep-timeline="true"]:not([data-upkeep-colorblind="none"]) .wr-pb-rail .wr-pb-blade--mine.is-set,
+html[data-upkeep-active="true"][data-upkeep-timeline="true"]:not([data-upkeep-colorblind="none"]) .wr-pb-rail .wr-pb-blade--mine[aria-pressed="true"] {
+  box-shadow: inset 0 4px 0 var(--upkeep-phase-stop-mine), inset -1px 0 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-timeline="true"]:not([data-upkeep-colorblind="none"]) .wr-pb-rail .wr-pb-blade--opp.is-set,
+html[data-upkeep-active="true"][data-upkeep-timeline="true"]:not([data-upkeep-colorblind="none"]) .wr-pb-rail .wr-pb-blade--opp[aria-pressed="true"] {
+  box-shadow: inset 0 -4px 0 var(--upkeep-phase-stop-opp), inset 1px 0 0 rgba(255, 255, 255, 0.2) !important;
 }
 
 /* Centered step label — pointer-events: none so all clicks & right-clicks hit real blades/steps */
@@ -1701,8 +1858,9 @@ html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-
 
 html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb--current .wr-pb-now-name,
 html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb--current .wr-pb-label {
-  color: #ffffff !important;
-  font-weight: 700 !important;
+  color: var(--upkeep-phase-current-ink, #0b0e14) !important;
+  font-weight: 800 !important;
+  text-shadow: none !important;
 }
 
 /* ============================================================================

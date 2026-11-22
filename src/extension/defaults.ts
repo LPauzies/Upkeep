@@ -1,4 +1,149 @@
-import type { UpkeepConfig } from './types';
+import type { ColorblindMode, UpkeepColors, UpkeepConfig } from './types';
+
+export const COLOR_PRESETS: Record<ColorblindMode, UpkeepColors> = {
+  none: {
+    bfSelfMyTurn: '#182030',
+    bfOppMyTurn: '#0d1119',
+    bfSelfOppTurn: '#0d1119',
+    bfOppOppTurn: '#182132',
+    phaseCurrent: '#c9a45c',
+    phaseStopMine: '#d6ab56',
+    phaseStopOpp: '#6ea8f0',
+    lifeNormal: '#f4f6fa',
+    targetBar: '#f5d076',
+  },
+  deuteranopia: {
+    bfSelfMyTurn: '#221d11',
+    bfOppMyTurn: '#0b0e14',
+    bfSelfOppTurn: '#0b0e14',
+    bfOppOppTurn: '#102030',
+    phaseCurrent: '#cc79a7',
+    phaseStopMine: '#e69f00',
+    phaseStopOpp: '#56b4e9',
+    lifeNormal: '#ffffff',
+    targetBar: '#f0e442',
+  },
+  tritanopia: {
+    bfSelfMyTurn: '#241419',
+    bfOppMyTurn: '#0b0e14',
+    bfSelfOppTurn: '#0b0e14',
+    bfOppOppTurn: '#0f2326',
+    phaseCurrent: '#ff99c8',
+    phaseStopMine: '#ff5c5c',
+    phaseStopOpp: '#00c2b2',
+    lifeNormal: '#ffffff',
+    targetBar: '#ffd6e7',
+  },
+  'high-contrast': {
+    bfSelfMyTurn: '#1e2636',
+    bfOppMyTurn: '#080a0f',
+    bfSelfOppTurn: '#080a0f',
+    bfOppOppTurn: '#1a2538',
+    phaseCurrent: '#ffd166',
+    phaseStopMine: '#ffd166',
+    phaseStopOpp: '#7ce8ff',
+    lifeNormal: '#ffffff',
+    targetBar: '#ffffff',
+  },
+};
+
+export const COLORBLIND_OPTIONS: { id: ColorblindMode; title: string; desc: string }[] = [
+  { id: 'none', title: 'Standard', desc: 'Palette Obsidienne & Or par défaut' },
+  { id: 'deuteranopia', title: 'Deuteranopia / Protanopia', desc: 'Okabe-Ito anti-confusion Rouge/Vert' },
+  { id: 'tritanopia', title: 'Tritanopia', desc: 'Palette anti-confusion Bleu/Jaune' },
+  { id: 'high-contrast', title: 'High Contrast', desc: 'Luminance maximale & repères renforcés' },
+];
+
+export const COLOR_GROUPS: {
+  title: string;
+  fields: { key: keyof UpkeepColors; short: string; label: string; hint: string }[];
+}[] = [
+  {
+    title: 'Battlefield (selon le tour actif)',
+    fields: [
+      {
+        key: 'bfSelfMyTurn',
+        short: 'You (Your T)',
+        label: 'Votre plateau — Votre tour',
+        hint: 'Teinte active côté joueur pendant votre tour',
+      },
+      {
+        key: 'bfOppMyTurn',
+        short: 'Opp (Your T)',
+        label: 'Plateau adverse — Votre tour',
+        hint: 'Teinte passive côté adversaire pendant votre tour',
+      },
+      {
+        key: 'bfSelfOppTurn',
+        short: 'You (Opp T)',
+        label: 'Votre plateau — Tour adverse',
+        hint: 'Teinte passive côté joueur pendant le tour adverse',
+      },
+      {
+        key: 'bfOppOppTurn',
+        short: 'Opp (Opp T)',
+        label: 'Plateau adverse — Tour adverse',
+        hint: 'Teinte active côté adversaire pendant son tour',
+      },
+    ],
+  },
+  {
+    title: 'Barre de phases (ligne médiane)',
+    fields: [
+      {
+        key: 'phaseCurrent',
+        short: 'Active Step',
+        label: 'Phase en cours',
+        hint: 'Remplissage haute visibilité avec contraste texte auto',
+      },
+      {
+        key: 'phaseStopMine',
+        short: 'Your Stops',
+        label: 'Vos stops (votre tour)',
+        hint: 'Repère haut/gauche lorsqu’un stop est posé sur votre tour',
+      },
+      {
+        key: 'phaseStopOpp',
+        short: 'Opp Stops',
+        label: 'Stops tour adverse',
+        hint: 'Repère bas/droit lorsqu’un stop est posé sur le tour adverse',
+      },
+    ],
+  },
+  {
+    title: 'Points de vie & barre de ciblage',
+    fields: [
+      {
+        key: 'lifeNormal',
+        short: 'Life (>5)',
+        label: 'Points de vie (> 5 PV)',
+        hint: 'Couleur des PV hors zone critique (≤ 5 reste en alerte)',
+      },
+      {
+        key: 'targetBar',
+        short: 'Target Bar',
+        label: 'Barre de ciblage (0/1)',
+        hint: 'Texte & jauge "NEED 1 MORE" dans le bloc Decision',
+      },
+    ],
+  },
+];
+
+export function sanitizeHex(val: unknown, fallback: string): string {
+  if (typeof val !== 'string') return fallback;
+  const trimmed = val.trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(trimmed)) return trimmed.toLowerCase();
+  return fallback;
+}
+
+export function computeContrastInk(hex: string): '#0b0e14' | '#ffffff' {
+  const clean = sanitizeHex(hex, '#c9a45c').slice(1);
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  const lum = (299 * r + 587 * g + 114 * b) / 1000;
+  return lum > 155 ? '#0b0e14' : '#ffffff';
+}
 
 export const DEFAULT_UPKEEP_CONFIG: UpkeepConfig = {
   version: '1.0.0',
@@ -13,6 +158,8 @@ export const DEFAULT_UPKEEP_CONFIG: UpkeepConfig = {
   logsWidth: 278,
   graveyardWidth: 268,
   hoverZoomScale: 1.45,
+  colorblindMode: 'none',
+  colors: { ...COLOR_PRESETS.none },
   shortcuts: {
     toggleLogs: 'l',
     toggleGraveyard: 'g',

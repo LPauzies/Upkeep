@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { ConfigView } from './components/ConfigView';
 import { EndstepSimulator } from './components/EndstepSimulator';
 import { PackageView } from './components/PackageView';
-import { DEFAULT_UPKEEP_CONFIG } from './extension/defaults';
+import { COLOR_PRESETS, DEFAULT_UPKEEP_CONFIG, sanitizeHex } from './extension/defaults';
 import { downloadExtensionPackage } from './extension/packager';
-import type { UpkeepConfig } from './extension/types';
+import type { ColorblindMode, UpkeepColors, UpkeepConfig } from './extension/types';
 
 type ActiveTab = 'simulator' | 'config' | 'package';
 
@@ -15,9 +15,22 @@ function loadInitialConfig(): UpkeepConfig {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (!raw) return structuredClone(DEFAULT_UPKEEP_CONFIG);
     const parsed = JSON.parse(raw);
+    const mode: ColorblindMode =
+      parsed.colorblindMode && parsed.colorblindMode in COLOR_PRESETS
+        ? parsed.colorblindMode
+        : 'none';
+    const baseColors = COLOR_PRESETS[mode];
+    const mergedColors: UpkeepColors = { ...baseColors };
+    if (parsed.colors && typeof parsed.colors === 'object') {
+      (Object.keys(baseColors) as (keyof UpkeepColors)[]).forEach((key) => {
+        mergedColors[key] = sanitizeHex(parsed.colors[key], baseColors[key]);
+      });
+    }
     return {
       ...DEFAULT_UPKEEP_CONFIG,
       ...parsed,
+      colorblindMode: mode,
+      colors: mergedColors,
       shortcuts: { ...DEFAULT_UPKEEP_CONFIG.shortcuts, ...(parsed.shortcuts || {}) },
       selectors: { ...DEFAULT_UPKEEP_CONFIG.selectors, ...(parsed.selectors || {}) },
     };
@@ -71,7 +84,7 @@ export default function App() {
             {(
               [
                 ['simulator', 'Aperçu injection'],
-                ['config', 'Sélecteurs DOM'],
+                ['config', 'Couleurs & DOM'],
                 ['package', 'Packaging & CI'],
               ] as const
             ).map(([tab, label]) => {

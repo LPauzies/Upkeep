@@ -20,6 +20,7 @@ import {
   ART_SANCTUM,
   OPPONENT_SPELL_POOL,
 } from '../data/mockMatch';
+import { computeContrastInk } from '../extension/defaults';
 import { downloadExtensionPackage, type PackageTarget } from '../extension/packager';
 import type { CardCategory, MtgCard, UpkeepConfig } from '../extension/types';
 import { CardZoomPreview } from './CardZoomPreview';
@@ -30,7 +31,8 @@ interface EndstepSimulatorProps {
 }
 
 type GraveyardFilter = 'all' | CardCategory;
-type DecisionMode = 'waiting' | 'priority' | 'attackers';
+type DecisionMode = 'waiting' | 'priority' | 'target' | 'attackers';
+type ActiveTurn = 'mine' | 'opp';
 type AutoPassKey = 'E' | 'B' | 'R';
 
 const NATIVE_HAND_CARDS: MtgCard[] = [
@@ -350,7 +352,8 @@ function NativeMagicCard({
 
 export function EndstepSimulator({ config }: EndstepSimulatorProps) {
   const [extensionActive, setExtensionActive] = useState<boolean>(config.enabled);
-  const [decisionMode, setDecisionMode] = useState<DecisionMode>('attackers');
+  const [activeTurn, setActiveTurn] = useState<ActiveTurn>('mine');
+  const [decisionMode, setDecisionMode] = useState<DecisionMode>('target');
   const [activeAutoPass, setActiveAutoPass] = useState<AutoPassKey | null>(null);
   const [hoveredAutoPass, setHoveredAutoPass] = useState<AutoPassKey | null>(null);
   const [showStack, setShowStack] = useState<boolean>(false);
@@ -358,6 +361,11 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
   const [phaseStops, setPhaseStops] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(PHASES.map((p) => [p.id, p.defaultStop]))
   );
+  const [oppPhaseStops, setOppPhaseStops] = useState<Record<string, boolean>>(() => ({
+    UPKEEP: true,
+    ATK: true,
+    END: true,
+  }));
 
   const [nativeLogDrawerOpen, setNativeLogDrawerOpen] = useState<boolean>(false);
   const [nativeGyPopupOpen, setNativeGyPopupOpen] = useState<boolean>(false);
@@ -486,7 +494,8 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
     setOppGy(INITIAL_OPP_GRAVEYARD);
     setSelfGy(INITIAL_SELF_GRAVEYARD);
     setLogs(INITIAL_LOGS);
-    setDecisionMode('attackers');
+    setDecisionMode('target');
+    setActiveTurn('mine');
     setActiveAutoPass(null);
     setShowStack(false);
     setNativeLogDrawerOpen(false);
@@ -506,18 +515,40 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
     ? AUTOPASS_BUTTONS.find((b) => b.key === hoveredAutoPass) ?? null
     : null;
 
+  const palette = config.colors;
+  const phaseCurrentInk = computeContrastInk(palette.phaseCurrent);
+  const bfOppHex = activeTurn === 'mine' ? palette.bfOppMyTurn : palette.bfOppOppTurn;
+  const bfSelfHex = activeTurn === 'mine' ? palette.bfSelfMyTurn : palette.bfSelfOppTurn;
+  const isColorblindEnhanced = config.colorblindMode !== 'none';
+  const criticalLifeHex =
+    config.colorblindMode === 'deuteranopia'
+      ? '#d55e00'
+      : config.colorblindMode === 'tritanopia'
+      ? '#ff4d6d'
+      : config.colorblindMode === 'high-contrast'
+      ? '#ff5a5f'
+      : '#e05a5a';
+  const gainLifeHex =
+    config.colorblindMode === 'deuteranopia'
+      ? '#009e73'
+      : config.colorblindMode === 'tritanopia'
+      ? '#00c2b2'
+      : config.colorblindMode === 'high-contrast'
+      ? '#3ef0a8'
+      : '#4cb782';
+
   return (
     <section className="space-y-5">
       {/* Header + 1-Click Chrome / Firefox MV3 Builds */}
       <div className="flex flex-wrap items-end justify-between gap-4 pb-4 border-b border-[rgba(242,238,230,0.09)]">
         <div className="max-w-3xl">
           <h1 className="font-display text-xl sm:text-2xl font-bold text-[#F2EEE6] text-balance">
-            Simulateur fidèle d’Upkeep sur endstep.cc/game/*
+            Simulateur fidèle d’Upkeep sur endstep.cc (/game/* &amp; /spectate/*)
           </h1>
           <p className="mt-1 text-sm text-[#9CA3B2]">
-            Testez en direct le double cimetière visuel (2 cartes/ligne), la barre de phases native
-            sur la ligne médiane, le Game Log et le bloc Decision à hauteur strictement fixe, ainsi
-            que la barre Auto-Pass 3 boutons avec tooltips.
+            Testez en direct les couleurs hexadécimales &amp; presets daltoniens, les battlefields
+            selon le tour actif, la barre de ciblage lisible, la barre de phases médiane, le Game
+            Log verrouillé à gauche et le double cimetière visuel.
           </p>
         </div>
 
@@ -576,17 +607,45 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
             </button>
           </div>
 
-          {/* Decision state switcher (proves ZERO Game Log jump) */}
+          {/* Active turn switcher (tests all 4 battlefield hex colors) */}
           <div
             className="inline-flex items-center p-0.5 rounded-none bg-[#151922] border border-[rgba(242,238,230,0.14)]"
             role="group"
-            aria-label="Tester la hauteur fixe Decision / Waiting"
+            aria-label="Basculer le tour actif"
+          >
+            {(
+              [
+                ['mine', 'Mon tour'],
+                ['opp', 'Tour adverse'],
+              ] as [ActiveTurn, string][]
+            ).map(([turn, label]) => (
+              <button
+                key={turn}
+                type="button"
+                onClick={() => setActiveTurn(turn)}
+                className={`px-2.5 py-1.5 text-[10.5px] font-bold uppercase tracking-[0.05em] rounded-none transition-colors whitespace-nowrap cursor-pointer ${
+                  activeTurn === turn
+                    ? 'bg-[#222B3B] text-[#F3C969]'
+                    : 'text-[#9CA3B2] hover:text-[#F2EEE6]'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Decision state switcher (proves ZERO Game Log jump + bright Target Bar) */}
+          <div
+            className="inline-flex items-center p-0.5 rounded-none bg-[#151922] border border-[rgba(242,238,230,0.14)]"
+            role="group"
+            aria-label="Tester la hauteur fixe Decision / Waiting / Target"
           >
             {(
               [
                 ['waiting', 'Waiting'],
                 ['priority', 'Pass Priority'],
-                ['attackers', 'Declare Attackers (3 btns)'],
+                ['target', 'Target (0/1)'],
+                ['attackers', 'Attackers'],
               ] as [DecisionMode, string][]
             ).map(([mode, label]) => (
               <button
@@ -716,9 +775,8 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                 <div className="mt-1.5 space-y-2">
                   <div className="flex items-baseline gap-2">
                     <span
-                      className={`font-mono-tabular text-3xl font-bold leading-none ${
-                        oppLife <= 5 ? 'text-[#E05A5A]' : 'text-[#F4F6FA]'
-                      }`}
+                      className="font-mono-tabular text-3xl font-bold leading-none"
+                      style={{ color: oppLife <= 5 ? criticalLifeHex : palette.lifeNormal }}
                     >
                       {oppLife}
                     </span>
@@ -726,8 +784,14 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                       LIFE
                     </span>
                     {oppDelta !== null && (
-                      <span className="font-mono-tabular text-[11px] font-bold px-1.5 py-0.5 rounded-none bg-[#E05A5A]/15 text-[#F07878]">
-                        {oppDelta}
+                      <span
+                        className="font-mono-tabular text-[11px] font-bold px-1.5 py-0.5 rounded-none"
+                        style={{
+                          backgroundColor: `${oppDelta < 0 ? criticalLifeHex : gainLifeHex}24`,
+                          color: oppDelta < 0 ? criticalLifeHex : gainLifeHex,
+                        }}
+                      >
+                        {oppDelta > 0 ? `+${oppDelta}` : oppDelta}
                       </span>
                     )}
                   </div>
@@ -920,6 +984,56 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                             </button>
                           </div>
                         </>
+                      ) : decisionMode === 'target' ? (
+                        <>
+                          <div className="text-[12.5px] font-bold text-white leading-tight">
+                            Choose target creature
+                          </div>
+                          <div className="text-[11px] text-[#D4DCE9] mt-0.5">
+                            Cast Lightning Bolt — select 1 target.
+                          </div>
+                          {/* Fixed bright Target Bar (Issue #1 screenshot 2) */}
+                          <div className="mt-2.5 px-2 py-1.5 bg-[#0E131D] border border-white/15 flex items-center gap-2">
+                            <span
+                              className="w-2 h-2 shrink-0"
+                              style={{ backgroundColor: palette.targetBar }}
+                            />
+                            <span
+                              className="font-mono-tabular text-[11px] font-bold shrink-0"
+                              style={{ color: palette.targetBar }}
+                            >
+                              0/1
+                            </span>
+                            <span className="flex-1 h-1.5 bg-white/15 overflow-hidden">
+                              <span
+                                className="block h-full w-1/3"
+                                style={{ backgroundColor: palette.targetBar }}
+                              />
+                            </span>
+                            <span
+                              className="text-[10px] font-bold tracking-wider uppercase whitespace-nowrap"
+                              style={{ color: palette.targetBar }}
+                            >
+                              NEED 1 MORE
+                            </span>
+                          </div>
+                          <div className="mt-2 grid grid-cols-2 gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setDecisionMode('priority')}
+                              className="px-2 py-1.5 rounded-none bg-[#1B2230] hover:bg-[#242D40] border border-white/20 text-[10px] font-bold tracking-[0.06em] text-[#E4E8F0] cursor-pointer"
+                            >
+                              CANCEL [ESC]
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDecisionMode('waiting')}
+                              className="px-2 py-1.5 rounded-none bg-[#232D40] hover:bg-[#2C3850] border border-[#C9A45C]/65 text-[10px] font-bold tracking-[0.06em] text-white cursor-pointer"
+                            >
+                              CONFIRM [SPACE]
+                            </button>
+                          </div>
+                        </>
                       ) : (
                         <>
                           <div className="text-[12.5px] font-bold text-white leading-tight">
@@ -957,6 +1071,32 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                   <div className="rounded border border-[#30261B] bg-[#19130D] p-2 text-[11px]">
                     <div className="text-[10px] tracking-widest text-[#C4A874]">WAITING</div>
                     <div className="text-[#9E8B67]">CACB is deciding.</div>
+                  </div>
+                ) : decisionMode === 'target' ? (
+                  <div className="rounded border border-[#6E5937] bg-[#18120C] p-2.5 space-y-2 text-[11px]">
+                    <div className="font-semibold text-[#F0DFB8]">Choose target creature</div>
+                    {/* Original low-contrast dark target bar bug */}
+                    <div className="flex items-center gap-2 text-[10px]">
+                      <span className="text-[#3C3328] font-mono-tabular">0/1</span>
+                      <span className="flex-1 h-1 bg-[#262018]" />
+                      <span className="text-[#6E2626] font-semibold">NEED 1 MORE</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setDecisionMode('priority')}
+                        className="py-1.5 rounded bg-[#231B12] border border-[#4A3B28] text-[10px] text-[#C4A874] cursor-pointer"
+                      >
+                        CANCEL [ESC]
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDecisionMode('waiting')}
+                        className="py-1.5 rounded bg-[#2A2016] border border-[#4A3B28] text-[10px] text-[#9E8B67] cursor-pointer"
+                      >
+                        CONFIRM [SPACE]
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="rounded border border-[#6E5937] bg-[#261D13] p-2.5 space-y-2 text-[11px]">
@@ -1009,9 +1149,10 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                         key={btn.key}
                         type="button"
                         aria-pressed={isPressed}
-                        onClick={() =>
-                          setActiveAutoPass((cur) => (cur === btn.key ? null : btn.key))
-                        }
+                        onClick={() => {
+                          setHoveredAutoPass(null);
+                          setActiveAutoPass((cur) => (cur === btn.key ? null : btn.key));
+                        }}
                         onMouseEnter={() => setHoveredAutoPass(btn.key)}
                         onMouseLeave={() => setHoveredAutoPass(null)}
                         onFocus={() => setHoveredAutoPass(btn.key)}
@@ -1074,9 +1215,8 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                 <div className="mt-1.5 space-y-2">
                   <div className="flex items-baseline gap-2">
                     <span
-                      className={`font-mono-tabular text-3xl font-bold leading-none ${
-                        selfLife <= 5 ? 'text-[#E05A5A]' : 'text-[#F4F6FA]'
-                      }`}
+                      className="font-mono-tabular text-3xl font-bold leading-none"
+                      style={{ color: selfLife <= 5 ? criticalLifeHex : palette.lifeNormal }}
                     >
                       {selfLife}
                     </span>
@@ -1085,11 +1225,11 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                     </span>
                     {selfDelta !== null && (
                       <span
-                        className={`font-mono-tabular text-[11px] font-bold px-1.5 py-0.5 rounded-none ${
-                          selfDelta < 0
-                            ? 'bg-[#E05A5A]/15 text-[#F07878]'
-                            : 'bg-[#3FA372]/15 text-[#5BD196]'
-                        }`}
+                        className="font-mono-tabular text-[11px] font-bold px-1.5 py-0.5 rounded-none"
+                        style={{
+                          backgroundColor: `${selfDelta < 0 ? criticalLifeHex : gainLifeHex}24`,
+                          color: selfDelta < 0 ? criticalLifeHex : gainLifeHex,
+                        }}
                       >
                         {selfDelta > 0 ? `+${selfDelta}` : selfDelta}
                       </span>
@@ -1181,63 +1321,129 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
               </div>
             )}
 
-            {/* Opponent Battlefield */}
+            {/* Opponent Battlefield (Turn-Aware Hex Color) */}
             <div
-              className={`flex-1 flex items-center justify-center ${
+              className={`flex-1 flex flex-col items-center justify-center gap-1 transition-colors duration-200 ${
                 extensionActive
-                  ? 'bg-gradient-to-b from-[#161E2C]/45 to-transparent'
+                  ? ''
                   : 'border-b border-[#3D3122] bg-gradient-to-b from-[#334F77]/55 via-[#182231]/45 to-transparent'
               }`}
+              style={
+                extensionActive
+                  ? {
+                      background: `linear-gradient(180deg, ${bfOppHex} 0%, ${bfOppHex}cc 75%, #0b0e14 100%)`,
+                    }
+                  : undefined
+              }
             >
               <span
                 className={`text-xs italic ${
-                  extensionActive ? 'text-[#5C6678]' : 'text-[#847862]'
+                  extensionActive ? 'text-[#8C98AD]' : 'text-[#847862]'
                 }`}
               >
-                Opponent battlefield (cartes Magic 100 % intactes)
+                Opponent battlefield — {activeTurn === 'opp' ? 'Tour adverse (actif)' : 'Votre tour (passif)'}
               </span>
+              {extensionActive && (
+                <span className="font-mono-tabular text-[10px] text-[#6E7B91] uppercase">
+                  {bfOppHex}
+                </span>
+              )}
             </div>
 
             {/* HORIZONTAL NATIVE MIDLINE PHASE BAR (when Upkeep + showMidlineTimeline ON) */}
             {extensionActive && config.showMidlineTimeline && (
               <div
-                className="h-[34px] shrink-0 px-2 flex items-center gap-1 bg-[#111621]/95 border-y border-[rgba(242,238,230,0.09)]"
+                className="h-[38px] shrink-0 px-2 flex items-center gap-1 bg-[#111621]/95 border-y border-[rgba(242,238,230,0.1)]"
                 aria-label="Barre de phases native sur la ligne médiane"
               >
                 {PHASES.map((phase) => {
-                  const hasStop = Boolean(phaseStops[phase.id]);
+                  const hasMineStop = Boolean(phaseStops[phase.id]);
+                  const hasOppStop = Boolean(oppPhaseStops[phase.id]);
+                  const isCurrent = Boolean(phase.active);
                   return (
                     <button
                       key={phase.id}
                       type="button"
                       onClick={() =>
-                        setPhaseStops((prev) => ({ ...prev, [phase.id]: !prev[phase.id] }))
+                        activeTurn === 'mine'
+                          ? setPhaseStops((prev) => ({ ...prev, [phase.id]: !prev[phase.id] }))
+                          : setOppPhaseStops((prev) => ({ ...prev, [phase.id]: !prev[phase.id] }))
                       }
-                      title="Cliquer pour activer/retirer un stop de phase"
-                      className={`flex-1 min-w-0 h-[22px] px-1 rounded-none font-mono-tabular text-[9px] font-bold tracking-tight transition-colors truncate cursor-pointer border ${
-                        phase.active
-                          ? 'bg-[#C9A45C]/22 border-[#C9A45C] text-[#F4F6FA]'
-                          : hasStop
-                          ? 'bg-[#1D2535] border-[#C9A45C]/45 text-[#E5E9F0]'
-                          : 'bg-transparent border-transparent text-[#687387] hover:text-[#B8C2D4] hover:bg-[#19202D]'
-                      }`}
+                      title="Cliquer pour activer/retirer un stop de phase (selon le tour actif)"
+                      className="relative flex-1 min-w-0 h-[26px] px-1 rounded-none font-mono-tabular text-[9px] font-bold tracking-tight transition-colors truncate cursor-pointer border flex items-center justify-center"
+                      style={
+                        isCurrent
+                          ? {
+                              backgroundColor: palette.phaseCurrent,
+                              borderColor: palette.phaseCurrent,
+                              color: phaseCurrentInk,
+                              boxShadow: `0 0 0 1px ${palette.phaseCurrent}55`,
+                            }
+                          : {
+                              backgroundColor:
+                                hasMineStop || hasOppStop ? '#1A2130' : 'transparent',
+                              borderColor:
+                                hasMineStop || hasOppStop
+                                  ? 'rgba(244,246,250,0.16)'
+                                  : 'rgba(244,246,250,0.06)',
+                              color: hasMineStop || hasOppStop ? '#E5E9F0' : '#7C879B',
+                            }
+                      }
                     >
-                      {phase.label}
+                      {/* Top Stop Bar: Your Turn Stop */}
+                      {hasMineStop && (
+                        <span
+                          aria-hidden="true"
+                          className="absolute top-0 left-0 right-0"
+                          style={{
+                            height: isColorblindEnhanced ? '4px' : '3px',
+                            backgroundColor: palette.phaseStopMine,
+                            borderBottom: isColorblindEnhanced ? '1px solid #0b0e14' : undefined,
+                          }}
+                        />
+                      )}
+                      <span className="truncate">{phase.label}</span>
+                      {/* Bottom Stop Bar: Opponent Turn Stop */}
+                      {hasOppStop && (
+                        <span
+                          aria-hidden="true"
+                          className="absolute bottom-0 left-0 right-0"
+                          style={{
+                            height: isColorblindEnhanced ? '4px' : '3px',
+                            backgroundColor: palette.phaseStopOpp,
+                            borderTop: isColorblindEnhanced ? '1px solid #0b0e14' : undefined,
+                          }}
+                        />
+                      )}
                     </button>
                   );
                 })}
               </div>
             )}
 
-            {/* Player Battlefield */}
-            <div className="flex-1 flex items-center justify-center">
+            {/* Player Battlefield (Turn-Aware Hex Color) */}
+            <div
+              className="flex-1 flex flex-col items-center justify-center gap-1 transition-colors duration-200"
+              style={
+                extensionActive
+                  ? {
+                      background: `linear-gradient(0deg, ${bfSelfHex} 0%, ${bfSelfHex}cc 75%, #0b0e14 100%)`,
+                    }
+                  : undefined
+              }
+            >
               <span
                 className={`text-xs italic ${
-                  extensionActive ? 'text-[#5C6678]' : 'text-[#847862]'
+                  extensionActive ? 'text-[#8C98AD]' : 'text-[#847862]'
                 }`}
               >
-                Your battlefield (zéro réduction du plateau)
+                Your battlefield — {activeTurn === 'mine' ? 'Votre tour (actif)' : 'Tour adverse (passif)'}
               </span>
+              {extensionActive && (
+                <span className="font-mono-tabular text-[10px] text-[#6E7B91] uppercase">
+                  {bfSelfHex}
+                </span>
+              )}
             </div>
 
             {/* Bottom Hand — 100% UNTOUCHED MAGIC CARDS */}
@@ -1287,7 +1493,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
               <div className="rounded-none bg-[#151A24] border border-[rgba(242,238,230,0.1)] px-2.5 py-2 flex items-center justify-between gap-2 shrink-0">
                 <div>
                   <div className="text-[10px] font-bold tracking-wider text-[#C9A45C]">
-                    YOUR TURN · T4
+                    {activeTurn === 'mine' ? 'YOUR TURN · T4' : 'OPPONENT TURN · T4'}
                   </div>
                   <div className="text-[10px] text-[#8E98AC]">MAIN 1 · PRIORITY</div>
                 </div>
