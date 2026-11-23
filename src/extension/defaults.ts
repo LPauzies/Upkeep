@@ -94,7 +94,7 @@ export const COLOR_GROUPS: {
         key: 'phaseCurrent',
         short: 'Active Step',
         label: 'Flèches de phase en cours',
-        hint: 'Flèches haute/basse et bordure d’accentuation sur l’étape active',
+        hint: 'Flèches haute et basse sur l’étape active',
       },
       {
         key: 'phaseStopMine',

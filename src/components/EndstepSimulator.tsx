@@ -20,7 +20,6 @@ import {
   ART_SANCTUM,
   OPPONENT_SPELL_POOL,
 } from '../data/mockMatch';
-import { computeContrastInk } from '../extension/defaults';
 import { downloadExtensionPackage, type PackageTarget } from '../extension/packager';
 import type { CardCategory, MtgCard, UpkeepConfig } from '../extension/types';
 import { CardZoomPreview } from './CardZoomPreview';
@@ -516,7 +515,6 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
     : null;
 
   const palette = config.colors;
-  const phaseCurrentInk = computeContrastInk(palette.phaseCurrent);
   const bfOppHex = activeTurn === 'mine' ? palette.bfOppMyTurn : palette.bfOppOppTurn;
   const bfSelfHex = activeTurn === 'mine' ? palette.bfSelfMyTurn : palette.bfSelfOppTurn;
   const isColorblindEnhanced = config.colorblindMode !== 'none';
@@ -1383,10 +1381,8 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                         isCurrent
                           ? {
                               backgroundColor: '#1B2232',
-                              borderColor: `${palette.phaseCurrent}d9`,
-                              borderWidth: '1.5px',
+                              borderColor: 'rgba(244,246,250,0.16)',
                               color: '#FFFFFF',
-                              boxShadow: `inset 0 0 12px ${palette.phaseCurrent}29, 0 0 10px ${palette.phaseCurrent}3d`,
                             }
                           : {
                               backgroundColor:

@@ -1528,8 +1528,33 @@ html[data-upkeep-timeline="false"] #upkeep-graveyards-dock[data-mode="docked"] {
 }
 
 /* ============================================================================
- * 7. HIDE REDUNDANT RIGHT-SIDE OPPONENT ACTION NOTIFICATIONS (LOGS ARE OPEN)
+ * 7. GAME NOTICES & ALERT STACK POSITIONING + LEGACY TOAST CLEANUP
+ *    Move Endstep's floating notices off the right rail into the right edge
+ *    of the battlefield (.wr-main-col), left of aside.wr-rail-right.
  * ============================================================================ */
+
+html[data-upkeep-active="true"] aside[data-testid="chip-column"] {
+  position: fixed !important;
+  top: var(--upkeep-notices-top, 12px) !important;
+  right: var(--upkeep-notices-right, 276px) !important;
+  left: auto !important;
+  z-index: 34 !important;
+  max-height: min(72dvh, calc(100dvh - 210px)) !important;
+  max-width: min(304px, calc(100vw - var(--upkeep-notices-right, 276px) - 24px)) !important;
+  pointer-events: none !important;
+}
+
+html[data-upkeep-active="true"] aside[data-testid="chip-column"] > button[data-testid="reveal-chips-dismiss-all"],
+html[data-upkeep-active="true"] aside[data-testid="chip-column"] [data-slot-id]:not([aria-hidden="true"]) [data-testid="notice-chip"] {
+  pointer-events: auto !important;
+}
+
+html[data-upkeep-active="true"] .es-al-stack {
+  top: var(--upkeep-notices-top, 12px) !important;
+  right: var(--upkeep-notices-right, 276px) !important;
+  left: auto !important;
+  max-width: min(340px, calc(100vw - var(--upkeep-notices-right, 276px) - 24px)) !important;
+}
 
 html[data-upkeep-active="true"][data-upkeep-hide-toasts="true"] #root > div.fixed.pointer-events-none[class*="z-[200]"],
 html[data-upkeep-active="true"][data-upkeep-hide-toasts="true"] div.fixed.bottom-20[class*="z-[200]"],
@@ -1778,7 +1803,7 @@ html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-
   border-color: rgba(244, 246, 250, 0.04) !important;
 }
 
-/* Current active phase: clean dark elevated surface + top & bottom red pointer arrows (zero clash with gold/blue stops) */
+/* Current active phase: clean dark elevated surface + top & bottom red pointer arrows only (no red border) */
 html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb--current,
 html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb--current[data-turn="mine"],
 html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb--current[data-turn="opp"] {
@@ -1786,10 +1811,8 @@ html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-
   overflow: visible !important;
   z-index: 4 !important;
   background: #1b2232 !important;
-  border: 1.5px solid color-mix(in srgb, var(--upkeep-phase-current, #e5484d) 85%, transparent) !important;
-  box-shadow:
-    inset 0 0 12px color-mix(in srgb, var(--upkeep-phase-current, #e5484d) 16%, transparent),
-    0 0 10px color-mix(in srgb, var(--upkeep-phase-current, #e5484d) 24%, transparent) !important;
+  border: 1px solid rgba(244, 246, 250, 0.16) !important;
+  box-shadow: none !important;
 }
 
 /* Top downward pointer arrow (▼) centered on active step */

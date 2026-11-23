@@ -1602,6 +1602,40 @@
   }
 
   // ==========================================================================
+  // POSITION GAME NOTICES ON RIGHT EDGE OF BATTLEFIELD (LEFT OF RIGHT RAIL)
+  // ==========================================================================
+  function syncGameNoticesPosition() {
+    const root = document.documentElement;
+    const mainCol = document.querySelector('.wr-main-col');
+    const rightRail = document.querySelector('aside.wr-rail-right');
+    if (!mainCol && !rightRail) return;
+
+    const vw = window.innerWidth;
+    const mainRect = mainCol?.getBoundingClientRect();
+    const railRect = rightRail?.getBoundingClientRect();
+
+    let rightOffset = 16;
+    if (mainRect && mainRect.width > 120) {
+      rightOffset = Math.max(12, Math.round(vw - mainRect.right + 12));
+    } else if (railRect && railRect.width > 0) {
+      rightOffset = Math.round(railRect.width + 12);
+    }
+
+    // If user undocked graveyards onto the battlefield, keep notices clear of it too
+    const gyDock = document.getElementById('upkeep-graveyards-dock');
+    if (gyDock && gyDock.dataset.mode === 'floating' && gyDock.dataset.hidden !== 'true') {
+      const gyRect = gyDock.getBoundingClientRect();
+      if (gyRect.width > 0) {
+        rightOffset = Math.max(rightOffset, Math.round(vw - gyRect.left + 12));
+      }
+    }
+
+    const topOffset = mainRect ? Math.max(12, Math.round(mainRect.top + 12)) : 12;
+    root.style.setProperty('--upkeep-notices-right', `${rightOffset}px`);
+    root.style.setProperty('--upkeep-notices-top', `${topOffset}px`);
+  }
+
+  // ==========================================================================
   // HIDE REDUNDANT RIGHT-SIDE OPPONENT ACTION TOASTS (LOGS ALREADY OPEN)
   // ==========================================================================
   function hideRightRailNotifications() {
@@ -1615,6 +1649,7 @@
     toastCandidates.forEach((el) => {
       if (el.id?.startsWith('upkeep-')) return;
       if (el.classList.contains('vfx-layer')) return;
+      if (el.matches('[data-testid="chip-column"], .es-al-stack, .es-notices')) return;
       const cls = String(el.className || '');
       if (cls.includes('z-[200]') || cls.includes('right-') || el.getAttribute('data-testid')?.toLowerCase().includes('toast')) {
         el.dataset.upkeepHiddenToast = 'true';
@@ -1863,6 +1898,8 @@
       '--upkeep-phase-stop-opp',
       '--upkeep-life-normal',
       '--upkeep-target-bar',
+      '--upkeep-notices-right',
+      '--upkeep-notices-top',
     ].forEach((prop) => root.style.removeProperty(prop));
     document.getElementById('upkeep-graveyards-dock')?.remove();
     document.getElementById('upkeep-card-zoom')?.remove();
@@ -1950,6 +1987,7 @@
     hideRightRailNotifications();
     syncPhaseTimeline();
     renderGraveyardsDock();
+    syncGameNoticesPosition();
   }
 
   function scheduleSync() {
