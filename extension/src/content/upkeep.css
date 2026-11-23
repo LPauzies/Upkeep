@@ -124,6 +124,57 @@ html[data-upkeep-active="true"][data-upkeep-turn="opp"] .wr-game-grid {
   ) !important;
 }
 
+/* Direct battlefield half overrides (Endstep sets --gradient-half-*, background-color,
+ * and box-shadow directly on [data-half="self"|"opp"][data-turn="mine"|"opp"],
+ * which overrides variables inherited from [data-testid="game-root"]). */
+html[data-upkeep-active="true"] [data-half="opp"][data-turn="mine"],
+html[data-upkeep-active="true"][data-upkeep-turn="mine"] [data-half="opp"]:not([data-turn="opp"]) {
+  background-color: var(--upkeep-bf-opp-my-turn) !important;
+  --gradient-half-opponent: linear-gradient(
+    180deg,
+    var(--upkeep-bf-opp-my-turn) 0%,
+    color-mix(in srgb, var(--upkeep-bf-opp-my-turn) 82%, #07090e) 100%
+  ) !important;
+  background-image: var(--gradient-half-opponent) !important;
+  box-shadow: none !important;
+}
+
+html[data-upkeep-active="true"] [data-half="self"][data-turn="mine"],
+html[data-upkeep-active="true"][data-upkeep-turn="mine"] [data-half="self"]:not([data-turn="opp"]) {
+  background-color: var(--upkeep-bf-self-my-turn) !important;
+  --gradient-half-self: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--upkeep-bf-self-my-turn) 84%, #07090e) 0%,
+    var(--upkeep-bf-self-my-turn) 100%
+  ) !important;
+  background-image: var(--gradient-half-self) !important;
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--upkeep-bf-self-my-turn) 65%, #ffffff) !important;
+}
+
+html[data-upkeep-active="true"] [data-half="opp"][data-turn="opp"],
+html[data-upkeep-active="true"][data-upkeep-turn="opp"] [data-half="opp"]:not([data-turn="mine"]) {
+  background-color: var(--upkeep-bf-opp-opp-turn) !important;
+  --gradient-half-opponent: linear-gradient(
+    180deg,
+    var(--upkeep-bf-opp-opp-turn) 0%,
+    color-mix(in srgb, var(--upkeep-bf-opp-opp-turn) 84%, #07090e) 100%
+  ) !important;
+  background-image: var(--gradient-half-opponent) !important;
+  box-shadow: inset 0 2px 0 color-mix(in srgb, var(--upkeep-bf-opp-opp-turn) 65%, #ffffff) !important;
+}
+
+html[data-upkeep-active="true"] [data-half="self"][data-turn="opp"],
+html[data-upkeep-active="true"][data-upkeep-turn="opp"] [data-half="self"]:not([data-turn="mine"]) {
+  background-color: var(--upkeep-bf-self-opp-turn) !important;
+  --gradient-half-self: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--upkeep-bf-self-opp-turn) 82%, #07090e) 0%,
+    var(--upkeep-bf-self-opp-turn) 100%
+  ) !important;
+  background-image: var(--gradient-half-self) !important;
+  box-shadow: none !important;
+}
+
 html[data-upkeep-active="true"] aside.wr-rail-left,
 html[data-upkeep-active="true"] aside.wr-rail-left *,
 html[data-upkeep-active="true"] aside.wr-rail-right,
@@ -724,8 +775,17 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-message {
   flex-shrink: 0 !important;
 }
 
+/* Reset Endstep's parchment text tokens inside active decision surface so labels stay legible on dark obsidian */
+html[data-upkeep-active="true"] [data-zone="decision-surface"]:not([role="status"]) {
+  --color-text-primary: #f4f6fa;
+  --color-text-secondary: #d4dce9;
+  --color-text-tertiary: #aebad0;
+  --color-accent: var(--upkeep-target-bar, #f5d076);
+}
+
 /* High-legibility target counter, progress bar & prompts ("0/1 — NEED 1 MORE", "CLICK TO SELECT")
  * Carefully excludes interactive mode pickers (buttons, checkboxes, radios, options, labels) so modal spells stay crisp */
+html[data-upkeep-active="true"] [data-zone="decision-surface"]:not([role="status"]) .display-eyebrow:not(button):not(.wr-ds-banner *),
 html[data-upkeep-active="true"] [data-zone="decision-surface"] [data-upkeep-target-bar="true"],
 html[data-upkeep-active="true"] [data-zone="decision-surface"] [data-upkeep-target-bar="true"] *:not(button):not(button *),
 html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="hint" i]:not(button):not([role="option"]):not([role="checkbox"]),
@@ -735,21 +795,29 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="target" 
 html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="need" i]:not(button),
 html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="count" i]:not(button):not(label):not([role="option"]) {
   color: var(--upkeep-target-bar, #f5d076) !important;
+  background-color: transparent !important;
   font-weight: 700 !important;
-  letter-spacing: 0.04em !important;
+  letter-spacing: 0.08em !important;
   text-shadow: none !important;
   opacity: 1 !important;
 }
 
+html[data-upkeep-active="true"] [data-zone="decision-surface"]:not([role="status"]) .display-eyebrow:not(button):not(.wr-ds-banner *) {
+  font-size: 11px !important;
+  line-height: 1.3 !important;
+}
+
+/* Progress track & fill (NEVER match Tailwind tracking-[...] utility classes!) */
 html[data-upkeep-active="true"] [data-zone="decision-surface"] [role="progressbar"],
 html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="progress" i],
-html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="track" i] {
+html[data-upkeep-active="true"] [data-zone="decision-surface"] span[aria-hidden="true"][class*="h-[3px]"] {
   background-color: rgba(244, 246, 250, 0.22) !important;
   border-radius: 0 !important;
 }
 
 html[data-upkeep-active="true"] [data-zone="decision-surface"] [role="progressbar"] > div,
 html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="progress" i] > div,
+html[data-upkeep-active="true"] [data-zone="decision-surface"] span[aria-hidden="true"][class*="h-[3px]"] > span,
 html[data-upkeep-active="true"] [data-zone="decision-surface"] [class*="fill" i] {
   background-color: var(--upkeep-target-bar, #f5d076) !important;
   border-radius: 0 !important;

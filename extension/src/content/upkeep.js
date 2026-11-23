@@ -1687,12 +1687,14 @@
   // ==========================================================================
   function syncActiveTurn() {
     const root = document.documentElement;
+    const selfHalf = document.querySelector('[data-half="self"]');
     const phaseBar = document.querySelector('aside.wr-rail-right .wr-phase-bar--vertical');
     const currentStep = document.querySelector('.wr-pb-rail .wr-pb--current');
     const turnChip = document.querySelector('aside.wr-rail-right .wr-turn-chip');
     const turnOwner = document.querySelector('aside.wr-rail-right .wr-turn-owner');
 
     let turn =
+      selfHalf?.getAttribute('data-turn') ||
       currentStep?.getAttribute('data-turn') ||
       phaseBar?.getAttribute('data-turn') ||
       turnChip?.getAttribute('data-live') ||
@@ -1753,7 +1755,14 @@
         if (el.querySelector('button, input, [role="checkbox"], [role="option"]')) return;
         const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
         if (!text || text.length > 64) return;
-        if (/\bneed\s+\d+\s+more\b/i.test(text) || /^\d+\s*\/\s*\d+/.test(text) || /\b\d+\s*\/\s*\d+\b/.test(text)) {
+        if (
+          /\bneed\s+\d+\s+more\b/i.test(text) ||
+          /^\d+\s*\/\s*\d+/.test(text) ||
+          /\b\d+\s*\/\s*\d+\b/.test(text) ||
+          /^click\s+to\s+select$/i.test(text) ||
+          /^tap\s+a\s+highlighted\s+target$/i.test(text) ||
+          /^\d*\s*selected$/i.test(text)
+        ) {
           el.dataset.upkeepTargetBar = 'true';
         }
       });
