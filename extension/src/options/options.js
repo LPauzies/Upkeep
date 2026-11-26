@@ -13,6 +13,7 @@
       phaseStopOpp: '#6ea8f0',
       lifeNormal: '#f4f6fa',
       targetBar: '#f5d076',
+      undoButton: '#e5484d',
     },
     deuteranopia: {
       bfSelfMyTurn: '#221d11',
@@ -24,6 +25,7 @@
       phaseStopOpp: '#56b4e9',
       lifeNormal: '#ffffff',
       targetBar: '#f0e442',
+      undoButton: '#d55e00',
     },
     tritanopia: {
       bfSelfMyTurn: '#241419',
@@ -35,6 +37,7 @@
       phaseStopOpp: '#00c2b2',
       lifeNormal: '#ffffff',
       targetBar: '#ffd6e7',
+      undoButton: '#ff4d6d',
     },
     'high-contrast': {
       bfSelfMyTurn: '#1e2636',
@@ -46,6 +49,7 @@
       phaseStopOpp: '#7ce8ff',
       lifeNormal: '#ffffff',
       targetBar: '#ffffff',
+      undoButton: '#ff5a5f',
     },
   };
 
@@ -54,6 +58,11 @@
     { id: 'deuteranopia', title: 'Deuteranopia / Protanopia', desc: 'Red-Green safe Okabe-Ito palette' },
     { id: 'tritanopia', title: 'Tritanopia', desc: 'Blue-Yellow safe crimson & teal' },
     { id: 'high-contrast', title: 'High Contrast', desc: 'Maximum luminance & sharp cues' },
+  ];
+
+  const BATTLEFIELD_STYLE_OPTIONS = [
+    { id: 'solid', label: 'Solid (Upkeep)' },
+    { id: 'gradient', label: 'Gradient (Endstep)' },
   ];
 
   const COLOR_GROUPS = [
@@ -75,10 +84,11 @@
       ],
     },
     {
-      title: 'Life & Target Bar',
+      title: 'Life, Target & Actions',
       fields: [
         { key: 'lifeNormal', label: 'Life Total (> 5 PV)', hint: 'Player & opponent life color outside the critical red zone' },
         { key: 'targetBar', label: 'Target Selection Bar', hint: 'Counter & prompt color (e.g. 0/1 — NEED 1 MORE)' },
+        { key: 'undoButton', label: 'Undo Button', hint: 'Accent color for the Undo button in the Decision box (default red)' },
       ],
     },
   ];
@@ -104,6 +114,7 @@
 
   let current = {
     colorblindMode: 'none',
+    battlefieldStyle: 'solid',
     colors: { ...COLOR_PRESETS.none },
     selectors: { ...DEFAULT_SELECTORS },
   };
@@ -111,6 +122,7 @@
   const colorControlRefs = new Map();
   const selectorInputRefs = new Map();
   const presetButtonRefs = new Map();
+  const bfStyleButtonRefs = new Map();
   let statusTimer = null;
 
   function sanitizeHex(val, fallback) {
@@ -206,6 +218,38 @@
     });
 
     syncPresetButtons();
+  }
+
+  function syncBattlefieldStyleButtons() {
+    bfStyleButtonRefs.forEach((btn, id) => {
+      const active = current.battlefieldStyle === id;
+      btn.classList.toggle('is-active', active);
+      btn.setAttribute('aria-checked', active ? 'true' : 'false');
+    });
+  }
+
+  function renderBattlefieldStyles() {
+    const bar = document.getElementById('bf-style-bar');
+    if (!bar) return;
+    while (bar.firstChild) bar.removeChild(bar.firstChild);
+    bfStyleButtonRefs.clear();
+
+    BATTLEFIELD_STYLE_OPTIONS.forEach((opt) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'style-btn';
+      btn.setAttribute('role', 'radio');
+      btn.textContent = opt.label;
+      btn.addEventListener('click', () => {
+        current.battlefieldStyle = opt.id;
+        syncBattlefieldStyleButtons();
+        persist(`Battlefield style set to ${opt.label}.`);
+      });
+      bar.appendChild(btn);
+      bfStyleButtonRefs.set(opt.id, btn);
+    });
+
+    syncBattlefieldStyleButtons();
   }
 
   function renderColorGroups() {
@@ -344,19 +388,23 @@
       current = {
         ...saved,
         colorblindMode: mode,
+        battlefieldStyle: saved.battlefieldStyle === 'gradient' ? 'gradient' : 'solid',
         colors: mergedColors,
         selectors: { ...DEFAULT_SELECTORS, ...(saved.selectors || {}) },
       };
     }
 
     renderPresets();
+    renderBattlefieldStyles();
     renderColorGroups();
     renderSelectors();
 
     document.getElementById('btn-reset-colors')?.addEventListener('click', () => {
       current.colorblindMode = 'none';
+      current.battlefieldStyle = 'solid';
       current.colors = { ...COLOR_PRESETS.none };
       syncPresetButtons();
+      syncBattlefieldStyleButtons();
       syncColorControls();
       persist('Theme colors reset to Standard defaults.');
     });

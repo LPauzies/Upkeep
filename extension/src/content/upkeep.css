@@ -37,6 +37,7 @@
   --upkeep-phase-stop-opp: #6ea8f0;
   --upkeep-life-normal: #f4f6fa;
   --upkeep-target-bar: #f5d076;
+  --upkeep-undo-button: #e5484d;
 }
 
 /* Colorblind-safe semantic overrides (critical life, deltas, high-contrast borders) */
@@ -170,6 +171,65 @@ html[data-upkeep-active="true"][data-upkeep-turn="opp"] [data-half="self"]:not([
     180deg,
     color-mix(in srgb, var(--upkeep-bf-self-opp-turn) 82%, #07090e) 0%,
     var(--upkeep-bf-self-opp-turn) 100%
+  ) !important;
+  background-image: var(--gradient-half-self) !important;
+  box-shadow: none !important;
+}
+
+/* Optional Endstep-style gradient fade (outer edge tint + ambient bloom fading smoothly to dark toward midline) */
+html[data-upkeep-active="true"][data-upkeep-bf-style="gradient"] [data-half="opp"][data-turn="mine"],
+html[data-upkeep-active="true"][data-upkeep-bf-style="gradient"][data-upkeep-turn="mine"] [data-half="opp"]:not([data-turn="opp"]) {
+  background-color: #05070b !important;
+  --gradient-half-opponent: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--upkeep-bf-opp-my-turn) 75%, transparent) 0%,
+    color-mix(in srgb, var(--upkeep-bf-opp-my-turn) 28%, transparent) 34%,
+    transparent 74%
+  ) !important;
+  background-image: var(--gradient-half-opponent) !important;
+  box-shadow: none !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-bf-style="gradient"] [data-half="self"][data-turn="mine"],
+html[data-upkeep-active="true"][data-upkeep-bf-style="gradient"][data-upkeep-turn="mine"] [data-half="self"]:not([data-turn="opp"]) {
+  background-color: #05070b !important;
+  --gradient-half-self: linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--upkeep-bf-self-my-turn) 92%, transparent) 0%,
+    color-mix(in srgb, var(--upkeep-bf-self-my-turn) 48%, transparent) 28%,
+    color-mix(in srgb, var(--upkeep-bf-self-my-turn) 14%, transparent) 60%,
+    transparent 100%
+  ) !important;
+  background-image: var(--gradient-half-self) !important;
+  box-shadow:
+    inset 0 -3px 0 color-mix(in srgb, var(--upkeep-bf-self-my-turn) 82%, #ffffff),
+    inset 0 -150px 95px -85px color-mix(in srgb, var(--upkeep-bf-self-my-turn) 62%, transparent) !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-bf-style="gradient"] [data-half="opp"][data-turn="opp"],
+html[data-upkeep-active="true"][data-upkeep-bf-style="gradient"][data-upkeep-turn="opp"] [data-half="opp"]:not([data-turn="mine"]) {
+  background-color: #05070b !important;
+  --gradient-half-opponent: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--upkeep-bf-opp-opp-turn) 92%, transparent) 0%,
+    color-mix(in srgb, var(--upkeep-bf-opp-opp-turn) 48%, transparent) 28%,
+    color-mix(in srgb, var(--upkeep-bf-opp-opp-turn) 14%, transparent) 60%,
+    transparent 100%
+  ) !important;
+  background-image: var(--gradient-half-opponent) !important;
+  box-shadow:
+    inset 0 3px 0 color-mix(in srgb, var(--upkeep-bf-opp-opp-turn) 82%, #ffffff),
+    inset 0 150px 95px -85px color-mix(in srgb, var(--upkeep-bf-opp-opp-turn) 62%, transparent) !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-bf-style="gradient"] [data-half="self"][data-turn="opp"],
+html[data-upkeep-active="true"][data-upkeep-bf-style="gradient"][data-upkeep-turn="opp"] [data-half="self"]:not([data-turn="mine"]) {
+  background-color: #05070b !important;
+  --gradient-half-self: linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--upkeep-bf-self-opp-turn) 75%, transparent) 0%,
+    color-mix(in srgb, var(--upkeep-bf-self-opp-turn) 28%, transparent) 34%,
+    transparent 74%
   ) !important;
   background-image: var(--gradient-half-self) !important;
   box-shadow: none !important;
@@ -852,6 +912,36 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions bu
 html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions button:hover {
   background: #2c3850 !important;
   border-color: var(--upkeep-gold) !important;
+}
+
+/* Undo button (distinct crimson red by default, customizable via --upkeep-undo-button) */
+html[data-upkeep-active="true"] [data-zone="decision-surface"] button[data-testid="undo-priority"],
+html[data-upkeep-active="true"] [data-zone="decision-surface"] button[data-testid="undo-mana"],
+html[data-upkeep-active="true"] [data-zone="decision-surface"] button[data-testid="undo-prompt"],
+html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions button[data-testid^="undo-"],
+html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions button[title^="Undo" i],
+html[data-upkeep-active="true"] aside.wr-rail-left button[data-testid^="undo-"] {
+  background: color-mix(in srgb, var(--upkeep-undo-button, #e5484d) 20%, #141923) !important;
+  border: 1px solid color-mix(in srgb, var(--upkeep-undo-button, #e5484d) 78%, transparent) !important;
+  color: color-mix(in srgb, var(--upkeep-undo-button, #e5484d) 16%, #ffffff) !important;
+}
+
+html[data-upkeep-active="true"] [data-zone="decision-surface"] button[data-testid="undo-priority"]:hover,
+html[data-upkeep-active="true"] [data-zone="decision-surface"] button[data-testid="undo-mana"]:hover,
+html[data-upkeep-active="true"] [data-zone="decision-surface"] button[data-testid="undo-prompt"]:hover,
+html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions button[data-testid^="undo-"]:hover,
+html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions button[title^="Undo" i]:hover,
+html[data-upkeep-active="true"] aside.wr-rail-left button[data-testid^="undo-"]:hover {
+  background: color-mix(in srgb, var(--upkeep-undo-button, #e5484d) 34%, #141923) !important;
+  border-color: var(--upkeep-undo-button, #e5484d) !important;
+  color: #ffffff !important;
+}
+
+html[data-upkeep-active="true"] [data-zone="decision-surface"] button[data-testid^="undo-"] [data-testid="kcap"],
+html[data-upkeep-active="true"] [data-zone="decision-surface"] button[title^="Undo" i] [data-testid="kcap"],
+html[data-upkeep-active="true"] aside.wr-rail-left button[data-testid^="undo-"] [data-testid="kcap"] {
+  border-color: color-mix(in srgb, var(--upkeep-undo-button, #e5484d) 55%, transparent) !important;
+  color: color-mix(in srgb, var(--upkeep-undo-button, #e5484d) 35%, #ffffff) !important;
 }
 
 /* Selected mode / choice highlight (e.g. Kozilek's Command "Choose two") */

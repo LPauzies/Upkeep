@@ -24,6 +24,7 @@ export interface UpkeepShortcuts {
 }
 
 export type ColorblindMode = 'none' | 'deuteranopia' | 'tritanopia' | 'high-contrast';
+export type BattlefieldStyle = 'solid' | 'gradient';
 
 export interface UpkeepColors {
   bfSelfMyTurn: string;
@@ -35,6 +36,7 @@ export interface UpkeepColors {
   phaseStopOpp: string;
   lifeNormal: string;
   targetBar: string;
+  undoButton: string;
 }
 
 export interface UpkeepConfig {
@@ -51,6 +53,7 @@ export interface UpkeepConfig {
   graveyardWidth: number;
   hoverZoomScale: number;
   colorblindMode: ColorblindMode;
+  battlefieldStyle: BattlefieldStyle;
   colors: UpkeepColors;
   shortcuts: UpkeepShortcuts;
   selectors: DomSelectorConfig;

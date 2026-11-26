@@ -973,7 +973,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                           <div className="text-[11px] text-[#D4DCE9] mt-0.5">
                             Abilities may trigger. Respond or pass.
                           </div>
-                          <div className="mt-2.5">
+                          <div className="mt-2.5 flex flex-col gap-1.5">
                             <button
                               type="button"
                               onClick={() => setDecisionMode('waiting')}
@@ -982,6 +982,26 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                               <span>PASS PRIORITY</span>
                               <span className="px-1.5 py-0.5 rounded-none bg-[#111620] border border-white/20 text-[9.5px] font-mono-tabular text-[#C9A45C]">
                                 SPACE
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDecisionMode('priority')}
+                              className="w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded-none border text-[11px] font-bold tracking-[0.06em] text-white cursor-pointer transition-colors"
+                              style={{
+                                backgroundColor: `${palette.undoButton}33`,
+                                borderColor: `${palette.undoButton}c7`,
+                              }}
+                            >
+                              <span>↶ UNDO</span>
+                              <span
+                                className="px-1.5 py-0.5 rounded-none bg-[#111620] border text-[9.5px] font-mono-tabular"
+                                style={{
+                                  borderColor: `${palette.undoButton}8c`,
+                                  color: palette.undoButton,
+                                }}
+                              >
+                                ⌘ + Z
                               </span>
                             </button>
                           </div>
@@ -1332,9 +1352,20 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
               }`}
               style={
                 extensionActive
-                  ? {
-                      background: `linear-gradient(180deg, ${bfOppHex} 0%, ${bfOppHex}cc 75%, #0b0e14 100%)`,
-                    }
+                  ? config.battlefieldStyle === 'gradient'
+                    ? activeTurn === 'opp'
+                      ? {
+                          backgroundColor: '#05070b',
+                          backgroundImage: `linear-gradient(180deg, ${bfOppHex}eb 0%, ${bfOppHex}7a 28%, ${bfOppHex}24 60%, transparent 100%)`,
+                          boxShadow: `inset 0 3px 0 ${bfOppHex}, inset 0 150px 95px -85px ${bfOppHex}9e`,
+                        }
+                      : {
+                          backgroundColor: '#05070b',
+                          backgroundImage: `linear-gradient(180deg, ${bfOppHex}bf 0%, ${bfOppHex}47 34%, transparent 74%)`,
+                        }
+                    : {
+                        background: `linear-gradient(180deg, ${bfOppHex} 0%, ${bfOppHex}cc 75%, #0b0e14 100%)`,
+                      }
                   : undefined
               }
             >
@@ -1461,9 +1492,20 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
               className="flex-1 flex flex-col items-center justify-center gap-1 transition-colors duration-200"
               style={
                 extensionActive
-                  ? {
-                      background: `linear-gradient(0deg, ${bfSelfHex} 0%, ${bfSelfHex}cc 75%, #0b0e14 100%)`,
-                    }
+                  ? config.battlefieldStyle === 'gradient'
+                    ? activeTurn === 'mine'
+                      ? {
+                          backgroundColor: '#05070b',
+                          backgroundImage: `linear-gradient(0deg, ${bfSelfHex}eb 0%, ${bfSelfHex}7a 28%, ${bfSelfHex}24 60%, transparent 100%)`,
+                          boxShadow: `inset 0 -3px 0 ${bfSelfHex}, inset 0 -150px 95px -85px ${bfSelfHex}9e`,
+                        }
+                      : {
+                          backgroundColor: '#05070b',
+                          backgroundImage: `linear-gradient(0deg, ${bfSelfHex}bf 0%, ${bfSelfHex}47 34%, transparent 74%)`,
+                        }
+                    : {
+                        background: `linear-gradient(0deg, ${bfSelfHex} 0%, ${bfSelfHex}cc 75%, #0b0e14 100%)`,
+                      }
                   : undefined
               }
             >

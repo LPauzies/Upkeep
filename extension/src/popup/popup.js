@@ -13,6 +13,7 @@
       phaseStopOpp: '#6ea8f0',
       lifeNormal: '#f4f6fa',
       targetBar: '#f5d076',
+      undoButton: '#e5484d',
     },
     deuteranopia: {
       bfSelfMyTurn: '#221d11',
@@ -24,6 +25,7 @@
       phaseStopOpp: '#56b4e9',
       lifeNormal: '#ffffff',
       targetBar: '#f0e442',
+      undoButton: '#d55e00',
     },
     tritanopia: {
       bfSelfMyTurn: '#241419',
@@ -35,6 +37,7 @@
       phaseStopOpp: '#00c2b2',
       lifeNormal: '#ffffff',
       targetBar: '#ffd6e7',
+      undoButton: '#ff4d6d',
     },
     'high-contrast': {
       bfSelfMyTurn: '#1e2636',
@@ -46,19 +49,21 @@
       phaseStopOpp: '#7ce8ff',
       lifeNormal: '#ffffff',
       targetBar: '#ffffff',
+      undoButton: '#ff5a5f',
     },
   };
 
   const QUICK_COLOR_FIELDS = [
-    { key: 'bfSelfMyTurn', label: 'You (Your T)', title: 'Your battlefield on your turn', group: 'bf' },
-    { key: 'bfOppMyTurn', label: 'Opp (Your T)', title: 'Opponent battlefield on your turn', group: 'bf' },
-    { key: 'bfSelfOppTurn', label: 'You (Opp T)', title: 'Your battlefield on opponent turn', group: 'bf' },
-    { key: 'bfOppOppTurn', label: 'Opp (Opp T)', title: 'Opponent battlefield on opponent turn', group: 'bf' },
+    { key: 'bfSelfMyTurn', label: 'You (Your Turn)', title: 'Your battlefield on your turn', group: 'bf' },
+    { key: 'bfOppMyTurn', label: 'Opp (Your Turn)', title: 'Opponent battlefield on your turn', group: 'bf' },
+    { key: 'bfSelfOppTurn', label: 'You (Opp Turn)', title: 'Your battlefield on opponent turn', group: 'bf' },
+    { key: 'bfOppOppTurn', label: 'Opp (Opp Turn)', title: 'Opponent battlefield on opponent turn', group: 'bf' },
     { key: 'phaseCurrent', label: 'Active Step', title: 'Top & bottom pointer arrows on current step', group: 'accent' },
     { key: 'phaseStopMine', label: 'Your Stops', title: 'Your turn phase stop marker', group: 'accent' },
     { key: 'phaseStopOpp', label: 'Opp Stops', title: 'Opponent turn phase stop marker', group: 'accent' },
-    { key: 'lifeNormal', label: 'Life (>5)', title: 'Life total outside red zone (> 5 PV)', group: 'accent' },
+    { key: 'lifeNormal', label: 'Life (>5 PV)', title: 'Life total outside red zone (> 5 PV)', group: 'accent' },
     { key: 'targetBar', label: 'Target Bar', title: 'Target counter & prompt highlight', group: 'accent' },
+    { key: 'undoButton', label: 'Undo Button', title: 'Undo button color in Decision box (default red)', group: 'accent' },
   ];
 
   const SWATCH_PALETTES = {
@@ -100,6 +105,7 @@
     logsWidth: 278,
     graveyardWidth: 268,
     colorblindMode: 'none',
+    battlefieldStyle: 'solid',
     colors: { ...COLOR_PRESETS.none },
   };
 
@@ -468,6 +474,7 @@
         ...DEFAULTS,
         ...saved,
         colorblindMode: mode,
+        battlefieldStyle: saved.battlefieldStyle === 'gradient' ? 'gradient' : 'solid',
         colors: mergedColors,
       };
     }
@@ -504,10 +511,21 @@
       });
     }
 
+    const bfStyleSelect = document.getElementById('select-bf-style');
+    if (bfStyleSelect) {
+      bfStyleSelect.value = current.battlefieldStyle === 'gradient' ? 'gradient' : 'solid';
+      bfStyleSelect.addEventListener('change', () => {
+        current.battlefieldStyle = bfStyleSelect.value === 'gradient' ? 'gradient' : 'solid';
+        save();
+      });
+    }
+
     document.getElementById('btn-reset-colors')?.addEventListener('click', () => {
       current.colorblindMode = 'none';
+      current.battlefieldStyle = 'solid';
       current.colors = { ...COLOR_PRESETS.none };
       if (colorblindSelect) colorblindSelect.value = 'none';
+      if (bfStyleSelect) bfStyleSelect.value = 'solid';
       syncColorGridUi();
       save();
     });

@@ -8,7 +8,7 @@ import {
   SELECTOR_LABELS,
   sanitizeHex,
 } from '../extension/defaults';
-import type { ColorblindMode, DomSelectorConfig, UpkeepColors, UpkeepConfig } from '../extension/types';
+import type { BattlefieldStyle, ColorblindMode, DomSelectorConfig, UpkeepColors, UpkeepConfig } from '../extension/types';
 
 interface ConfigViewProps {
   config: UpkeepConfig;
@@ -289,7 +289,19 @@ export function ConfigView({ config, onChange }: ConfigViewProps) {
                     </select>
                   </label>
 
-                  <div className="grid grid-cols-3 gap-1">
+                  <label className="flex items-center justify-between gap-2 text-[11.5px] text-[#E4E8F0]">
+                    <span>Battlefield style</span>
+                    <select
+                      value={config.battlefieldStyle}
+                      onChange={(e) => updateField('battlefieldStyle', e.target.value as BattlefieldStyle)}
+                      className="w-[172px] px-2 py-1 rounded-none bg-[#141A26] border border-[rgba(244,246,250,0.16)] text-[11px] font-semibold text-[#F4F6FA] focus:outline-none focus:border-[#C9A45C]"
+                    >
+                      <option value="solid">Solid (Upkeep)</option>
+                      <option value="gradient">Gradient (Endstep)</option>
+                    </select>
+                  </label>
+
+                  <div className="grid grid-cols-2 gap-1">
                     {ALL_COLOR_FIELDS.map((field) => (
                       <label
                         key={field.key}
@@ -431,6 +443,48 @@ export function ConfigView({ config, onChange }: ConfigViewProps) {
                   </button>
                 );
               })}
+            </div>
+
+            {/* Battlefield Background Style (Solid vs Gradient) */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-none bg-[#0E1116] border border-[rgba(242,238,230,0.1)]">
+              <div className="min-w-0">
+                <div className="text-xs font-semibold text-[#F2EEE6]">
+                  Style du Battlefield
+                </div>
+                <div className="text-[11px] text-[#8F9BB0]">
+                  Teinte pleine (Upkeep) ou dégradé progressif depuis les bords (style Endstep original).
+                </div>
+              </div>
+              <div
+                className="inline-grid grid-cols-2 gap-1.5 shrink-0"
+                role="radiogroup"
+                aria-label="Style du Battlefield"
+              >
+                {(
+                  [
+                    ['solid', 'Solid (Upkeep)'],
+                    ['gradient', 'Gradient (Endstep)'],
+                  ] as const
+                ).map(([styleId, label]) => {
+                  const active = config.battlefieldStyle === styleId;
+                  return (
+                    <button
+                      key={styleId}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => updateField('battlefieldStyle', styleId)}
+                      className={`px-3 py-1.5 rounded-none border text-[11px] font-bold tracking-[0.03em] transition-colors cursor-pointer whitespace-nowrap ${
+                        active
+                          ? 'bg-[#C9A45C]/15 border-[#C9A45C] text-[#F2D58B]'
+                          : 'bg-[#141A26] border-[rgba(242,238,230,0.14)] text-[#BCC5D4] hover:border-[#C9A45C]/50 hover:text-[#F2EEE6]'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Grouped Color Pickers + Hex Inputs */}

@@ -11,6 +11,7 @@ export const COLOR_PRESETS: Record<ColorblindMode, UpkeepColors> = {
     phaseStopOpp: '#6ea8f0',
     lifeNormal: '#f4f6fa',
     targetBar: '#f5d076',
+    undoButton: '#e5484d',
   },
   deuteranopia: {
     bfSelfMyTurn: '#221d11',
@@ -22,6 +23,7 @@ export const COLOR_PRESETS: Record<ColorblindMode, UpkeepColors> = {
     phaseStopOpp: '#56b4e9',
     lifeNormal: '#ffffff',
     targetBar: '#f0e442',
+    undoButton: '#d55e00',
   },
   tritanopia: {
     bfSelfMyTurn: '#241419',
@@ -33,6 +35,7 @@ export const COLOR_PRESETS: Record<ColorblindMode, UpkeepColors> = {
     phaseStopOpp: '#00c2b2',
     lifeNormal: '#ffffff',
     targetBar: '#ffd6e7',
+    undoButton: '#ff4d6d',
   },
   'high-contrast': {
     bfSelfMyTurn: '#1e2636',
@@ -44,6 +47,7 @@ export const COLOR_PRESETS: Record<ColorblindMode, UpkeepColors> = {
     phaseStopOpp: '#7ce8ff',
     lifeNormal: '#ffffff',
     targetBar: '#ffffff',
+    undoButton: '#ff5a5f',
   },
 };
 
@@ -111,7 +115,7 @@ export const COLOR_GROUPS: {
     ],
   },
   {
-    title: 'Points de vie & barre de ciblage',
+    title: 'Points de vie, ciblage & actions',
     fields: [
       {
         key: 'lifeNormal',
@@ -124,6 +128,12 @@ export const COLOR_GROUPS: {
         short: 'Target Bar',
         label: 'Barre de ciblage (0/1)',
         hint: 'Texte & jauge "NEED 1 MORE" dans le bloc Decision',
+      },
+      {
+        key: 'undoButton',
+        short: 'Undo Button',
+        label: 'Bouton Undo',
+        hint: 'Couleur d’accentuation du bouton UNDO dans le bloc Decision (rouge par défaut)',
       },
     ],
   },
@@ -159,6 +169,7 @@ export const DEFAULT_UPKEEP_CONFIG: UpkeepConfig = {
   graveyardWidth: 268,
   hoverZoomScale: 1.45,
   colorblindMode: 'none',
+  battlefieldStyle: 'solid',
   colors: { ...COLOR_PRESETS.none },
   shortcuts: {
     toggleLogs: 'l',

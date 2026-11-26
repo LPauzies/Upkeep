@@ -13,6 +13,7 @@
       phaseStopOpp: '#6ea8f0',
       lifeNormal: '#f4f6fa',
       targetBar: '#f5d076',
+      undoButton: '#e5484d',
     },
     deuteranopia: {
       bfSelfMyTurn: '#221d11',
@@ -24,6 +25,7 @@
       phaseStopOpp: '#56b4e9',
       lifeNormal: '#ffffff',
       targetBar: '#f0e442',
+      undoButton: '#d55e00',
     },
     tritanopia: {
       bfSelfMyTurn: '#241419',
@@ -35,6 +37,7 @@
       phaseStopOpp: '#00c2b2',
       lifeNormal: '#ffffff',
       targetBar: '#ffd6e7',
+      undoButton: '#ff4d6d',
     },
     'high-contrast': {
       bfSelfMyTurn: '#1e2636',
@@ -46,6 +49,7 @@
       phaseStopOpp: '#7ce8ff',
       lifeNormal: '#ffffff',
       targetBar: '#ffffff',
+      undoButton: '#ff5a5f',
     },
   };
 
@@ -59,6 +63,7 @@
     highContrastHud: true,
     enableHoverZoom: true,
     colorblindMode: 'none',
+    battlefieldStyle: 'solid',
     colors: { ...COLOR_PRESETS.none },
     logsWidth: 278,
     graveyardWidth: 268,
@@ -273,6 +278,7 @@
       ...DEFAULT_CONFIG,
       ...saved,
       colorblindMode: cbMode,
+      battlefieldStyle: saved.battlefieldStyle === 'gradient' ? 'gradient' : 'solid',
       colors: mergedColors,
       shortcuts: { ...DEFAULT_CONFIG.shortcuts, ...(saved.shortcuts || {}) },
       selectors: { ...DEFAULT_CONFIG.selectors, ...(saved.selectors || {}) },
@@ -1848,6 +1854,7 @@
     const phaseStopOpp = sanitizeHex(c.phaseStopOpp, base.phaseStopOpp);
     const lifeNormal = sanitizeHex(c.lifeNormal, base.lifeNormal);
     const targetBar = sanitizeHex(c.targetBar, base.targetBar);
+    const undoButton = sanitizeHex(c.undoButton, base.undoButton);
 
     root.dataset.upkeepColorblind = cbMode;
     root.style.setProperty('--upkeep-bf-self-my-turn', bfSelfMyTurn);
@@ -1860,6 +1867,7 @@
     root.style.setProperty('--upkeep-phase-stop-opp', phaseStopOpp);
     root.style.setProperty('--upkeep-life-normal', lifeNormal);
     root.style.setProperty('--upkeep-target-bar', targetBar);
+    root.style.setProperty('--upkeep-undo-button', undoButton);
   }
 
   function applyRootAttributes() {
@@ -1869,6 +1877,7 @@
     root.dataset.upkeepSpectate = active && isSpectateRoute() ? 'true' : 'false';
     root.dataset.upkeepHud = active && config.highContrastHud ? 'true' : 'false';
     root.dataset.upkeepStackAnchor = active && config.anchorStackTopLeft ? 'true' : 'false';
+    root.dataset.upkeepBfStyle = config.battlefieldStyle === 'gradient' ? 'gradient' : 'solid';
     root.style.setProperty('--upkeep-gy-width', `${config.graveyardWidth || 268}px`);
 
     if (active) {
@@ -1891,6 +1900,7 @@
     delete root.dataset.upkeepPeekingGy;
     delete root.dataset.upkeepTurn;
     delete root.dataset.upkeepColorblind;
+    delete root.dataset.upkeepBfStyle;
     [
       '--upkeep-ds-height',
       '--upkeep-log-left',
@@ -1907,6 +1917,7 @@
       '--upkeep-phase-stop-opp',
       '--upkeep-life-normal',
       '--upkeep-target-bar',
+      '--upkeep-undo-button',
       '--upkeep-notices-right',
       '--upkeep-notices-top',
     ].forEach((prop) => root.style.removeProperty(prop));
