@@ -524,3 +524,36 @@ body[data-enabled="false"] .content {
   background: rgba(201, 164, 92, 0.22);
   border-color: #c9a45c;
 }
+
+.btn-donate {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 0;
+  border: 1px solid rgba(110, 168, 240, 0.35);
+  background: rgba(110, 168, 240, 0.08);
+  color: #9ec5f8;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.btn-donate:hover {
+  background: rgba(110, 168, 240, 0.18);
+  border-color: #6ea8f0;
+  color: #dcebff;
+}
+
+.btn-donate-icon {
+  display: block;
+  flex-shrink: 0;
+  color: #6ea8f0;
+}
