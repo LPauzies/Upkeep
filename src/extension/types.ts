@@ -54,6 +54,7 @@ export interface UpkeepConfig {
   hoverZoomScale: number;
   colorblindMode: ColorblindMode;
   battlefieldStyle: BattlefieldStyle;
+  battlefieldTexture: boolean;
   colors: UpkeepColors;
   shortcuts: UpkeepShortcuts;
   selectors: DomSelectorConfig;

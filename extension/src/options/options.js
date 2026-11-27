@@ -65,6 +65,11 @@
     { id: 'gradient', label: 'Gradient (Endstep)' },
   ];
 
+  const BATTLEFIELD_TEXTURE_OPTIONS = [
+    { id: true, label: 'Subtle Texture' },
+    { id: false, label: 'Flat (Off)' },
+  ];
+
   const COLOR_GROUPS = [
     {
       title: 'Battlefield (Turn-Aware)',
@@ -79,8 +84,8 @@
       title: 'Phase Timeline',
       fields: [
         { key: 'phaseCurrent', label: 'Active Phase Pointer', hint: 'Top & bottom pointer arrows on the current step' },
-        { key: 'phaseStopMine', label: 'Your Turn Stop Marker', hint: 'Top/left blade marker when you set a stop on your turn' },
-        { key: 'phaseStopOpp', label: 'Opponent Turn Stop Marker', hint: 'Bottom/right blade marker when you set a stop on their turn' },
+        { key: 'phaseStopMine', label: 'Your Turn Stop Marker', hint: 'Bottom bar on phase steps when you set a stop on your turn (player side)' },
+        { key: 'phaseStopOpp', label: 'Opponent Turn Stop Marker', hint: 'Top bar on phase steps when you set a stop on their turn (opponent side)' },
       ],
     },
     {
@@ -115,6 +120,7 @@
   let current = {
     colorblindMode: 'none',
     battlefieldStyle: 'solid',
+    battlefieldTexture: true,
     colors: { ...COLOR_PRESETS.none },
     selectors: { ...DEFAULT_SELECTORS },
   };
@@ -123,6 +129,7 @@
   const selectorInputRefs = new Map();
   const presetButtonRefs = new Map();
   const bfStyleButtonRefs = new Map();
+  const bfTextureButtonRefs = new Map();
   let statusTimer = null;
 
   function sanitizeHex(val, fallback) {
@@ -250,6 +257,38 @@
     });
 
     syncBattlefieldStyleButtons();
+  }
+
+  function syncBattlefieldTextureButtons() {
+    bfTextureButtonRefs.forEach((btn, val) => {
+      const active = Boolean(current.battlefieldTexture) === val;
+      btn.classList.toggle('is-active', active);
+      btn.setAttribute('aria-checked', active ? 'true' : 'false');
+    });
+  }
+
+  function renderBattlefieldTexture() {
+    const bar = document.getElementById('bf-texture-bar');
+    if (!bar) return;
+    while (bar.firstChild) bar.removeChild(bar.firstChild);
+    bfTextureButtonRefs.clear();
+
+    BATTLEFIELD_TEXTURE_OPTIONS.forEach((opt) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'style-btn';
+      btn.setAttribute('role', 'radio');
+      btn.textContent = opt.label;
+      btn.addEventListener('click', () => {
+        current.battlefieldTexture = opt.id;
+        syncBattlefieldTextureButtons();
+        persist(opt.id ? 'Subtle battlefield texture enabled.' : 'Battlefield texture disabled.');
+      });
+      bar.appendChild(btn);
+      bfTextureButtonRefs.set(opt.id, btn);
+    });
+
+    syncBattlefieldTextureButtons();
   }
 
   function renderColorGroups() {
@@ -389,6 +428,7 @@
         ...saved,
         colorblindMode: mode,
         battlefieldStyle: saved.battlefieldStyle === 'gradient' ? 'gradient' : 'solid',
+        battlefieldTexture: saved.battlefieldTexture !== false,
         colors: mergedColors,
         selectors: { ...DEFAULT_SELECTORS, ...(saved.selectors || {}) },
       };
@@ -396,15 +436,18 @@
 
     renderPresets();
     renderBattlefieldStyles();
+    renderBattlefieldTexture();
     renderColorGroups();
     renderSelectors();
 
     document.getElementById('btn-reset-colors')?.addEventListener('click', () => {
       current.colorblindMode = 'none';
       current.battlefieldStyle = 'solid';
+      current.battlefieldTexture = true;
       current.colors = { ...COLOR_PRESETS.none };
       syncPresetButtons();
       syncBattlefieldStyleButtons();
+      syncBattlefieldTextureButtons();
       syncColorControls();
       persist('Theme colors reset to Standard defaults.');
     });

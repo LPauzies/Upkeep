@@ -84,6 +84,8 @@ export function ConfigView({ config, onChange }: ConfigViewProps) {
     onChange({
       ...config,
       colorblindMode: 'none',
+      battlefieldStyle: 'solid',
+      battlefieldTexture: true,
       colors: { ...COLOR_PRESETS.none },
     });
     flashNotice('Couleurs réinitialisées (Standard).');
@@ -301,6 +303,16 @@ export function ConfigView({ config, onChange }: ConfigViewProps) {
                     </select>
                   </label>
 
+                  <label className="flex items-center justify-between gap-3 cursor-pointer text-[11.5px] text-[#E4E8F0]">
+                    <span>Subtle battlefield texture</span>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(config.battlefieldTexture)}
+                      onChange={(e) => updateField('battlefieldTexture', e.target.checked)}
+                      className="w-3.5 h-3.5 accent-[#C9A45C] cursor-pointer"
+                    />
+                  </label>
+
                   <div className="grid grid-cols-2 gap-1">
                     {ALL_COLOR_FIELDS.map((field) => (
                       <label
@@ -474,6 +486,48 @@ export function ConfigView({ config, onChange }: ConfigViewProps) {
                       role="radio"
                       aria-checked={active}
                       onClick={() => updateField('battlefieldStyle', styleId)}
+                      className={`px-3 py-1.5 rounded-none border text-[11px] font-bold tracking-[0.03em] transition-colors cursor-pointer whitespace-nowrap ${
+                        active
+                          ? 'bg-[#C9A45C]/15 border-[#C9A45C] text-[#F2D58B]'
+                          : 'bg-[#141A26] border-[rgba(242,238,230,0.14)] text-[#BCC5D4] hover:border-[#C9A45C]/50 hover:text-[#F2EEE6]'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Battlefield Surface Texture (Playmat micro-weave) */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-none bg-[#0E1116] border border-[rgba(242,238,230,0.1)]">
+              <div className="min-w-0">
+                <div className="text-xs font-semibold text-[#F2EEE6]">
+                  Texture discrète du Battlefield
+                </div>
+                <div className="text-[11px] text-[#8F9BB0]">
+                  Ajoute un grain textile discret (style tapis MTGO / Cockatrice) compatible Solid et Gradient.
+                </div>
+              </div>
+              <div
+                className="inline-grid grid-cols-2 gap-1.5 shrink-0"
+                role="radiogroup"
+                aria-label="Texture du Battlefield"
+              >
+                {(
+                  [
+                    [true, 'Texture discrète'],
+                    [false, 'Uni (sans grain)'],
+                  ] as const
+                ).map(([enabledVal, label]) => {
+                  const active = Boolean(config.battlefieldTexture) === enabledVal;
+                  return (
+                    <button
+                      key={String(enabledVal)}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => updateField('battlefieldTexture', enabledVal)}
                       className={`px-3 py-1.5 rounded-none border text-[11px] font-bold tracking-[0.03em] transition-colors cursor-pointer whitespace-nowrap ${
                         active
                           ? 'bg-[#C9A45C]/15 border-[#C9A45C] text-[#F2D58B]'

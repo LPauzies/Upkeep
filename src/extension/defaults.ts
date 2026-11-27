@@ -104,13 +104,13 @@ export const COLOR_GROUPS: {
         key: 'phaseStopMine',
         short: 'Your Stops',
         label: 'Vos stops (votre tour)',
-        hint: 'Repère haut/gauche lorsqu’un stop est posé sur votre tour',
+        hint: 'Barre inférieure (côté joueur) lorsqu’un stop est posé sur votre tour',
       },
       {
         key: 'phaseStopOpp',
         short: 'Opp Stops',
         label: 'Stops tour adverse',
-        hint: 'Repère bas/droit lorsqu’un stop est posé sur le tour adverse',
+        hint: 'Barre supérieure (côté adversaire) lorsqu’un stop est posé sur le tour adverse',
       },
     ],
   },
@@ -170,6 +170,7 @@ export const DEFAULT_UPKEEP_CONFIG: UpkeepConfig = {
   hoverZoomScale: 1.45,
   colorblindMode: 'none',
   battlefieldStyle: 'solid',
+  battlefieldTexture: true,
   colors: { ...COLOR_PRESETS.none },
   shortcuts: {
     toggleLogs: 'l',

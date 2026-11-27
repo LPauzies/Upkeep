@@ -59,8 +59,8 @@
     { key: 'bfSelfOppTurn', label: 'You (Opp Turn)', title: 'Your battlefield on opponent turn', group: 'bf' },
     { key: 'bfOppOppTurn', label: 'Opp (Opp Turn)', title: 'Opponent battlefield on opponent turn', group: 'bf' },
     { key: 'phaseCurrent', label: 'Active Step', title: 'Top & bottom pointer arrows on current step', group: 'accent' },
-    { key: 'phaseStopMine', label: 'Your Stops', title: 'Your turn phase stop marker', group: 'accent' },
-    { key: 'phaseStopOpp', label: 'Opp Stops', title: 'Opponent turn phase stop marker', group: 'accent' },
+    { key: 'phaseStopMine', label: 'Your Stops', title: 'Bottom bar on phase steps for your turn stops (your side)', group: 'accent' },
+    { key: 'phaseStopOpp', label: 'Opp Stops', title: 'Top bar on phase steps for opponent turn stops (opponent side)', group: 'accent' },
     { key: 'lifeNormal', label: 'Life (>5 PV)', title: 'Life total outside red zone (> 5 PV)', group: 'accent' },
     { key: 'targetBar', label: 'Target Bar', title: 'Target counter & prompt highlight', group: 'accent' },
     { key: 'undoButton', label: 'Undo Button', title: 'Undo button color in Decision box (default red)', group: 'accent' },
@@ -106,6 +106,7 @@
     graveyardWidth: 268,
     colorblindMode: 'none',
     battlefieldStyle: 'solid',
+    battlefieldTexture: true,
     colors: { ...COLOR_PRESETS.none },
   };
 
@@ -475,6 +476,7 @@
         ...saved,
         colorblindMode: mode,
         battlefieldStyle: saved.battlefieldStyle === 'gradient' ? 'gradient' : 'solid',
+        battlefieldTexture: saved.battlefieldTexture !== false,
         colors: mergedColors,
       };
     }
@@ -498,6 +500,7 @@
     bindCheck('toggle-stack', 'anchorStackTopLeft');
     bindCheck('toggle-hud', 'highContrastHud');
     bindCheck('toggle-zoom', 'enableHoverZoom');
+    bindCheck('toggle-bf-texture', 'battlefieldTexture');
 
     const colorblindSelect = document.getElementById('select-colorblind');
     if (colorblindSelect) {
@@ -523,9 +526,12 @@
     document.getElementById('btn-reset-colors')?.addEventListener('click', () => {
       current.colorblindMode = 'none';
       current.battlefieldStyle = 'solid';
+      current.battlefieldTexture = true;
       current.colors = { ...COLOR_PRESETS.none };
       if (colorblindSelect) colorblindSelect.value = 'none';
       if (bfStyleSelect) bfStyleSelect.value = 'solid';
+      const bfTextureInput = document.getElementById('toggle-bf-texture');
+      if (bfTextureInput) bfTextureInput.checked = true;
       syncColorGridUi();
       save();
     });

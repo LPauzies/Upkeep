@@ -64,6 +64,7 @@
     enableHoverZoom: true,
     colorblindMode: 'none',
     battlefieldStyle: 'solid',
+    battlefieldTexture: true,
     colors: { ...COLOR_PRESETS.none },
     logsWidth: 278,
     graveyardWidth: 268,
@@ -94,6 +95,30 @@
     'snow-covered mountain', 'snow-covered forest',
   ]);
 
+  const DELIRIUM_CARD_TYPES = [
+    'Artifact',
+    'Battle',
+    'Creature',
+    'Enchantment',
+    'Instant',
+    'Kindred',
+    'Land',
+    'Planeswalker',
+    'Sorcery',
+  ];
+
+  const DELIRIUM_SHORT = {
+    Artifact: 'ART',
+    Battle: 'BAT',
+    Creature: 'CRE',
+    Enchantment: 'ENC',
+    Instant: 'INS',
+    Kindred: 'KND',
+    Land: 'LND',
+    Planeswalker: 'PLW',
+    Sorcery: 'SOR',
+  };
+
   let config = structuredClone(DEFAULT_CONFIG);
   let activeGameKey = '';
   let gyDockMode = 'docked'; // 'docked' (inside aside.wr-rail-right) | 'floating'
@@ -105,10 +130,18 @@
   let prevOppLife = null;
   let prevSelfLife = null;
 
+  // Per-owner card art & MTG card type cache (populated from WS state/deltas + live DOM)
+  const cardMetaCache = {
+    opp: new Map(),
+    self: new Map(),
+    any: new Map(),
+  };
+  const cardTypeFetchCache = new Map(); // nameLower -> string[] (resolved from /api/cards)
+  const cardTypeFetchInFlight = new Set();
+
   // Dual 3-Layer Live Graveyard State ('opp' and 'self')
   function createGyBucket() {
     return {
-      filter: 'all',
       collapsed: false,
       wsCards: [],
       peekCards: [],
@@ -212,21 +245,175 @@
     return m ? parseInt(m[0], 10) : 0;
   }
 
-  function classifyCard(card) {
-    const tl = String(card.typeLine || '').toLowerCase();
-    const nm = String(card.name || '').toLowerCase();
-    if (tl.includes('creature')) return 'creature';
-    if (tl.includes('land') || KNOWN_LANDS.has(nm)) return 'land';
-    if (
-      tl.includes('instant') ||
-      tl.includes('sorcery') ||
-      tl.includes('artifact') ||
-      tl.includes('enchantment') ||
-      tl.includes('planeswalker')
-    ) {
-      return 'spell';
+  function hasCustomPrintingUrl(url) {
+    return typeof url === 'string' && /[?&]set=/.test(url) && /[?&]cn=/.test(url);
+  }
+
+  function parseTypesFromText(rawText, layout) {
+    const raw = String(rawText || '').trim();
+    if (!raw) return [];
+    // Under MTG rules (712.8a), in the graveyard only the front face of DFCs/MDFCs/Adventures exists,
+    // whereas both halves of a Split card exist.
+    const relevant = layout === 'split' ? raw : raw.split('//')[0];
+    const lower = relevant.toLowerCase();
+    const found = [];
+    for (const t of DELIRIUM_CARD_TYPES) {
+      const re =
+        t === 'Kindred'
+          ? /\b(?:kindred|tribal)\b/i
+          : new RegExp(`\\b${t.toLowerCase()}\\b`, 'i');
+      if (re.test(lower)) found.push(t);
     }
-    return 'other';
+    return found;
+  }
+
+  function normalizeTypesList(typesArr, typeLine, cardName) {
+    const set = new Set();
+    if (Array.isArray(typesArr)) {
+      for (const item of typesArr) {
+        for (const parsed of parseTypesFromText(item, 'split')) {
+          set.add(parsed);
+        }
+      }
+    }
+    if (typeLine) {
+      for (const parsed of parseTypesFromText(typeLine)) {
+        set.add(parsed);
+      }
+    }
+    if (set.size === 0 && KNOWN_LANDS.has(String(cardName || '').toLowerCase())) {
+      set.add('Land');
+    }
+    return DELIRIUM_CARD_TYPES.filter((t) => set.has(t));
+  }
+
+  function recordCardMeta(owner, name, imageUrl, typesArr, typeLine) {
+    const cleanName = String(name || '').trim();
+    if (!cleanName || cleanName === 'Hidden card') return;
+    const key = cleanName.toLowerCase();
+    const normTypes = normalizeTypesList(typesArr, typeLine, cleanName);
+
+    const targets = owner === 'opp' || owner === 'self' ? [cardMetaCache[owner], cardMetaCache.any] : [cardMetaCache.any];
+    for (const cache of targets) {
+      const prev = cache.get(key);
+      const nextImg =
+        hasCustomPrintingUrl(imageUrl)
+          ? imageUrl
+          : prev && hasCustomPrintingUrl(prev.imageUrl)
+          ? prev.imageUrl
+          : imageUrl || prev?.imageUrl || '';
+      const mergedTypeSet = new Set([...(prev?.types || []), ...normTypes]);
+      const nextTypes = DELIRIUM_CARD_TYPES.filter((t) => mergedTypeSet.has(t));
+      cache.set(key, {
+        imageUrl: nextImg,
+        types: nextTypes,
+        typeLine: typeLine || prev?.typeLine || '',
+      });
+    }
+  }
+
+  function lookupCardMeta(owner, name) {
+    const key = String(name || '').trim().toLowerCase();
+    if (!key) return null;
+    const ownerMeta = owner === 'opp' || owner === 'self' ? cardMetaCache[owner].get(key) : null;
+    const anyMeta = cardMetaCache.any.get(key);
+    const fetchedTypes = cardTypeFetchCache.get(key) || [];
+    const imageUrl = hasCustomPrintingUrl(ownerMeta?.imageUrl)
+      ? ownerMeta.imageUrl
+      : hasCustomPrintingUrl(anyMeta?.imageUrl)
+      ? anyMeta.imageUrl
+      : ownerMeta?.imageUrl || anyMeta?.imageUrl || '';
+    const mergedTypes = DELIRIUM_CARD_TYPES.filter(
+      (t) =>
+        (ownerMeta?.types && ownerMeta.types.includes(t)) ||
+        (anyMeta?.types && anyMeta.types.includes(t)) ||
+        fetchedTypes.includes(t)
+    );
+    return {
+      imageUrl,
+      types: mergedTypes,
+      typeLine: ownerMeta?.typeLine || anyMeta?.typeLine || '',
+    };
+  }
+
+  function enrichCard(owner, card) {
+    const meta = lookupCardMeta(owner, card.name);
+    const baseTypes = normalizeTypesList(card.types, card.typeLine, card.name);
+    const mergedSet = new Set([...baseTypes, ...(meta?.types || [])]);
+    const types = DELIRIUM_CARD_TYPES.filter((t) => mergedSet.has(t));
+    const imageUrl = hasCustomPrintingUrl(card.imageUrl)
+      ? card.imageUrl
+      : meta?.imageUrl || card.imageUrl || toCardImageUrl(card.name);
+    return {
+      ...card,
+      types,
+      typeLine: card.typeLine || meta?.typeLine || types.join(' '),
+      imageUrl,
+    };
+  }
+
+  function harvestDomCardArt() {
+    const imgs = document.querySelectorAll('img[data-testid="card-img"], img[src*="/api/cards/image"]');
+    imgs.forEach((img) => {
+      if (img.closest('#upkeep-graveyards-dock, #upkeep-card-zoom')) return;
+      const src = img.getAttribute('src') || '';
+      if (!src || !src.includes('/api/cards/image')) return;
+      let name = (img.getAttribute('alt') || '').trim();
+      if (!name) {
+        try {
+          const u = new URL(src, window.location.origin);
+          name = (u.searchParams.get('name') || '').trim();
+        } catch (_) {}
+      }
+      if (!name || name.startsWith('{') || name === 'Hidden card') return;
+      const inOpp = Boolean(img.closest('[data-half="opp"]'));
+      const inSelf = Boolean(img.closest('[data-half="self"], [data-half="me"], [data-zone="hand"], .wr-hand-card'));
+      const owner = inOpp ? 'opp' : inSelf ? 'self' : 'any';
+      recordCardMeta(owner, name, src, [], '');
+    });
+  }
+
+  function requestMissingCardTypes(cards) {
+    for (const card of cards) {
+      if (Array.isArray(card.types) && card.types.length > 0) continue;
+      const key = String(card.name || '').trim().toLowerCase();
+      if (!key || cardTypeFetchCache.has(key) || cardTypeFetchInFlight.has(key)) continue;
+      cardTypeFetchInFlight.add(key);
+      fetch(`/api/cards?name=${encodeURIComponent(card.name)}`, { credentials: 'same-origin' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          const parsed = data ? parseTypesFromText(data.typeLine || data.type_line || '', data.layout) : [];
+          cardTypeFetchCache.set(key, parsed);
+          if (parsed.length > 0) {
+            recordCardMeta('any', card.name, '', parsed, data.typeLine || '');
+            scheduleSync();
+          }
+        })
+        .catch(() => {
+          cardTypeFetchCache.set(key, []);
+        })
+        .finally(() => {
+          cardTypeFetchInFlight.delete(key);
+        });
+    }
+  }
+
+  function computeDeliriumSummary(cards) {
+    const present = new Set();
+    for (const card of cards) {
+      const types = Array.isArray(card.types) && card.types.length > 0
+        ? card.types
+        : normalizeTypesList([], card.typeLine, card.name);
+      for (const t of types) {
+        if (DELIRIUM_SHORT[t]) present.add(t);
+      }
+    }
+    const list = DELIRIUM_CARD_TYPES.filter((t) => present.has(t));
+    return {
+      count: list.length,
+      types: list,
+      active: list.length >= 4,
+    };
   }
 
   function setStatusNotice(owner, msg, durationMs = 2600) {
@@ -279,6 +466,7 @@
       ...saved,
       colorblindMode: cbMode,
       battlefieldStyle: saved.battlefieldStyle === 'gradient' ? 'gradient' : 'solid',
+      battlefieldTexture: saved.battlefieldTexture !== false,
       colors: mergedColors,
       shortcuts: { ...DEFAULT_CONFIG.shortcuts, ...(saved.shortcuts || {}) },
       selectors: { ...DEFAULT_CONFIG.selectors, ...(saved.selectors || {}) },
@@ -325,27 +513,59 @@
       oppPlayer = data.players[0];
     }
 
-    let updated = false;
-    if (oppPlayer && Array.isArray(oppPlayer.graveyard)) {
-      gyState.opp.wsCards = oppPlayer.graveyard.map((c) => ({
-        name: c.name,
-        typeLine: c.typeLine || '',
-        manaCost: c.manaCost || '',
-        imageUrl: c.imageUrl || toCardImageUrl(c.name),
-        source: 'ws',
-      }));
-      updated = true;
+    if (Array.isArray(data.stackCatalog)) {
+      data.stackCatalog.forEach((c) => {
+        if (c && c.name) recordCardMeta('any', c.name, c.imageUrl || '', c.types || [], c.typeLine || '');
+      });
     }
 
-    if (selfPlayer && Array.isArray(selfPlayer.graveyard)) {
-      gyState.self.wsCards = selfPlayer.graveyard.map((c) => ({
-        name: c.name,
-        typeLine: c.typeLine || '',
-        manaCost: c.manaCost || '',
-        imageUrl: c.imageUrl || toCardImageUrl(c.name),
-        source: 'ws',
-      }));
-      updated = true;
+    let updated = false;
+    if (oppPlayer) {
+      if (Array.isArray(oppPlayer.catalog)) {
+        oppPlayer.catalog.forEach((c) => {
+          if (c && c.name) recordCardMeta('opp', c.name, c.imageUrl || '', c.types || [], c.typeLine || '');
+        });
+      }
+      if (Array.isArray(oppPlayer.graveyard)) {
+        gyState.opp.wsCards = oppPlayer.graveyard.map((c) => {
+          const types = normalizeTypesList(c.types, c.typeLine, c.name);
+          const imageUrl = c.imageUrl || toCardImageUrl(c.name);
+          recordCardMeta('opp', c.name, imageUrl, types, c.typeLine || '');
+          return {
+            name: c.name,
+            types,
+            typeLine: c.typeLine || types.join(' '),
+            manaCost: c.manaCost || '',
+            imageUrl,
+            source: 'ws',
+          };
+        });
+        updated = true;
+      }
+    }
+
+    if (selfPlayer) {
+      if (Array.isArray(selfPlayer.catalog)) {
+        selfPlayer.catalog.forEach((c) => {
+          if (c && c.name) recordCardMeta('self', c.name, c.imageUrl || '', c.types || [], c.typeLine || '');
+        });
+      }
+      if (Array.isArray(selfPlayer.graveyard)) {
+        gyState.self.wsCards = selfPlayer.graveyard.map((c) => {
+          const types = normalizeTypesList(c.types, c.typeLine, c.name);
+          const imageUrl = c.imageUrl || toCardImageUrl(c.name);
+          recordCardMeta('self', c.name, imageUrl, types, c.typeLine || '');
+          return {
+            name: c.name,
+            types,
+            typeLine: c.typeLine || types.join(' '),
+            manaCost: c.manaCost || '',
+            imageUrl,
+            source: 'ws',
+          };
+        });
+        updated = true;
+      }
     }
 
     if (updated) scheduleSync();
@@ -437,6 +657,7 @@
       if (!owner) continue;
       const found = extractCardsFromDialog(dlg);
       if (found.length > 0) {
+        found.forEach((c) => recordCardMeta(owner, c.name, c.imageUrl, c.types || [], c.typeLine || ''));
         gyState[owner].peekCards = found;
         gyState[owner].peekCountAtCapture = getAuthoritativeGyCount(owner);
       }
@@ -532,6 +753,7 @@
       }
 
       if (captured.length > 0) {
+        captured.forEach((c) => recordCardMeta(owner, c.name, c.imageUrl, c.types || [], c.typeLine || ''));
         bucket.peekCards = captured;
         bucket.peekCountAtCapture = count;
       }
@@ -571,7 +793,10 @@
     const castCandidates = [];
     let activeTurnOwner = 'unknown';
 
-    const halfSelector = owner === 'opp' ? '[data-half="opp"] [data-testid="card-img"]' : '[data-half="me"] [data-testid="card-img"]';
+    const halfSelector =
+      owner === 'opp'
+        ? '[data-half="opp"] [data-testid="card-img"]'
+        : '[data-half="self"] [data-testid="card-img"], [data-half="me"] [data-testid="card-img"]';
     const boardCardNames = new Set(
       Array.from(document.querySelectorAll(halfSelector))
         .map((img) => (img.getAttribute('alt') || '').trim().toLowerCase())
@@ -815,50 +1040,39 @@
     titleRow.appendChild(collapseBtn);
     titleRow.appendChild(actions);
 
+    const metaRow = document.createElement('div');
+    metaRow.className = 'upkeep-gy-meta-row';
+
     const metaEl = document.createElement('div');
     metaEl.className = 'upkeep-gy-meta';
     metaEl.id = `upkeep-gy-meta-${owner}`;
     metaEl.textContent = 'No cards in graveyard';
 
+    const deliriumBadge = document.createElement('div');
+    deliriumBadge.className = 'upkeep-gy-delirium';
+    deliriumBadge.id = `upkeep-gy-delirium-${owner}`;
+    deliriumBadge.dataset.active = 'false';
+    deliriumBadge.hidden = true;
+
+    metaRow.appendChild(metaEl);
+    metaRow.appendChild(deliriumBadge);
+
     header.appendChild(titleRow);
-    header.appendChild(metaEl);
+    header.appendChild(metaRow);
 
     const body = document.createElement('div');
     body.className = 'upkeep-gy-body';
 
-    const filtersEl = document.createElement('div');
-    filtersEl.className = 'upkeep-gy-filters';
-    filtersEl.setAttribute('role', 'group');
-    filtersEl.setAttribute('aria-label', `Filter ${titleText}`);
-
-    const filterDefs = [
-      ['all', 'All'],
-      ['creature', 'Creatures'],
-      ['spell', 'Spells'],
-      ['land', 'Lands'],
-    ];
-    for (const [key, label] of filterDefs) {
-      const fBtn = document.createElement('button');
-      fBtn.type = 'button';
-      fBtn.className = 'upkeep-gy-filter-btn';
-      fBtn.dataset.filter = key;
-      fBtn.setAttribute('aria-pressed', key === 'all' ? 'true' : 'false');
-      fBtn.textContent = label;
-      fBtn.addEventListener('click', () => {
-        gyState[owner].filter = key;
-        filtersEl.querySelectorAll('.upkeep-gy-filter-btn').forEach((b) => {
-          b.setAttribute('aria-pressed', String(b === fBtn));
-        });
-        renderGraveyardsDock();
-      });
-      filtersEl.appendChild(fBtn);
-    }
+    const typesStrip = document.createElement('div');
+    typesStrip.className = 'upkeep-gy-types-strip';
+    typesStrip.id = `upkeep-gy-types-${owner}`;
+    typesStrip.hidden = true;
 
     const listEl = document.createElement('div');
     listEl.className = 'upkeep-gy-list';
     listEl.id = `upkeep-gy-list-${owner}`;
 
-    body.appendChild(filtersEl);
+    body.appendChild(typesStrip);
     body.appendChild(listEl);
 
     section.appendChild(header);
@@ -906,14 +1120,22 @@
     }
   }
 
-  function groupCardsByName(cards) {
+  function groupCardsByName(owner, cards) {
     const map = new Map();
-    for (const card of cards) {
+    for (const rawCard of cards) {
+      const card = enrichCard(owner, rawCard);
       const key = card.name.toLowerCase();
       if (!map.has(key)) {
-        map.set(key, { ...card, qty: 1, category: classifyCard(card) });
+        map.set(key, { ...card, qty: 1 });
       } else {
-        map.get(key).qty += 1;
+        const existing = map.get(key);
+        existing.qty += 1;
+        if (!hasCustomPrintingUrl(existing.imageUrl) && hasCustomPrintingUrl(card.imageUrl)) {
+          existing.imageUrl = card.imageUrl;
+        }
+        if (card.types.length > existing.types.length) {
+          existing.types = card.types;
+        }
       }
     }
     return Array.from(map.values());
@@ -925,18 +1147,29 @@
     const titleEl = section?.querySelector('.upkeep-gy-title');
     const countEl = dock.querySelector(`#upkeep-gy-count-${owner}`);
     const metaEl = dock.querySelector(`#upkeep-gy-meta-${owner}`);
+    const deliriumEl = dock.querySelector(`#upkeep-gy-delirium-${owner}`);
+    const typesStripEl = dock.querySelector(`#upkeep-gy-types-${owner}`);
     const listEl = dock.querySelector(`#upkeep-gy-list-${owner}`);
     const chevronEl = dock.querySelector(`#upkeep-gy-chevron-${owner}`);
     if (!section || !countEl || !metaEl || !listEl) return false;
 
     if (titleEl) {
+      const compactRight = document.documentElement.dataset.upkeepCompactRight === 'true';
       if (isSpectateRoute()) {
         const playerName = owner === 'opp' ? getOpponentName() : getSelfName();
         titleEl.textContent = playerName
-          ? `${playerName} Graveyard`
+          ? compactRight
+            ? `${playerName} GY`
+            : `${playerName} Graveyard`
           : owner === 'opp'
-          ? 'Top Player Graveyard'
+          ? compactRight
+            ? 'Top GY'
+            : 'Top Player Graveyard'
+          : compactRight
+          ? 'Bottom GY'
           : 'Bottom Player Graveyard';
+      } else if (compactRight) {
+        titleEl.textContent = owner === 'opp' ? 'Opp. GY' : 'Your GY';
       } else {
         titleEl.textContent = owner === 'opp' ? 'Opponent Graveyard' : 'Your Graveyard';
       }
@@ -946,6 +1179,11 @@
     if (chevronEl) chevronEl.textContent = bucket.collapsed ? '▸' : '▾';
 
     const { count, cards, source } = getEffectiveGraveyard(owner);
+    const enrichedCards = cards.map((c) => enrichCard(owner, c));
+    if (enrichedCards.length > 0) {
+      requestMissingCardTypes(enrichedCards);
+    }
+
     countEl.textContent = String(count);
 
     const gyBtn = getGraveyardButton(owner);
@@ -953,19 +1191,58 @@
       gyBtn.dataset.upkeepHasCards = count > 0 ? 'true' : 'false';
     }
 
+    const delirium = computeDeliriumSummary(enrichedCards);
+    if (deliriumEl) {
+      const compactRight = document.documentElement.dataset.upkeepCompactRight === 'true';
+      if (count > 0 && delirium.count > 0) {
+        deliriumEl.hidden = false;
+        deliriumEl.dataset.active = delirium.active ? 'true' : 'false';
+        deliriumEl.textContent = delirium.active
+          ? compactRight
+            ? `DEL ${delirium.count}`
+            : `DELIRIUM · ${delirium.count}`
+          : compactRight
+          ? `T ${delirium.count}/4`
+          : `TYPES ${delirium.count}/4`;
+        deliriumEl.title = delirium.active
+          ? `Delirium active (${delirium.count} card types): ${delirium.types.join(', ')}`
+          : `${delirium.count} of 4 card types for Delirium: ${delirium.types.join(', ')}`;
+      } else {
+        deliriumEl.hidden = true;
+        deliriumEl.dataset.active = 'false';
+      }
+    }
+
+    if (typesStripEl) {
+      if (count > 0 && delirium.types.length > 0) {
+        typesStripEl.hidden = false;
+        typesStripEl.dataset.active = delirium.active ? 'true' : 'false';
+        typesStripEl.replaceChildren();
+        for (const t of delirium.types) {
+          const tag = document.createElement('span');
+          tag.className = 'upkeep-gy-type-tag';
+          tag.textContent = DELIRIUM_SHORT[t] || t.slice(0, 3).toUpperCase();
+          tag.title = t;
+          typesStripEl.appendChild(tag);
+        }
+      } else {
+        typesStripEl.hidden = true;
+        typesStripEl.replaceChildren();
+      }
+    }
+
     if (bucket.statusNotice) {
       metaEl.textContent = bucket.statusNotice;
     } else if (count === 0) {
       metaEl.textContent = 'No cards in graveyard';
-    } else if (cards.length > 0) {
+    } else if (enrichedCards.length > 0) {
       const srcLabel = source === 'ws' ? 'Live' : source === 'dialog' ? 'Live sync' : 'From log';
-      metaEl.textContent = `${cards.length}/${count} card${count > 1 ? 's' : ''} · ${srcLabel}`;
+      metaEl.textContent = `${enrichedCards.length}/${count} card${count > 1 ? 's' : ''} · ${srcLabel}`;
     } else {
       metaEl.textContent = `${count} card${count > 1 ? 's' : ''} detected`;
     }
 
-    const grouped = groupCardsByName(cards);
-    const filtered = bucket.filter === 'all' ? grouped : grouped.filter((c) => c.category === bucket.filter);
+    const grouped = groupCardsByName(owner, enrichedCards);
 
     listEl.replaceChildren();
 
@@ -980,24 +1257,20 @@
       return false;
     }
 
-    if (filtered.length === 0) {
+    if (grouped.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'upkeep-gy-empty';
-      if (grouped.length === 0) {
-        empty.textContent = `${count} card${count > 1 ? 's' : ''} in graveyard.`;
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'upkeep-gy-sync-btn';
-        btn.textContent = 'Sync cards now';
-        btn.addEventListener('click', () => peekGraveyard(owner, { force: true }));
-        empty.appendChild(document.createElement('br'));
-        empty.appendChild(btn);
-      } else {
-        empty.textContent = 'No cards match this filter.';
-      }
+      empty.textContent = `${count} card${count > 1 ? 's' : ''} in graveyard.`;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'upkeep-gy-sync-btn';
+      btn.textContent = 'Sync cards now';
+      btn.addEventListener('click', () => peekGraveyard(owner, { force: true }));
+      empty.appendChild(document.createElement('br'));
+      empty.appendChild(btn);
       listEl.appendChild(empty);
     } else {
-      for (const card of filtered) {
+      for (const card of grouped) {
         const row = document.createElement('button');
         row.type = 'button';
         row.className = 'upkeep-gy-row';
@@ -1103,6 +1376,7 @@
     if (closeBtn) {
       closeBtn.addEventListener('click', () => {
         userClosedLog = true;
+        window.setTimeout(scheduleSync, 40);
       });
     }
 
@@ -1262,6 +1536,7 @@
     if (/end\s*of\s*turn/.test(lower) || keyText === 'E') {
       return {
         short: 'EOT',
+        tiny: 'EOT',
         title: 'End of Turn',
         desc: 'Auto-pass priority until the end of this turn.',
       };
@@ -1269,6 +1544,7 @@
     if (/before\s*my\s*turn/.test(lower) || keyText === 'B') {
       return {
         short: 'MY TURN',
+        tiny: 'TURN',
         title: 'Before My Turn',
         desc: 'Auto-pass priority until your next turn begins.',
       };
@@ -1276,6 +1552,7 @@
     if (/action|end\s*step/.test(lower) || keyText === 'R') {
       return {
         short: 'ACTION',
+        tiny: 'ACT',
         title: 'Action / End Step',
         desc: 'Auto-pass until an opponent acts or end step.',
       };
@@ -1321,8 +1598,10 @@
       if (keyEl) keyEl.dataset.upkeepApKey = 'true';
       triggerButtons.push(btn);
 
-      if (btn.dataset.upkeepApShort !== meta.short) {
-        btn.dataset.upkeepApShort = meta.short;
+      const compactLeft = document.documentElement.dataset.upkeepCompactLeft === 'true';
+      const chosenShort = compactLeft ? meta.tiny || meta.short : meta.short;
+      if (btn.dataset.upkeepApShort !== chosenShort) {
+        btn.dataset.upkeepApShort = chosenShort;
       }
       btn.dataset.upkeepApTitle = meta.title;
       btn.dataset.upkeepApKeyText = keyText;
@@ -1465,7 +1744,6 @@
 
     const logPanel = querySafe(config.selectors.logsPanel);
     if (!logPanel) {
-      root.dataset.upkeepLogsDocked = 'false';
       if (config.autoOpenLogsLeft && !userClosedLog && logAutoOpenAttempts < 8) {
         const openBtn = findNativeLogOpenButton();
         if (openBtn) {
@@ -1473,20 +1751,16 @@
           openBtn.click();
         }
       }
-      return;
+    } else {
+      enhanceLogPanelControls(logPanel);
     }
 
-    enhanceLogPanelControls(logPanel);
-
-    if (!config.autoOpenLogsLeft || userUndockedLog) {
-      root.dataset.upkeepLogsDocked = 'false';
-      return;
-    }
+    const wantsLogDocked = Boolean(logPanel && config.autoOpenLogsLeft && !userUndockedLog);
 
     // If leftRail/topPlate momentarily unmount during a React re-render, keep last valid docked geometry
     // so the Game Log NEVER teleports back and forth between left and right!
     if (!leftRail || !oppPlate) {
-      if (lastValidLogGeom) {
+      if (wantsLogDocked && lastValidLogGeom) {
         root.dataset.upkeepLogsDocked = 'true';
       } else {
         root.dataset.upkeepLogsDocked = 'false';
@@ -1502,15 +1776,9 @@
 
     // Ignore transient zero-rect frames during layout recalculations
     if (railRect.width === 0 || oppRect.height === 0) {
-      if (lastValidLogGeom) {
+      if (wantsLogDocked && lastValidLogGeom) {
         root.dataset.upkeepLogsDocked = 'true';
       }
-      return;
-    }
-
-    // Only undock if left rail is genuinely collapsed to mobile/narrow width
-    if (railRect.width < 120) {
-      root.dataset.upkeepLogsDocked = 'false';
       return;
     }
 
@@ -1526,17 +1794,44 @@
       : Math.round(selfRect && selfRect.height > 0 ? selfRect.top - 6 : railRect.bottom - 8);
 
     const autoPassReserved = hasPendingControls && autoPassEl ? cachedAutoPassHeight : 0;
-    const stackOverhead = hasPendingControls ? (autoPassEl ? 20 : 14) : 6;
-    const usableForLogAndDecision = Math.max(120, pendingBottomY - topY - autoPassReserved - stackOverhead);
+    const stackOverhead = hasPendingControls ? (autoPassEl ? 18 : 12) : 6;
+    const usableForLogAndDecision = Math.max(140, pendingBottomY - topY - autoPassReserved - stackOverhead);
+
+    // Only undock if left rail is genuinely collapsed to mobile/narrow width
+    const isLogDocked = wantsLogDocked && railRect.width >= 120;
+
+    if (!isLogDocked) {
+      root.dataset.upkeepLogsDocked = 'false';
+      // Game Log is closed or undocked: automatically expand Decision into the reclaimed vertical space
+      if (hasPendingControls) {
+        const expandedDecisionHeight = Math.max(240, usableForLogAndDecision);
+        root.style.setProperty('--upkeep-ds-height', `${expandedDecisionHeight}px`);
+      }
+      return;
+    }
 
     let fixedDecisionHeight = 0;
     if (hasPendingControls) {
-      // Guarantee at least 96px for the docked Game Log even on compact viewports (zero left/right flipping!)
-      const maxDecisionForLog = Math.max(136, usableForLogAndDecision - 96);
-      fixedDecisionHeight = Math.min(
-        maxDecisionForLog,
-        Math.max(180, Math.min(268, Math.round(usableForLogAndDecision * 0.42)))
+      // Generous comfortable Decision height when Game Log is docked, auto-growing for taller prompts
+      // (e.g. Declare Attackers with 2-line button, Commander Zone choices) while keeping Game Log >= 110px
+      const minLogHeight = usableForLogAndDecision >= 340 ? 110 : 96;
+      const maxDecisionForLog = Math.max(160, usableForLogAndDecision - minLogHeight);
+      let targetDecisionHeight = Math.max(228, Math.min(340, Math.round(usableForLogAndDecision * 0.48)));
+
+      const activeSurface = leftRail.querySelector(
+        '[data-zone="decision-surface"]:not([role="status"]):not([role="dialog"])'
       );
+      if (activeSurface) {
+        const bodyEl = activeSurface.querySelector('.wr-ds-body');
+        if (bodyEl && bodyEl.scrollHeight > 0) {
+          const naturalNeeded = 28 + Math.ceil(bodyEl.scrollHeight) + 6;
+          if (naturalNeeded > targetDecisionHeight) {
+            targetDecisionHeight = Math.min(maxDecisionForLog, naturalNeeded);
+          }
+        }
+      }
+
+      fixedDecisionHeight = Math.min(maxDecisionForLog, targetDecisionHeight);
       root.style.setProperty('--upkeep-ds-height', `${fixedDecisionHeight}px`);
     }
 
@@ -1878,6 +2173,7 @@
     root.dataset.upkeepHud = active && config.highContrastHud ? 'true' : 'false';
     root.dataset.upkeepStackAnchor = active && config.anchorStackTopLeft ? 'true' : 'false';
     root.dataset.upkeepBfStyle = config.battlefieldStyle === 'gradient' ? 'gradient' : 'solid';
+    root.dataset.upkeepBfTexture = config.battlefieldTexture !== false ? 'true' : 'false';
     root.style.setProperty('--upkeep-gy-width', `${config.graveyardWidth || 268}px`);
 
     if (active) {
@@ -1901,6 +2197,10 @@
     delete root.dataset.upkeepTurn;
     delete root.dataset.upkeepColorblind;
     delete root.dataset.upkeepBfStyle;
+    delete root.dataset.upkeepBfTexture;
+    delete root.dataset.upkeepCompactLeft;
+    delete root.dataset.upkeepCompactRight;
+    delete root.dataset.upkeepCompactH;
     [
       '--upkeep-ds-height',
       '--upkeep-log-left',
@@ -1985,7 +2285,25 @@
     prevSelfLife = null;
     gyState.opp = createGyBucket();
     gyState.self = createGyBucket();
+    cardMetaCache.opp.clear();
+    cardMetaCache.self.clear();
+    cardMetaCache.any.clear();
     attachResizeObserver();
+  }
+
+  function syncCompactDensity() {
+    const root = document.documentElement;
+    const leftRail = document.querySelector('aside.wr-rail-left');
+    const rightRail = document.querySelector('aside.wr-rail-right');
+    const leftW = leftRail ? leftRail.getBoundingClientRect().width : 0;
+    const rightW = rightRail ? rightRail.getBoundingClientRect().width : 0;
+    const compactLeft = (leftW > 0 && leftW < 228) || window.innerWidth <= 1480;
+    const compactRight = (rightW > 0 && rightW < 210) || window.innerWidth <= 1480;
+    const compactH = window.innerHeight <= 940;
+
+    root.dataset.upkeepCompactLeft = compactLeft ? 'true' : 'false';
+    root.dataset.upkeepCompactRight = compactRight ? 'true' : 'false';
+    root.dataset.upkeepCompactH = compactH ? 'true' : 'false';
   }
 
   function runSync() {
@@ -1994,10 +2312,12 @@
     applyRootAttributes();
     if (!config.enabled || !isGameRoute()) return;
 
+    syncCompactDensity();
     syncActiveTurn();
     updatePlateLifeFeedback('opp-life', true);
     updatePlateLifeFeedback('me-life', false);
     syncTargetablePlayers();
+    harvestDomCardArt();
     passiveScanOpenDialogs();
     enhanceAutoPassBar();
     enhanceWaitingCard();

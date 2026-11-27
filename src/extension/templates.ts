@@ -64,6 +64,7 @@ export function generateContentJs(config: UpkeepConfig): string {
       graveyardWidth: config.graveyardWidth,
       colorblindMode: config.colorblindMode,
       battlefieldStyle: config.battlefieldStyle,
+      battlefieldTexture: config.battlefieldTexture,
       colors: config.colors,
       shortcuts: config.shortcuts,
       selectors: config.selectors,

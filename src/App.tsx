@@ -30,6 +30,8 @@ function loadInitialConfig(): UpkeepConfig {
       ...DEFAULT_UPKEEP_CONFIG,
       ...parsed,
       colorblindMode: mode,
+      battlefieldStyle: parsed.battlefieldStyle === 'gradient' ? 'gradient' : 'solid',
+      battlefieldTexture: parsed.battlefieldTexture !== false,
       colors: mergedColors,
       shortcuts: { ...DEFAULT_UPKEEP_CONFIG.shortcuts, ...(parsed.shortcuts || {}) },
       selectors: { ...DEFAULT_UPKEEP_CONFIG.selectors, ...(parsed.selectors || {}) },

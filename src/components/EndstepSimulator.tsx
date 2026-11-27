@@ -21,7 +21,7 @@ import {
   OPPONENT_SPELL_POOL,
 } from '../data/mockMatch';
 import { downloadExtensionPackage, type PackageTarget } from '../extension/packager';
-import type { CardCategory, MtgCard, UpkeepConfig } from '../extension/types';
+import type { MtgCard, UpkeepConfig } from '../extension/types';
 import { CardZoomPreview } from './CardZoomPreview';
 import { ManaCost } from './ManaCost';
 
@@ -29,10 +29,51 @@ interface EndstepSimulatorProps {
   config: UpkeepConfig;
 }
 
-type GraveyardFilter = 'all' | CardCategory;
 type DecisionMode = 'waiting' | 'priority' | 'target' | 'attackers';
 type ActiveTurn = 'mine' | 'opp';
 type AutoPassKey = 'E' | 'B' | 'R';
+
+const DELIRIUM_CARD_TYPES = [
+  'Artifact',
+  'Battle',
+  'Creature',
+  'Enchantment',
+  'Instant',
+  'Kindred',
+  'Land',
+  'Planeswalker',
+  'Sorcery',
+] as const;
+
+const DELIRIUM_SHORT: Record<string, string> = {
+  Artifact: 'ART',
+  Battle: 'BAT',
+  Creature: 'CRE',
+  Enchantment: 'ENC',
+  Instant: 'INS',
+  Kindred: 'KND',
+  Land: 'LND',
+  Planeswalker: 'PW',
+  Sorcery: 'SOR',
+};
+
+function computeDelirium(cards: MtgCard[]) {
+  const found = new Set<string>();
+  for (const card of cards) {
+    const frontFace = (card.typeLine || '').split('//')[0];
+    const main = frontFace.split(/[—–-]/)[0].toLowerCase();
+    for (const typeName of DELIRIUM_CARD_TYPES) {
+      if (new RegExp(`\\b${typeName.toLowerCase()}\\b`).test(main)) {
+        found.add(typeName);
+      }
+    }
+  }
+  const types = Array.from(found).sort();
+  return { count: types.length, active: types.length >= 4, types };
+}
+
+const BF_TEXTURE_LAYERS =
+  'repeating-linear-gradient(45deg, rgba(255,255,255,0.017) 0 1px, transparent 1px 6px), repeating-linear-gradient(-45deg, rgba(0,0,0,0.06) 0 1px, transparent 1px 6px)';
 
 const NATIVE_HAND_CARDS: MtgCard[] = [
   {
@@ -379,10 +420,9 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
 
   const [oppGy, setOppGy] = useState<MtgCard[]>(INITIAL_OPP_GRAVEYARD);
   const [selfGy, setSelfGy] = useState<MtgCard[]>(INITIAL_SELF_GRAVEYARD);
-  const [oppGyFilter, setOppGyFilter] = useState<GraveyardFilter>('all');
-  const [selfGyFilter, setSelfGyFilter] = useState<GraveyardFilter>('all');
   const [oppGyCollapsed, setOppGyCollapsed] = useState<boolean>(false);
   const [selfGyCollapsed, setSelfGyCollapsed] = useState<boolean>(false);
+  const [logDockedOpen, setLogDockedOpen] = useState<boolean>(true);
 
   const [logs, setLogs] = useState(INITIAL_LOGS);
   const [hoveredCard, setHoveredCard] = useState<MtgCard | null>(null);
@@ -393,6 +433,10 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
   useEffect(() => {
     setExtensionActive(config.enabled);
   }, [config.enabled]);
+
+  useEffect(() => {
+    setLogDockedOpen(config.autoOpenLogsLeft);
+  }, [config.autoOpenLogsLeft]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -413,19 +457,10 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
     return () => window.removeEventListener('keydown', onKey);
   }, [config.shortcuts.toggleTheme]);
 
-  const oppGrouped = useMemo(() => {
-    const grouped = groupCards(oppGy);
-    return oppGyFilter === 'all'
-      ? grouped
-      : grouped.filter((item) => item.card.category === oppGyFilter);
-  }, [oppGy, oppGyFilter]);
-
-  const selfGrouped = useMemo(() => {
-    const grouped = groupCards(selfGy);
-    return selfGyFilter === 'all'
-      ? grouped
-      : grouped.filter((item) => item.card.category === selfGyFilter);
-  }, [selfGy, selfGyFilter]);
+  const oppGrouped = useMemo(() => groupCards(oppGy), [oppGy]);
+  const selfGrouped = useMemo(() => groupCards(selfGy), [selfGy]);
+  const oppDelirium = useMemo(() => computeDelirium(oppGy), [oppGy]);
+  const selfDelirium = useMemo(() => computeDelirium(selfGy), [selfGy]);
 
   function triggerOpponentSpell() {
     const tpl = OPPONENT_SPELL_POOL[oppSpellIdx % OPPONENT_SPELL_POOL.length];
@@ -859,16 +894,27 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
               )}
             </div>
 
-            {/* 2. DOCKED GAME LOG (STRICTLY FIXED HEIGHT IN UPKEEP, COLLAPSED TAB IN NATIVE) */}
-            {extensionActive && config.autoOpenLogsLeft ? (
+            {/* 2. DOCKED GAME LOG (CLOSING LOG AUTO-EXPANDS DECISION IN UPKEEP) */}
+            {extensionActive && logDockedOpen ? (
               <div className="flex-1 min-h-0 rounded-none bg-[#151A24] border border-[#C9A45C]/35 flex flex-col overflow-hidden">
-                <div className="px-2.5 py-1.5 bg-[#1B2230] border-b border-[rgba(242,238,230,0.08)] flex items-center justify-between shrink-0">
-                  <span className="text-xs font-bold text-[#F4F6FA]">Game Log</span>
-                  <span className="font-mono-tabular text-[10px] text-[#8E98AC]">
-                    Taille fixe · {logs.length}
-                  </span>
+                <div className="px-2.5 py-1.5 bg-[#1B2230] border-b border-[rgba(242,238,230,0.08)] flex items-center justify-between gap-2 shrink-0">
+                  <span className="text-xs font-bold text-[#F4F6FA] whitespace-nowrap">Game Log</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="font-mono-tabular text-[10px] text-[#8E98AC]">
+                      {logs.length}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setLogDockedOpen(false)}
+                      title="Close Game Log (auto-expands Decision)"
+                      aria-label="Close Game Log"
+                      className="p-0.5 text-[#8E98AC] hover:text-[#C9A45C] cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-                <div className="px-2.5 py-1 bg-[#C9A45C]/10 border-b border-[rgba(242,238,230,0.06)] flex items-center justify-between text-[10px] font-semibold text-[#C9A45C] shrink-0">
+                <div className="px-2.5 py-1 bg-[#252424] border-b border-[rgba(242,238,230,0.06)] flex items-center justify-between text-[10px] font-semibold text-[#C9A45C] shrink-0">
                   <span>T4 · YOUR TURN</span>
                   <span className="text-[#8E98AC]">MAIN 1</span>
                 </div>
@@ -881,7 +927,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                   ))}
                 </div>
               </div>
-            ) : (
+            ) : !extensionActive ? (
               <div className="flex-1 relative flex items-center">
                 <button
                   type="button"
@@ -910,12 +956,14 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                   </div>
                 )}
               </div>
-            )}
+            ) : null}
 
-            {/* 3. FIXED-HEIGHT DECISION / WAITING SLOT (184px fixed in Upkeep vs jumping in Original) */}
+            {/* 3. ROOMY DECISION / WAITING SLOT (AUTO-EXPANDS WHEN GAME LOG IS CLOSED) */}
             {extensionActive ? (
               <div
-                className={`h-[184px] shrink-0 rounded-none flex flex-col overflow-hidden ${
+                className={`${
+                  logDockedOpen ? 'h-[218px] shrink-0' : 'flex-1 min-h-[218px]'
+                } rounded-none flex flex-col overflow-hidden ${
                   decisionMode === 'waiting'
                     ? 'bg-[#151A24] border border-[rgba(242,238,230,0.14)]'
                     : 'bg-[#151A24] border border-[#C9A45C]/45 shadow-md'
@@ -960,9 +1008,19 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                       <span className="text-[10px] font-bold tracking-[0.12em] text-[#C9A45C]">
                         DECISION
                       </span>
-                      <span className="font-mono-tabular text-[9.5px] text-[#7E889C]">
-                        Hauteur fixe
-                      </span>
+                      {!logDockedOpen ? (
+                        <button
+                          type="button"
+                          onClick={() => setLogDockedOpen(true)}
+                          className="font-mono-tabular text-[9.5px] text-[#C9A45C] hover:underline cursor-pointer"
+                        >
+                          + Open Log
+                        </button>
+                      ) : (
+                        <span className="font-mono-tabular text-[9.5px] text-[#7E889C]">
+                          Auto-fit
+                        </span>
+                      )}
                     </div>
                     <div className="flex-1 min-h-0 overflow-y-auto upkeep-scroll p-2.5 flex flex-col">
                       {decisionMode === 'priority' ? (
@@ -1064,7 +1122,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                           <div className="text-[10px] font-bold tracking-wider text-[#F3C969] mt-0.5">
                             • CLICK TO SELECT
                           </div>
-                          <div className="mt-2 flex flex-col gap-1">
+                          <div className="mt-2 flex flex-col gap-1.5">
                             {[
                               'ALPHA STRIKE',
                               'SKIP COMBAT',
@@ -1074,7 +1132,7 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                                 key={label}
                                 type="button"
                                 onClick={() => setDecisionMode('priority')}
-                                className="w-full px-2 py-1.5 rounded-none bg-[#232D40] hover:bg-[#2C3850] border border-[#C9A45C]/55 hover:border-[#C9A45C] text-[10.5px] font-bold tracking-[0.06em] text-white truncate cursor-pointer transition-colors"
+                                className="w-full min-h-[32px] px-2.5 py-1.5 rounded-none bg-[#232D40] hover:bg-[#2C3850] border border-[#C9A45C]/55 hover:border-[#C9A45C] text-[10.5px] font-bold leading-snug tracking-[0.04em] text-white whitespace-normal text-center cursor-pointer transition-colors"
                               >
                                 {label}
                               </button>
@@ -1356,15 +1414,22 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                     ? activeTurn === 'opp'
                       ? {
                           backgroundColor: '#05070b',
-                          backgroundImage: `linear-gradient(180deg, ${bfOppHex}eb 0%, ${bfOppHex}7a 28%, ${bfOppHex}24 60%, transparent 100%)`,
+                          backgroundImage: config.battlefieldTexture
+                            ? `${BF_TEXTURE_LAYERS}, linear-gradient(180deg, ${bfOppHex}eb 0%, ${bfOppHex}7a 28%, ${bfOppHex}24 60%, transparent 100%)`
+                            : `linear-gradient(180deg, ${bfOppHex}eb 0%, ${bfOppHex}7a 28%, ${bfOppHex}24 60%, transparent 100%)`,
                           boxShadow: `inset 0 3px 0 ${bfOppHex}, inset 0 150px 95px -85px ${bfOppHex}9e`,
                         }
                       : {
                           backgroundColor: '#05070b',
-                          backgroundImage: `linear-gradient(180deg, ${bfOppHex}bf 0%, ${bfOppHex}47 34%, transparent 74%)`,
+                          backgroundImage: config.battlefieldTexture
+                            ? `${BF_TEXTURE_LAYERS}, linear-gradient(180deg, ${bfOppHex}bf 0%, ${bfOppHex}47 34%, transparent 74%)`
+                            : `linear-gradient(180deg, ${bfOppHex}bf 0%, ${bfOppHex}47 34%, transparent 74%)`,
                         }
                     : {
-                        background: `linear-gradient(180deg, ${bfOppHex} 0%, ${bfOppHex}cc 75%, #0b0e14 100%)`,
+                        backgroundColor: bfOppHex,
+                        backgroundImage: config.battlefieldTexture
+                          ? `${BF_TEXTURE_LAYERS}, linear-gradient(180deg, ${bfOppHex} 0%, ${bfOppHex}cc 75%, #0b0e14 100%)`
+                          : `linear-gradient(180deg, ${bfOppHex} 0%, ${bfOppHex}cc 75%, #0b0e14 100%)`,
                       }
                   : undefined
               }
@@ -1441,28 +1506,26 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                           }}
                         />
                       )}
-                      {/* Top Stop Bar: Your Turn Stop */}
-                      {hasMineStop && (
-                        <span
-                          aria-hidden="true"
-                          className="absolute top-0 left-0 w-1/2"
-                          style={{
-                            height: isColorblindEnhanced ? '4px' : '3px',
-                            backgroundColor: palette.phaseStopMine,
-                            borderBottom: isColorblindEnhanced ? '1px solid #0b0e14' : undefined,
-                          }}
-                        />
-                      )}
-                      <span className="truncate uppercase leading-none">{phase.label}</span>
-                      {/* Bottom Stop Bar: Opponent Turn Stop */}
+                      {/* Top Stop Bar (Opponent side): Opponent Turn Stop */}
                       {hasOppStop && (
                         <span
                           aria-hidden="true"
-                          className="absolute bottom-0 right-0 w-1/2"
+                          className="absolute top-0 left-0 right-0 h-1/2 pointer-events-none"
                           style={{
-                            height: isColorblindEnhanced ? '4px' : '3px',
-                            backgroundColor: palette.phaseStopOpp,
-                            borderTop: isColorblindEnhanced ? '1px solid #0b0e14' : undefined,
+                            background: `linear-gradient(180deg, ${palette.phaseStopOpp}55 0%, ${palette.phaseStopOpp}14 100%)`,
+                            boxShadow: `inset 0 ${isColorblindEnhanced ? '4px' : '3px'} 0 ${palette.phaseStopOpp}`,
+                          }}
+                        />
+                      )}
+                      <span className="relative z-10 truncate uppercase leading-none">{phase.label}</span>
+                      {/* Bottom Stop Bar (Player side): Your Turn Stop */}
+                      {hasMineStop && (
+                        <span
+                          aria-hidden="true"
+                          className="absolute bottom-0 left-0 right-0 h-1/2 pointer-events-none"
+                          style={{
+                            background: `linear-gradient(0deg, ${palette.phaseStopMine}55 0%, ${palette.phaseStopMine}14 100%)`,
+                            boxShadow: `inset 0 -${isColorblindEnhanced ? '4px' : '3px'} 0 ${palette.phaseStopMine}`,
                           }}
                         />
                       )}
@@ -1496,15 +1559,22 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                     ? activeTurn === 'mine'
                       ? {
                           backgroundColor: '#05070b',
-                          backgroundImage: `linear-gradient(0deg, ${bfSelfHex}eb 0%, ${bfSelfHex}7a 28%, ${bfSelfHex}24 60%, transparent 100%)`,
+                          backgroundImage: config.battlefieldTexture
+                            ? `${BF_TEXTURE_LAYERS}, linear-gradient(0deg, ${bfSelfHex}eb 0%, ${bfSelfHex}7a 28%, ${bfSelfHex}24 60%, transparent 100%)`
+                            : `linear-gradient(0deg, ${bfSelfHex}eb 0%, ${bfSelfHex}7a 28%, ${bfSelfHex}24 60%, transparent 100%)`,
                           boxShadow: `inset 0 -3px 0 ${bfSelfHex}, inset 0 -150px 95px -85px ${bfSelfHex}9e`,
                         }
                       : {
                           backgroundColor: '#05070b',
-                          backgroundImage: `linear-gradient(0deg, ${bfSelfHex}bf 0%, ${bfSelfHex}47 34%, transparent 74%)`,
+                          backgroundImage: config.battlefieldTexture
+                            ? `${BF_TEXTURE_LAYERS}, linear-gradient(0deg, ${bfSelfHex}bf 0%, ${bfSelfHex}47 34%, transparent 74%)`
+                            : `linear-gradient(0deg, ${bfSelfHex}bf 0%, ${bfSelfHex}47 34%, transparent 74%)`,
                         }
                     : {
-                        background: `linear-gradient(0deg, ${bfSelfHex} 0%, ${bfSelfHex}cc 75%, #0b0e14 100%)`,
+                        backgroundColor: bfSelfHex,
+                        backgroundImage: config.battlefieldTexture
+                          ? `${BF_TEXTURE_LAYERS}, linear-gradient(0deg, ${bfSelfHex} 0%, ${bfSelfHex}cc 75%, #0b0e14 100%)`
+                          : `linear-gradient(0deg, ${bfSelfHex} 0%, ${bfSelfHex}cc 75%, #0b0e14 100%)`,
                       }
                   : undefined
               }
@@ -1617,41 +1687,49 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                         </button>
                         <RefreshCw className="w-3 h-3 text-[#7E889C] shrink-0" />
                       </div>
-                      <div className="pl-5 text-[10px] text-[#7E889C]">
-                        {oppGy.length}/{oppGy.length} cards · Live
+                      <div className="pl-5 mt-0.5 flex items-center justify-between gap-1.5">
+                        <span className="text-[10px] text-[#7E889C] truncate">
+                          {oppGy.length} cards · Live
+                        </span>
+                        <span
+                          title={`Delirium: ${oppDelirium.count} card types (${oppDelirium.types.join(', ')})`}
+                          className={`font-mono-tabular text-[9px] font-bold uppercase tracking-[0.06em] px-1.5 py-0.5 border shrink-0 ${
+                            oppDelirium.active
+                              ? 'border-[#C9A45C] bg-[#C9A45C]/20 text-[#F3D286]'
+                              : 'border-white/15 bg-[#0B0E14]/60 text-[#BCC5D4]'
+                          }`}
+                        >
+                          {oppDelirium.active
+                            ? `DELIRIUM · ${oppDelirium.count}`
+                            : `TYPES ${oppDelirium.count}/4`}
+                        </span>
                       </div>
                     </div>
 
                     {!oppGyCollapsed && (
                       <>
-                        <div className="grid grid-cols-4 gap-1 px-1.5 py-1 bg-[#0E121A] border-b border-[rgba(242,238,230,0.07)] shrink-0">
-                          {(
-                            [
-                              ['all', 'All'],
-                              ['creature', 'Creatures'],
-                              ['spell', 'Spells'],
-                              ['land', 'Lands'],
-                            ] as const
-                          ).map(([k, lbl]) => (
-                            <button
-                              key={k}
-                              type="button"
-                              onClick={() => setOppGyFilter(k)}
-                              className={`py-0.5 text-[9.5px] font-semibold rounded-none border cursor-pointer transition-colors ${
-                                oppGyFilter === k
-                                  ? 'bg-[#C9A45C]/15 border-[#C9A45C]/50 text-[#C9A45C]'
-                                  : 'border-transparent text-[#8E98AC] hover:text-white'
-                              }`}
-                            >
-                              {lbl}
-                            </button>
-                          ))}
-                        </div>
+                        {oppDelirium.types.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1 px-2 py-1 bg-[#0E121A] border-b border-[rgba(242,238,230,0.07)] shrink-0">
+                            {oppDelirium.types.map((typeName) => (
+                              <span
+                                key={typeName}
+                                title={typeName}
+                                className={`px-1 py-[1px] text-[8.5px] font-bold tracking-[0.06em] uppercase border ${
+                                  oppDelirium.active
+                                    ? 'border-[#C9A45C]/40 bg-[#C9A45C]/10 text-[#E9CC86]'
+                                    : 'border-white/12 bg-white/5 text-[#BCC5D4]'
+                                }`}
+                              >
+                                {DELIRIUM_SHORT[typeName] || typeName.slice(0, 3).toUpperCase()}
+                              </span>
+                            ))}
+                          </div>
+                        )}
 
                         <div className="flex-1 min-h-0 overflow-y-auto upkeep-scroll p-1.5 grid grid-cols-2 content-start gap-1.5">
                           {oppGrouped.length === 0 ? (
                             <div className="col-span-2 py-6 text-center text-[11px] text-[#7E889C]">
-                              No cards match this filter.
+                              Graveyard is empty.
                             </div>
                           ) : (
                             oppGrouped.map(({ card, qty }) => (
@@ -1710,41 +1788,49 @@ export function EndstepSimulator({ config }: EndstepSimulatorProps) {
                         </button>
                         <RefreshCw className="w-3 h-3 text-[#7E889C] shrink-0" />
                       </div>
-                      <div className="pl-5 text-[10px] text-[#7E889C]">
-                        {selfGy.length}/{selfGy.length} cards · Live
+                      <div className="pl-5 mt-0.5 flex items-center justify-between gap-1.5">
+                        <span className="text-[10px] text-[#7E889C] truncate">
+                          {selfGy.length} cards · Live
+                        </span>
+                        <span
+                          title={`Delirium: ${selfDelirium.count} card types (${selfDelirium.types.join(', ')})`}
+                          className={`font-mono-tabular text-[9px] font-bold uppercase tracking-[0.06em] px-1.5 py-0.5 border shrink-0 ${
+                            selfDelirium.active
+                              ? 'border-[#4CB782] bg-[#4CB782]/20 text-[#7EE3B0]'
+                              : 'border-white/15 bg-[#0B0E14]/60 text-[#BCC5D4]'
+                          }`}
+                        >
+                          {selfDelirium.active
+                            ? `DELIRIUM · ${selfDelirium.count}`
+                            : `TYPES ${selfDelirium.count}/4`}
+                        </span>
                       </div>
                     </div>
 
                     {!selfGyCollapsed && (
                       <>
-                        <div className="grid grid-cols-4 gap-1 px-1.5 py-1 bg-[#0E121A] border-b border-[rgba(242,238,230,0.07)] shrink-0">
-                          {(
-                            [
-                              ['all', 'All'],
-                              ['creature', 'Creatures'],
-                              ['spell', 'Spells'],
-                              ['land', 'Lands'],
-                            ] as const
-                          ).map(([k, lbl]) => (
-                            <button
-                              key={k}
-                              type="button"
-                              onClick={() => setSelfGyFilter(k)}
-                              className={`py-0.5 text-[9.5px] font-semibold rounded-none border cursor-pointer transition-colors ${
-                                selfGyFilter === k
-                                  ? 'bg-[#7CAEE6]/18 border-[#7CAEE6]/50 text-[#8CBEF5]'
-                                  : 'border-transparent text-[#8E98AC] hover:text-white'
-                              }`}
-                            >
-                              {lbl}
-                            </button>
-                          ))}
-                        </div>
+                        {selfDelirium.types.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1 px-2 py-1 bg-[#0E121A] border-b border-[rgba(242,238,230,0.07)] shrink-0">
+                            {selfDelirium.types.map((typeName) => (
+                              <span
+                                key={typeName}
+                                title={typeName}
+                                className={`px-1 py-[1px] text-[8.5px] font-bold tracking-[0.06em] uppercase border ${
+                                  selfDelirium.active
+                                    ? 'border-[#4CB782]/45 bg-[#4CB782]/10 text-[#8BE7B8]'
+                                    : 'border-white/12 bg-white/5 text-[#BCC5D4]'
+                                }`}
+                              >
+                                {DELIRIUM_SHORT[typeName] || typeName.slice(0, 3).toUpperCase()}
+                              </span>
+                            ))}
+                          </div>
+                        )}
 
                         <div className="flex-1 min-h-0 overflow-y-auto upkeep-scroll p-1.5 grid grid-cols-2 content-start gap-1.5">
                           {selfGrouped.length === 0 ? (
                             <div className="col-span-2 py-6 text-center text-[11px] text-[#7E889C]">
-                              No cards match this filter.
+                              Graveyard is empty.
                             </div>
                           ) : (
                             selfGrouped.map(({ card, qty }) => (

@@ -235,6 +235,38 @@ html[data-upkeep-active="true"][data-upkeep-bf-style="gradient"][data-upkeep-tur
   box-shadow: none !important;
 }
 
+/* Optional subtle playmat/linen micro-texture (MTGO/Cockatrice tactile feel, works with Solid & Gradient) */
+html[data-upkeep-active="true"][data-upkeep-bf-texture="true"] [data-half="opp"],
+html[data-upkeep-active="true"][data-upkeep-bf-texture="true"] [data-half="self"] {
+  --upkeep-bf-texture-layer:
+    radial-gradient(ellipse at 50% 50%, transparent 48%, rgba(0, 0, 0, 0.22) 100%),
+    radial-gradient(rgba(255, 255, 255, 0.026) 1px, transparent 1px),
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.014) 0px,
+      rgba(255, 255, 255, 0.014) 1px,
+      transparent 1px,
+      transparent 7px
+    ),
+    repeating-linear-gradient(
+      45deg,
+      rgba(0, 0, 0, 0.065) 0px,
+      rgba(0, 0, 0, 0.065) 1px,
+      transparent 1px,
+      transparent 7px
+    );
+  background-size: 100% 100%, 14px 14px, 10px 10px, 10px 10px, 100% 100% !important;
+  background-repeat: no-repeat, repeat, repeat, repeat, no-repeat !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-bf-texture="true"] [data-half="opp"] {
+  background-image: var(--upkeep-bf-texture-layer), var(--gradient-half-opponent) !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-bf-texture="true"] [data-half="self"] {
+  background-image: var(--upkeep-bf-texture-layer), var(--gradient-half-self) !important;
+}
+
 html[data-upkeep-active="true"] aside.wr-rail-left,
 html[data-upkeep-active="true"] aside.wr-rail-left *,
 html[data-upkeep-active="true"] aside.wr-rail-right,
@@ -887,7 +919,7 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions {
   margin-top: 8px !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 5px !important;
+  gap: 6px !important;
   flex-shrink: 0 !important;
 }
 
@@ -899,11 +931,17 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions bu
   font-size: 11px !important;
   font-weight: 700 !important;
   letter-spacing: 0.04em !important;
-  padding: 6px 8px !important;
-  min-height: 30px !important;
+  padding: 7px 10px !important;
+  min-height: 34px !important;
   height: auto !important;
-  line-height: 1.3 !important;
+  line-height: 1.28 !important;
   white-space: normal !important;
+  flex-wrap: wrap !important;
+  row-gap: 4px !important;
+  column-gap: 6px !important;
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center !important;
   border-radius: 0 !important;
   box-shadow: none !important;
   pointer-events: auto !important;
@@ -958,10 +996,28 @@ html[data-upkeep-active="true"] [data-zone="decision-surface"] [role="option"][a
   box-shadow: inset 3px 0 0 var(--upkeep-gold) !important;
 }
 
-html[data-upkeep-active="true"] [data-zone="decision-surface"] .wr-ds-actions button .overflow-label {
+/* Kill Endstep horizontal scrolling marquee on long decision buttons ("Done Selecting Attackers")
+ * so labels wrap cleanly onto 2 readable lines inside a taller button */
+html[data-upkeep-active="true"] [data-zone="decision-surface"] button .overflow-label,
+html[data-upkeep-active="true"] [data-zone="decision-surface"] button .overflow-label[data-overflow],
+html[data-upkeep-active="true"] [data-zone="decision-surface"] button .overflow-label__text,
+html[data-upkeep-active="true"] [data-zone="decision-surface"] button .overflow-label[data-overflow] .overflow-label__text,
+html[data-upkeep-active="true"] [data-zone="decision-surface"] button .wr-marquee,
+html[data-upkeep-active="true"] [data-zone="decision-surface"] button .wr-marquee--clipped,
+html[data-upkeep-active="true"] [data-zone="decision-surface"] button .wr-marquee-track {
   white-space: normal !important;
   overflow: visible !important;
   text-overflow: clip !important;
+  width: auto !important;
+  max-width: 100% !important;
+  display: inline !important;
+  animation: none !important;
+  transform: none !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  overflow-wrap: break-word !important;
+  text-align: center !important;
+  line-height: 1.28 !important;
 }
 
 html[data-upkeep-active="true"] [data-zone="decision-surface"] [data-testid="kcap"] {
@@ -1238,6 +1294,8 @@ html[data-upkeep-active="true"] [data-gamelog-panel] [data-gamelog-titlebar] {
   background: var(--upkeep-bg-elevated) !important;
   border-bottom: 1px solid var(--upkeep-border) !important;
   padding: 6px 10px !important;
+  gap: 4px !important;
+  flex-wrap: nowrap !important;
   border-radius: 0 !important;
 }
 
@@ -1246,12 +1304,18 @@ html[data-upkeep-active="true"] [data-gamelog-panel] .gl-title {
   font-weight: 700 !important;
   letter-spacing: 0.02em !important;
   color: var(--upkeep-text-primary) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  min-width: 0 !important;
 }
 
 html[data-upkeep-active="true"] [data-gamelog-panel] .gl-turn {
-  background: rgba(201, 164, 92, 0.1) !important;
+  background: color-mix(in srgb, var(--upkeep-gold) 14%, var(--upkeep-bg-surface)) !important;
   border-color: var(--upkeep-border) !important;
   color: var(--upkeep-gold) !important;
+  z-index: 2 !important;
+  backdrop-filter: none !important;
 }
 
 html[data-upkeep-active="true"] [data-gamelog-panel] .gl-row {
@@ -1497,53 +1561,92 @@ html[data-upkeep-timeline="false"] #upkeep-graveyards-dock[data-mode="docked"] {
   color: var(--upkeep-gold);
 }
 
+.upkeep-gy-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding-left: 20px;
+  min-width: 0;
+}
+
 .upkeep-gy-meta {
   font-size: 10.5px;
   color: var(--upkeep-text-muted);
-  padding-left: 20px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
-.upkeep-gy-filters {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+.upkeep-gy-delirium {
+  flex-shrink: 0;
+  font-family: var(--upkeep-font-sans);
+  font-variant-numeric: tabular-nums;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border: 1px solid var(--upkeep-border-strong);
+  background: rgba(11, 14, 20, 0.55);
+  color: var(--upkeep-text-secondary);
+  line-height: 1.3;
+  cursor: help;
+}
+
+.upkeep-gy-delirium[hidden] {
+  display: none !important;
+}
+
+.upkeep-gy-delirium[data-active="true"] {
+  border-color: var(--upkeep-gold);
+  background: rgba(201, 164, 92, 0.2);
+  color: #f3d286;
+}
+
+.upkeep-gy-section[data-owner="self"] .upkeep-gy-delirium[data-active="true"] {
+  border-color: #4cb782;
+  background: rgba(76, 183, 130, 0.18);
+  color: #7ee3b0;
+}
+
+.upkeep-gy-types-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 3px;
-  padding: 5px 8px;
+  padding: 4px 8px;
   border-bottom: 1px solid var(--upkeep-border);
-  background: rgba(11, 14, 20, 0.35);
+  background: rgba(11, 14, 20, 0.38);
   flex-shrink: 0;
 }
 
-.upkeep-gy-filter-btn {
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--upkeep-text-secondary);
+.upkeep-gy-types-strip[hidden] {
+  display: none !important;
+}
+
+.upkeep-gy-type-tag {
   font-family: var(--upkeep-font-sans);
-  font-size: 10px;
-  font-weight: 600;
-  padding: 4px 2px;
-  border-radius: 0;
-  cursor: pointer;
-  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 1px 4px;
+  border: 1px solid rgba(244, 246, 250, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--upkeep-text-secondary);
+  line-height: 1.25;
 }
 
-.upkeep-gy-filter-btn:hover {
-  background: var(--upkeep-bg-hover);
-  color: var(--upkeep-text-primary);
+.upkeep-gy-types-strip[data-active="true"] .upkeep-gy-type-tag {
+  border-color: rgba(201, 164, 92, 0.38);
+  color: #e9cc86;
 }
 
-.upkeep-gy-filter-btn[aria-pressed="true"] {
-  background: var(--upkeep-gold-glow);
-  border-color: var(--upkeep-gold-soft);
-  color: var(--upkeep-gold);
-}
-
-.upkeep-gy-section[data-owner="self"] .upkeep-gy-filter-btn[aria-pressed="true"] {
-  background: rgba(124, 174, 230, 0.16);
-  border-color: rgba(124, 174, 230, 0.42);
-  color: #8cbef5;
+.upkeep-gy-section[data-owner="self"] .upkeep-gy-types-strip[data-active="true"] .upkeep-gy-type-tag {
+  border-color: rgba(76, 183, 130, 0.42);
+  color: #8be7b8;
 }
 
 .upkeep-gy-section[data-owner="self"] .upkeep-gy-card-qty {
@@ -2029,13 +2132,14 @@ html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-
   display: none !important;
 }
 
-/* Real interactive stop blades: left half = Your Turn, right half = Opp Turn (customizable) */
+/* Real interactive stop blades spatially aligned with the board:
+ * Top half (opponent side) = Opponent Turn stop | Bottom half (player side) = Your Turn stop */
 html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade {
   position: absolute !important;
-  top: 0 !important;
-  bottom: 0 !important;
-  width: 50% !important;
-  height: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  height: 50% !important;
   min-width: 0 !important;
   min-height: 0 !important;
   padding: 0 !important;
@@ -2055,28 +2159,10 @@ html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-
   display: none !important;
 }
 
-html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--mine {
-  left: 0 !important;
-  right: auto !important;
-}
-
-html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--mine:hover {
-  background: color-mix(in srgb, var(--upkeep-phase-stop-mine, #d6ab56) 24%, transparent) !important;
-}
-
-html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--mine.is-set,
-html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--mine[aria-pressed="true"] {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--upkeep-phase-stop-mine, #d6ab56) 34%, transparent) 0%,
-    color-mix(in srgb, var(--upkeep-phase-stop-mine, #d6ab56) 10%, transparent) 100%
-  ) !important;
-  box-shadow: inset 0 3px 0 var(--upkeep-phase-stop-mine, #d6ab56) !important;
-}
-
+/* Opponent Turn stop: TOP half (opponent side) */
 html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--opp {
-  right: 0 !important;
-  left: auto !important;
+  top: 0 !important;
+  bottom: auto !important;
 }
 
 html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--opp:hover {
@@ -2087,21 +2173,41 @@ html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-
 html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--opp[aria-pressed="true"] {
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--upkeep-phase-stop-opp, #6ea8f0) 10%, transparent) 0%,
-    color-mix(in srgb, var(--upkeep-phase-stop-opp, #6ea8f0) 34%, transparent) 100%
+    color-mix(in srgb, var(--upkeep-phase-stop-opp, #6ea8f0) 36%, transparent) 0%,
+    color-mix(in srgb, var(--upkeep-phase-stop-opp, #6ea8f0) 8%, transparent) 100%
   ) !important;
-  box-shadow: inset 0 -3px 0 var(--upkeep-phase-stop-opp, #6ea8f0) !important;
+  box-shadow: inset 0 3px 0 var(--upkeep-phase-stop-opp, #6ea8f0) !important;
 }
 
-/* Colorblind non-color visual cues on stops (stronger top/bottom edge bars + crisp divider) */
-html[data-upkeep-active="true"][data-upkeep-timeline="true"]:not([data-upkeep-colorblind="none"]) .wr-pb-rail .wr-pb-blade--mine.is-set,
-html[data-upkeep-active="true"][data-upkeep-timeline="true"]:not([data-upkeep-colorblind="none"]) .wr-pb-rail .wr-pb-blade--mine[aria-pressed="true"] {
-  box-shadow: inset 0 4px 0 var(--upkeep-phase-stop-mine), inset -1px 0 0 rgba(255, 255, 255, 0.2) !important;
+/* Your Turn stop: BOTTOM half (player side) */
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--mine {
+  bottom: 0 !important;
+  top: auto !important;
 }
 
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--mine:hover {
+  background: color-mix(in srgb, var(--upkeep-phase-stop-mine, #d6ab56) 24%, transparent) !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--mine.is-set,
+html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-blade--mine[aria-pressed="true"] {
+  background: linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--upkeep-phase-stop-mine, #d6ab56) 36%, transparent) 0%,
+    color-mix(in srgb, var(--upkeep-phase-stop-mine, #d6ab56) 8%, transparent) 100%
+  ) !important;
+  box-shadow: inset 0 -3px 0 var(--upkeep-phase-stop-mine, #d6ab56) !important;
+}
+
+/* Colorblind non-color visual cues on stops (stronger top/bottom edge bars + crisp horizontal divider) */
 html[data-upkeep-active="true"][data-upkeep-timeline="true"]:not([data-upkeep-colorblind="none"]) .wr-pb-rail .wr-pb-blade--opp.is-set,
 html[data-upkeep-active="true"][data-upkeep-timeline="true"]:not([data-upkeep-colorblind="none"]) .wr-pb-rail .wr-pb-blade--opp[aria-pressed="true"] {
-  box-shadow: inset 0 -4px 0 var(--upkeep-phase-stop-opp), inset 1px 0 0 rgba(255, 255, 255, 0.2) !important;
+  box-shadow: inset 0 4px 0 var(--upkeep-phase-stop-opp), inset 0 -1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-timeline="true"]:not([data-upkeep-colorblind="none"]) .wr-pb-rail .wr-pb-blade--mine.is-set,
+html[data-upkeep-active="true"][data-upkeep-timeline="true"]:not([data-upkeep-colorblind="none"]) .wr-pb-rail .wr-pb-blade--mine[aria-pressed="true"] {
+  box-shadow: inset 0 -4px 0 var(--upkeep-phase-stop-mine), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }
 
 /* Centered step label — pointer-events: none so all clicks & right-clicks hit real blades/steps */
@@ -2137,6 +2243,309 @@ html[data-upkeep-active="true"][data-upkeep-timeline="true"] .wr-pb-rail .wr-pb-
   font-weight: 800 !important;
   letter-spacing: 0.05em !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* ============================================================================
+ * 11. RESPONSIVE COMPACT DENSITY FOR SMALLER VIEWPORTS & NARROW RAILS
+ *     Driven dynamically by syncCompactDensity() on <html>:
+ *       - data-upkeep-compact-h="true"     (viewport height <= 940px)
+ *       - data-upkeep-compact-left="true"  (left rail width <= 232px)
+ *       - data-upkeep-compact-right="true" (right rail width <= 212px)
+ * ============================================================================ */
+
+/* Compact vertical density: reclaims ~110-130px on 900px/800px laptop screens */
+html[data-upkeep-active="true"][data-upkeep-compact-h="true"] .wr-plate {
+  padding: 6px 8px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-h="true"] .wr-plate .wr-player-nameplate {
+  font-size: 12px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] [data-testid="opp-life"],
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] [data-testid="me-life"] {
+  gap: 6px !important;
+  margin: 1px 0 2px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] [data-testid="opp-life"] .life-total,
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] [data-testid="me-life"] .life-total {
+  font-size: 1.85rem !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate [data-plate-section="body"] > div:first-child,
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate [data-plate-section="body"] > div:nth-child(2) {
+  gap: 4px !important;
+  margin-top: 3px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate [title="Library (deck) size"],
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate [data-zone-anchor="opp-hand"],
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate button[data-zone-anchor="my-library"],
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate [title="Hand size"],
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate button[data-zone-anchor="opp-graveyard"],
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate button[data-zone-anchor="opp-exile"],
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate button[data-zone-anchor="my-graveyard"],
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate button[data-zone-anchor="my-exile"] {
+  padding: 3px 5px !important;
+  gap: 3px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate [title="Library (deck) size"] [data-zone-count],
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate [data-zone-anchor="opp-hand"] [data-zone-count],
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate button[data-zone-anchor="my-library"] [data-zone-count],
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate [title="Hand size"] .font-mono,
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate button[data-zone-anchor="opp-graveyard"] [data-zone-count],
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate button[data-zone-anchor="opp-exile"] [data-zone-count],
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate button[data-zone-anchor="my-graveyard"] [data-zone-count],
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate button[data-zone-anchor="my-exile"] [data-zone-count] {
+  font-size: 13px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate [title="Library (deck) size"]::after,
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate button[data-zone-anchor="my-library"]::after,
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate [data-zone-anchor="opp-hand"]::after,
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate [title="Hand size"]::after,
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate button[data-zone-anchor="opp-exile"]::after,
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-h="true"] .wr-plate button[data-zone-anchor="my-exile"]::after {
+  font-size: 8px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-h="true"] [data-zone="decision-surface"] .wr-ds-banner,
+html[data-upkeep-active="true"][data-upkeep-compact-h="true"] aside.wr-rail-left [data-zone="decision-surface"][role="status"] > :first-child,
+html[data-upkeep-active="true"][data-upkeep-compact-h="true"] aside.wr-rail-left [data-upkeep-waiting="true"] [data-upkeep-waiting-head="true"] {
+  height: 24px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
+  flex: 0 0 24px !important;
+  padding: 0 8px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-h="true"] [data-zone="decision-surface"] .wr-ds-body {
+  padding: 7px 8px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-h="true"] [data-zone="decision-surface"] .wr-ds-title {
+  font-size: 12px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-h="true"] [data-zone="decision-surface"] .wr-ds-message {
+  font-size: 11px !important;
+  line-height: 1.3 !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-h="true"] [data-zone="decision-surface"] .wr-ds-actions {
+  margin-top: 6px !important;
+  gap: 4px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-h="true"] [data-zone="decision-surface"] .wr-ds-actions button {
+  min-height: 30px !important;
+  padding: 5px 8px !important;
+  font-size: 10.5px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-h="true"] aside.wr-rail-left [data-zone="decision-surface"][role="status"] > :nth-child(2),
+html[data-upkeep-active="true"][data-upkeep-compact-h="true"] aside.wr-rail-left [data-upkeep-waiting="true"] [data-upkeep-waiting-msg="true"] {
+  padding: 12px !important;
+  gap: 6px !important;
+  font-size: 12px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-h="true"] aside.wr-rail-left [data-zone="decision-surface"][role="status"] > :nth-child(2)::before,
+html[data-upkeep-active="true"][data-upkeep-compact-h="true"] aside.wr-rail-left [data-upkeep-waiting="true"] [data-upkeep-waiting-msg="true"]::before {
+  width: 22px;
+  height: 22px;
+}
+
+html[data-upkeep-active="true"][data-upkeep-timeline="true"][data-upkeep-compact-h="true"] .wr-main-col > [style*="--gradient-midline"] {
+  height: 40px !important;
+  min-height: 40px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-timeline="true"][data-upkeep-compact-h="true"] aside.wr-rail-right .wr-phase-bar--vertical .wr-pb-rail {
+  height: 40px !important;
+  padding: 0 8px !important;
+  gap: 3px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-timeline="true"][data-upkeep-compact-h="true"] .wr-pb-rail .wr-pb {
+  height: 26px !important;
+  min-height: 26px !important;
+  max-height: 26px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-timeline="true"][data-upkeep-compact-h="true"] .wr-pb-rail .wr-pb--current::before {
+  top: -7px !important;
+  border-left-width: 5px !important;
+  border-right-width: 5px !important;
+  border-top-width: 6px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-timeline="true"][data-upkeep-compact-h="true"] .wr-pb-rail .wr-pb--current::after {
+  bottom: -7px !important;
+  border-left-width: 5px !important;
+  border-right-width: 5px !important;
+  border-bottom-width: 6px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-timeline="true"][data-upkeep-compact-h="true"] .wr-pb-rail .wr-pb-label,
+html[data-upkeep-active="true"][data-upkeep-timeline="true"][data-upkeep-compact-h="true"] .wr-pb-rail .wr-pb-now-name {
+  font-size: 9.5px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-timeline="true"][data-upkeep-compact-h="true"] aside.wr-rail-right .wr-phase-bar--vertical {
+  padding: 5px 7px !important;
+  gap: 3px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-timeline="true"][data-upkeep-compact-h="true"] aside.wr-rail-right .wr-turn-chip {
+  padding: 4px 6px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-timeline="true"][data-upkeep-compact-h="true"] aside.wr-rail-right .wr-turn-owner,
+html[data-upkeep-active="true"][data-upkeep-timeline="true"][data-upkeep-compact-h="true"] aside.wr-rail-right .wr-turn-meta,
+html[data-upkeep-active="true"][data-upkeep-timeline="true"][data-upkeep-compact-h="true"] aside.wr-rail-right .wr-turn-player {
+  font-size: 10px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-timeline="true"][data-upkeep-compact-h="true"] aside.wr-rail-right .wr-priority-badge {
+  padding: 3px 6px !important;
+  font-size: 9.5px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-timeline="true"][data-upkeep-compact-h="true"] aside.wr-rail-right .wr-phase-legend {
+  font-size: 8.5px !important;
+  gap: 8px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-h="true"] .upkeep-gy-section {
+  min-height: 92px;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-h="true"] .upkeep-gy-header {
+  padding: 5px 7px;
+}
+
+/* Compact left rail width (<= 232px): eliminates Auto-Pass truncation, Game Log wrapping & plate crowding */
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-left="true"] .wr-plate button[data-zone-anchor="opp-graveyard"]::after,
+html[data-upkeep-active="true"][data-upkeep-hud="true"][data-upkeep-compact-left="true"] .wr-plate button[data-zone-anchor="my-graveyard"]::after {
+  content: 'GRAVE';
+  font-size: 7.5px;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-left="true"] [data-upkeep-autopass-grid="true"] {
+  gap: 3px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-left="true"] [aria-label="Pass priority shortcuts"] button[data-upkeep-ap-short] {
+  height: 26px !important;
+  min-height: 26px !important;
+  max-height: 26px !important;
+  padding: 0 3px !important;
+  gap: 3px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-left="true"] [aria-label="Pass priority shortcuts"] button[data-upkeep-ap-short]::before {
+  font-size: 8.5px !important;
+  letter-spacing: 0.02em !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-left="true"] [aria-label="Pass priority shortcuts"] button [data-upkeep-ap-key="true"],
+html[data-upkeep-active="true"][data-upkeep-compact-left="true"] [aria-label="Pass priority shortcuts"] button [data-testid="kcap"],
+html[data-upkeep-active="true"][data-upkeep-compact-left="true"] [aria-label="Pass priority shortcuts"] button kbd {
+  min-width: 13px !important;
+  height: 13px !important;
+  padding: 0 2px !important;
+  font-size: 8px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-left="true"] [data-gamelog-panel] [data-gamelog-titlebar] {
+  padding: 4px 6px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-left="true"] [data-gamelog-panel] .gl-title {
+  font-size: 11px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-left="true"] [data-gamelog-panel] .gl-row {
+  font-size: 11px !important;
+  line-height: 1.38 !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-left="true"] .upkeep-log-dock-btn {
+  width: 19px;
+  height: 19px;
+  font-size: 11px;
+}
+
+/* Compact right rail width (<= 212px): eliminates Graveyard title truncation and maximizes card thumbnail area */
+html[data-upkeep-active="true"][data-upkeep-compact-right="true"] aside.wr-rail-right .wr-phase-bar--vertical {
+  margin: 0 4px !important;
+  padding: 5px 6px !important;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-right="true"] #upkeep-graveyards-dock[data-mode="docked"] {
+  margin: 0 4px;
+  gap: 4px;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-right="true"] .upkeep-gy-header {
+  padding: 5px 6px;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-right="true"] .upkeep-gy-title-row {
+  gap: 4px;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-right="true"] .upkeep-gy-collapse-btn {
+  gap: 4px;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-right="true"] .upkeep-gy-chevron {
+  width: 11px;
+  font-size: 9px;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-right="true"] .upkeep-gy-title,
+html[data-upkeep-active="true"][data-upkeep-compact-right="true"] .upkeep-gy-count {
+  font-size: 11px;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-right="true"] .upkeep-gy-icon-btn {
+  width: 19px;
+  height: 19px;
+  font-size: 10px;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-right="true"] .upkeep-gy-meta-row {
+  padding-left: 15px;
+  gap: 4px;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-right="true"] .upkeep-gy-meta {
+  font-size: 9.5px;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-right="true"] .upkeep-gy-delirium {
+  font-size: 8.5px;
+  padding: 1px 4px;
+  letter-spacing: 0.04em;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-right="true"] .upkeep-gy-types-strip {
+  padding: 3px 6px;
+  gap: 2px;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-right="true"] .upkeep-gy-type-tag {
+  font-size: 8px;
+  padding: 1px 3px;
+}
+
+html[data-upkeep-active="true"][data-upkeep-compact-right="true"] .upkeep-gy-list {
+  padding: 4px;
+  gap: 4px;
 }
 
 /* ============================================================================
